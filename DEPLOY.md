@@ -50,6 +50,14 @@ Repo → Settings → Secrets and variables → Actions → New repository secre
 
 4. Configure your database credentials in `.env`.
 5. Disable the Plesk Git deployment script (Composer/npm on Plesk is not used).
+6. Seed sample data once (SSH):
+
+   ```bash
+   cd /var/www/vhosts/daidokoro.my.id/staging.daidokoro.my.id
+   /opt/plesk/php/8.3/bin/php artisan db:seed --force
+   ```
+
+   Deploy runs `migrate --force` only — it does not wipe or re-seed the database on every push.
 
 ## Day-to-day workflow
 

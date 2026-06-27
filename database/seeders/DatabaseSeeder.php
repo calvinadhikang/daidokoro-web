@@ -3,8 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use Database\Seeders\MenuSeeder;
-use Database\Seeders\TransactionSeeder;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -17,11 +15,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
+        User::query()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
+            'password' => 'password',
         ]);
 
         $this->call(MenuSeeder::class);
