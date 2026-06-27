@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\Customer;
 use App\Models\MenuModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,19 +19,22 @@ class CustomerMenuTest extends TestCase
         $response->assertRedirect(route('customer.login'));
     }
 
-    public function test_menu_page_shows_available_menus(): void
+    public function test_menu_page_shows_available_menus_and_categories(): void
     {
         $customer = Customer::query()->create([
             'name' => 'Alex Tan',
             'phone' => '6281234567890',
         ]);
 
-        MenuModel::query()->create([
+        $category = Category::query()->create(['name' => 'Mains']);
+
+        $availableMenu = MenuModel::query()->create([
             'name' => 'Chicken Rice',
             'price' => 35000,
             'is_available' => true,
             'is_recommended' => true,
         ]);
+        $availableMenu->categories()->attach($category);
 
         MenuModel::query()->create([
             'name' => 'Sold Out Dish',
@@ -48,6 +52,8 @@ class CustomerMenuTest extends TestCase
             ->where('serviceType', 'takeaway')
             ->has('menus', 1)
             ->where('menus.0.name', 'Chicken Rice')
+            ->has('categories', 1)
+            ->where('categories.0.name', 'Mains')
         );
     }
 }

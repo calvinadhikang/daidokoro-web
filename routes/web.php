@@ -3,6 +3,7 @@
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CustomerLoginController;
 use App\Http\Controllers\CustomerMenuController;
+use App\Http\Controllers\CustomerMenuOrderController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MenuBrowseController;
 use App\Http\Controllers\MenuController;
@@ -19,6 +20,8 @@ Route::prefix('customer')->name('customer.')->group(function () {
 
     Route::middleware('customer')->group(function () {
         Route::get('/menu', [CustomerMenuController::class, 'index'])->name('menu.index');
+        Route::get('/menu/{menuModel}', [CustomerMenuOrderController::class, 'show'])->name('menu.show');
+        Route::post('/menu/{menuModel}', [CustomerMenuOrderController::class, 'store'])->name('menu.store');
     });
 });
 

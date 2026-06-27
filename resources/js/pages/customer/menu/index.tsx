@@ -2,7 +2,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 
 import { MenuBrowsePanel } from '@/components/menu/menu-browse-panel';
 import type { Customer } from '@/types/customer';
-import type { Menu } from '@/types/menu';
+import type { Menu, MenuCategory } from '@/types/menu';
 import {
     serviceTypeLabel,
     type TransactionServiceType,
@@ -17,10 +17,15 @@ type PageProps = {
 
 type Props = {
     menus: Menu[];
+    categories: MenuCategory[];
     serviceType: TransactionServiceType | null;
 };
 
-export default function CustomerMenuIndex({ menus, serviceType }: Props) {
+export default function CustomerMenuIndex({
+    menus,
+    categories,
+    serviceType,
+}: Props) {
     const { customer, flash } = usePage<PageProps>().props;
 
     return (
@@ -65,7 +70,9 @@ export default function CustomerMenuIndex({ menus, serviceType }: Props) {
                 <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 py-4">
                     <MenuBrowsePanel
                         menus={menus}
+                        categories={categories}
                         availability="available"
+                        menuHref={(menu) => `/customer/menu/${menu.id}`}
                         emptyMessage="No menu items available right now."
                     />
                 </main>

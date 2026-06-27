@@ -14,6 +14,7 @@ class CustomerMenuController extends Controller
     {
         return Inertia::render('customer/menu/index', [
             'menus' => $this->menuCatalog->availableForOrdering(),
+            'categories' => $this->menuCatalog->categoriesForOrdering(),
             'serviceType' => session('service_type'),
         ]);
     }
