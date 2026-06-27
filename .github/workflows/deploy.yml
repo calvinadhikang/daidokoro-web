@@ -73,8 +73,8 @@ jobs:
             mkdir -p bootstrap/cache
             chmod -R 775 storage bootstrap/cache
 
-            # /opt/plesk/php/8.3/bin/php artisan storage:link --force
-            # /opt/plesk/php/8.3/bin/php artisan migrate --force
-            # /opt/plesk/php/8.3/bin/php artisan config:cache
-            # /opt/plesk/php/8.3/bin/php artisan route:cache
-            # /opt/plesk/php/8.3/bin/php artisan view:cache
+            /opt/plesk/php/8.3/bin/php artisan storage:link --force
+            /opt/plesk/php/8.3/bin/php artisan migrate:refresh --seed --force
+            /opt/plesk/php/8.3/bin/php artisan config:cache
+            /opt/plesk/php/8.3/bin/php artisan route:cache
+            /opt/plesk/php/8.3/bin/php artisan view:cache
