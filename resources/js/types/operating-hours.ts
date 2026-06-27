@@ -51,6 +51,14 @@ export type StoreStatus = {
     timezone_label: string;
 };
 
+export type NextSession = {
+    context: 'current' | 'upcoming';
+    session_number: number;
+    time_range_formatted: string;
+    starts_at_formatted: string;
+    ends_at_formatted: string;
+};
+
 export const DAY_NAMES = [
     'Sunday',
     'Monday',

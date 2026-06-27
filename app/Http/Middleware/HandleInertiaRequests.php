@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Customer;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -41,9 +42,36 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'customer' => fn () => $this->resolveCustomer($request),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
             ],
+        ];
+    }
+
+    /**
+     * @return array{id: int, name: string, phone: string, phone_display: string, phone_local: string}|null
+     */
+    private function resolveCustomer(Request $request): ?array
+    {
+        $customerId = $request->session()->get('customer_id');
+
+        if ($customerId === null) {
+            return null;
+        }
+
+        $customer = Customer::query()->find($customerId);
+
+        if ($customer === null) {
+            return null;
+        }
+
+        return [
+            'id' => $customer->id,
+            'name' => $customer->name,
+            'phone' => $customer->phone,
+            'phone_display' => $customer->phone_display,
+            'phone_local' => $customer->phone_local,
         ];
     }
 }

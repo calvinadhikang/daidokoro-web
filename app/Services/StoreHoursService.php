@@ -100,6 +100,119 @@ class StoreHoursService
         );
     }
 
+    /**
+     * @return array{
+     *     context: 'current'|'upcoming',
+     *     session_number: int,
+     *     time_range_formatted: string,
+     *     starts_at_formatted: string,
+     *     ends_at_formatted: string,
+     * }|null
+     */
+    public function nextSessionToday(?Carbon $at = null): ?array
+    {
+        $at = ($at ?? $this->now())->timezone(self::TIMEZONE);
+        $status = $this->status($at);
+
+        if (in_array($status['reason'], ['closed_period', 'weekly_closed'], true)) {
+            return null;
+        }
+
+        $dayOfWeek = (int) $at->format('w');
+        $schedule = OperatingHour::query()
+            ->where('day_of_week', $dayOfWeek)
+            ->first();
+
+        if ($schedule === null || $schedule->is_closed) {
+            return null;
+        }
+
+        $sessions = $this->sessionsFromSchedule($schedule);
+
+        if ($sessions === []) {
+            return null;
+        }
+
+        $currentTime = $at->format('H:i:s');
+
+        if ($status['is_open']) {
+            foreach ($sessions as $session) {
+                if ($this->isWithinSession($currentTime, $session['starts_at'], $session['ends_at'])) {
+                    return $this->formatSessionInfo($session, 'current');
+                }
+            }
+
+            return null;
+        }
+
+        foreach ($sessions as $session) {
+            if ($currentTime < $this->normalizeTime($session['starts_at'])) {
+                return $this->formatSessionInfo($session, 'upcoming');
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return list<array{session_number: int, starts_at: string, ends_at: string}>
+     */
+    private function sessionsFromSchedule(OperatingHour $schedule): array
+    {
+        $sessions = [];
+
+        if ($schedule->session_1_starts_at !== null && $schedule->session_1_ends_at !== null) {
+            $sessions[] = [
+                'session_number' => 1,
+                'starts_at' => $schedule->session_1_starts_at,
+                'ends_at' => $schedule->session_1_ends_at,
+            ];
+        }
+
+        if ($schedule->session_2_starts_at !== null && $schedule->session_2_ends_at !== null) {
+            $sessions[] = [
+                'session_number' => 2,
+                'starts_at' => $schedule->session_2_starts_at,
+                'ends_at' => $schedule->session_2_ends_at,
+            ];
+        }
+
+        return $sessions;
+    }
+
+    /**
+     * @param  array{session_number: int, starts_at: string, ends_at: string}  $session
+     * @return array{
+     *     context: 'current'|'upcoming',
+     *     session_number: int,
+     *     time_range_formatted: string,
+     *     starts_at_formatted: string,
+     *     ends_at_formatted: string,
+     * }
+     */
+    private function formatSessionInfo(array $session, string $context): array
+    {
+        $startsAtFormatted = $this->formatDisplayTime($session['starts_at']);
+        $endsAtFormatted = $this->formatDisplayTime($session['ends_at']);
+
+        return [
+            'context' => $context,
+            'session_number' => $session['session_number'],
+            'time_range_formatted' => "{$startsAtFormatted} – {$endsAtFormatted}",
+            'starts_at_formatted' => $startsAtFormatted,
+            'ends_at_formatted' => $endsAtFormatted,
+        ];
+    }
+
+    private function formatDisplayTime(string $time): string
+    {
+        return Carbon::createFromFormat(
+            'H:i:s',
+            $this->normalizeTime($time),
+            self::TIMEZONE,
+        )->format('g:i A');
+    }
+
     private function isWithinSession(
         string $currentTime,
         ?string $startsAt,
