@@ -102,6 +102,54 @@ class StoreHoursService
 
     /**
      * @return array{
+     *     session_number: int,
+     *     starts_at: Carbon,
+     *     ends_at: Carbon,
+     * }|null
+     */
+    public function currentSessionWindow(?Carbon $at = null): ?array
+    {
+        $at = ($at ?? $this->now())->timezone(self::TIMEZONE);
+
+        if (! $this->status($at)['is_open']) {
+            return null;
+        }
+
+        $dayOfWeek = (int) $at->format('w');
+        $schedule = OperatingHour::query()
+            ->where('day_of_week', $dayOfWeek)
+            ->first();
+
+        if ($schedule === null || $schedule->is_closed) {
+            return null;
+        }
+
+        $currentTime = $at->format('H:i:s');
+        $date = $at->toDateString();
+
+        foreach ($this->sessionsFromSchedule($schedule) as $session) {
+            if (! $this->isWithinSession($currentTime, $session['starts_at'], $session['ends_at'])) {
+                continue;
+            }
+
+            return [
+                'session_number' => $session['session_number'],
+                'starts_at' => Carbon::parse(
+                    "{$date} {$this->normalizeTime($session['starts_at'])}",
+                    self::TIMEZONE,
+                ),
+                'ends_at' => Carbon::parse(
+                    "{$date} {$this->normalizeTime($session['ends_at'])}",
+                    self::TIMEZONE,
+                ),
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{
      *     context: 'current'|'upcoming',
      *     session_number: int,
      *     time_range_formatted: string,

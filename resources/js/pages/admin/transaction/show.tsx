@@ -7,20 +7,24 @@ import {
     index as transactionsIndex,
     updateStatus,
 } from '@/actions/App/Http/Controllers/TransactionController';
+import {
+    OrderItemGroups,
+    formatPrice,
+} from '@/components/menu/order-item-groups';
 import { ConfirmDialog } from '@/components/admin/confirm-dialog';
 import { TransactionOrderForm } from '@/components/admin/transaction-order-form';
 import type { Menu } from '@/types/menu';
-import type { Transaction, TransactionItem } from '@/types/transaction';
+import type {
+    Transaction,
+    TransactionItemGroup,
+} from '@/types/transaction';
 import { serviceTypeLabel } from '@/types/transaction';
 
 type Props = {
     transaction: Transaction;
+    itemGroups: TransactionItemGroup[];
     menus: Menu[];
 };
-
-function formatPrice(price: number): string {
-    return price.toLocaleString();
-}
 
 function formatDate(iso: string): string {
     return new Date(iso).toLocaleString(undefined, {
@@ -39,35 +43,16 @@ function statusClassName(status: Transaction['status']): string {
         : 'rounded-full bg-[#fffaeb] px-2.5 py-1 text-xs font-medium text-[#b54708] dark:bg-[#4e1d09] dark:text-[#fec84b]';
 }
 
-function ItemAddons({ item }: { item: TransactionItem }) {
-    if (item.addons === null || item.addons.length === 0) {
-        return null;
-    }
-
-    return (
-        <ul className="mt-2 space-y-1 text-xs text-[#706f6c] dark:text-[#A1A09A]">
-            {item.addons.map((addon) => (
-                <li key={addon.menu_addon_option_id}>
-                    {addon.group_name}: {addon.name}
-                    {addon.price > 0 && (
-                        <span className="tabular-nums">
-                            {' '}
-                            (+{formatPrice(addon.price)})
-                        </span>
-                    )}
-                </li>
-            ))}
-        </ul>
-    );
-}
-
-export default function AdminTransactionShow({ transaction, menus }: Props) {
+export default function AdminTransactionShow({
+    transaction,
+    itemGroups,
+    menus,
+}: Props) {
     const { url } = usePage();
     const backHref = url.includes('from=history')
         ? transactionHistory.url()
         : transactionsIndex.url();
 
-    const items = transaction.items ?? [];
     const isPaid = transaction.status === 'paid';
     const [markPaidOpen, setMarkPaidOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
@@ -190,37 +175,9 @@ export default function AdminTransactionShow({ transaction, menus }: Props) {
                 <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4">
                     <h2 className="mb-3 text-base font-semibold">Ordered items</h2>
 
-                    {items.length === 0 ? (
-                        <div className="mb-6 rounded-lg border border-dashed border-[#e3e3e0] p-6 text-center text-sm text-[#706f6c] dark:border-[#3E3E3A] dark:text-[#A1A09A]">
-                            No items ordered yet.
-                        </div>
-                    ) : (
-                        <ul className="mb-6 space-y-3">
-                            {items.map((item) => (
-                                <li
-                                    key={item.id}
-                                    className="rounded-lg border border-[#e3e3e0] bg-white p-4 dark:border-[#3E3E3A] dark:bg-[#161615]"
-                                >
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="min-w-0">
-                                            <p className="font-medium">
-                                                {item.menu_name}
-                                            </p>
-                                            <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                                Qty {item.quantity} ·{' '}
-                                                {formatPrice(item.unit_price)}{' '}
-                                                each
-                                            </p>
-                                            <ItemAddons item={item} />
-                                        </div>
-                                        <p className="shrink-0 font-medium tabular-nums">
-                                            {formatPrice(item.line_total)}
-                                        </p>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
+                    <div className="mb-6">
+                        <OrderItemGroups groups={itemGroups} />
+                    </div>
 
                     {!isPaid && (
                         <section className="mb-3">

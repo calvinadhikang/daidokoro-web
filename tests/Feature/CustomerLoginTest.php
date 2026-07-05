@@ -33,6 +33,7 @@ class CustomerLoginTest extends TestCase
         ]);
 
         $response->assertRedirect(route('customer.menu.index'));
+        $response->assertSessionHas('success', 'Welcome, Alex Tan!');
 
         $this->assertDatabaseHas('customers', [
             'name' => 'Alex Tan',

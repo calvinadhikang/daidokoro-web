@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Models\Customer;
+use App\Services\CustomerCartService;
+use App\Services\CustomerTransactionService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -43,6 +45,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'customer' => fn () => $this->resolveCustomer($request),
+            'customerNav' => fn () => $this->resolveCustomerNav($request),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
             ],
@@ -72,6 +75,31 @@ class HandleInertiaRequests extends Middleware
             'phone' => $customer->phone,
             'phone_display' => $customer->phone_display,
             'phone_local' => $customer->phone_local,
+        ];
+    }
+
+    /**
+     * @return array{cartCount: int, hasOrder: bool}|null
+     */
+    private function resolveCustomerNav(Request $request): ?array
+    {
+        if ($request->session()->get('customer_id') === null) {
+            return null;
+        }
+
+        $cart = app(CustomerCartService::class);
+        $customer = Customer::query()->find($request->session()->get('customer_id'));
+
+        if ($customer === null) {
+            return null;
+        }
+
+        $transaction = app(CustomerTransactionService::class)
+            ->findActiveByPhone($customer->phone);
+
+        return [
+            'cartCount' => $cart->count(),
+            'hasOrder' => $transaction !== null && $transaction->items()->exists(),
         ];
     }
 }

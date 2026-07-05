@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCustomerLoginRequest;
 use App\Models\Customer;
+use App\Services\CustomerTransactionService;
 use App\Support\PhoneNumber;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -11,11 +12,17 @@ use Inertia\Response;
 
 class CustomerLoginController extends Controller
 {
+    public function __construct(private CustomerTransactionService $transactions) {}
+
     public function create(): Response
     {
         $customerId = session('customer_id');
         $customer = $customerId !== null
             ? Customer::query()->find($customerId)
+            : null;
+
+        $activeTransaction = $customer !== null
+            ? $this->transactions->findActiveByPhone($customer->phone)
             : null;
 
         return Inertia::render('customer/login', [
@@ -28,6 +35,7 @@ class CustomerLoginController extends Controller
                 'phone_display' => $customer->phone_display,
                 'phone_local' => $customer->phone_local,
             ],
+            'hasActiveOrder' => $activeTransaction !== null,
         ]);
     }
 
@@ -45,8 +53,17 @@ class CustomerLoginController extends Controller
             'service_type' => $validated['service_type'] ?? session('service_type'),
         ]);
 
+        $activeTransaction = $this->transactions->syncSessionTransaction(
+            $customer,
+            $validated['service_type'] ?? null,
+        );
+
+        $message = $activeTransaction !== null
+            ? 'Welcome back, '.$customer->name.'! Your order is ready to continue.'
+            : 'Welcome, '.$customer->name.'!';
+
         return redirect()
             ->route('customer.menu.index')
-            ->with('success', 'Welcome back, '.$customer->name.'!');
+            ->with('success', $message);
     }
 }

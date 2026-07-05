@@ -6,8 +6,8 @@ use App\Http\Requests\StoreTransactionItemRequest;
 use App\Http\Requests\StoreTransactionRequest;
 use App\Models\MenuModel;
 use App\Models\Transaction;
-use App\Models\TransactionItem;
-use App\Services\MenuOrderLineBuilder;
+use App\Services\TransactionOrderService;
+use App\Support\TransactionItemGrouper;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +17,7 @@ use Inertia\Response;
 
 class TransactionController extends Controller
 {
-    public function __construct(private MenuOrderLineBuilder $lineBuilder) {}
+    public function __construct(private TransactionOrderService $orderService) {}
 
     public function index(): Response
     {
@@ -95,7 +95,7 @@ class TransactionController extends Controller
             ]);
 
             foreach ($validated['items'] ?? [] as $itemData) {
-                $this->addItemToTransaction(
+                $this->orderService->addMenuItem(
                     $transaction,
                     $itemData['menu_id'],
                     $itemData['quantity'],
@@ -123,6 +123,7 @@ class TransactionController extends Controller
 
         return Inertia::render('admin/transaction/show', [
             'transaction' => $transaction,
+            'itemGroups' => TransactionItemGrouper::groupByOrderedAt($transaction->items),
             'menus' => $menus,
         ]);
     }
@@ -138,7 +139,7 @@ class TransactionController extends Controller
         $validated = $request->validated();
 
         DB::transaction(function () use ($transaction, $validated) {
-            $this->addItemToTransaction(
+            $this->orderService->addMenuItem(
                 $transaction,
                 $validated['menu_id'],
                 $validated['quantity'],
@@ -179,34 +180,5 @@ class TransactionController extends Controller
         return redirect()
             ->route('admin.transaction.index')
             ->with('success', 'Transaction deleted successfully.');
-    }
-
-    /**
-     * @param  array<int, int>  $addonOptionIds
-     */
-    private function addItemToTransaction(
-        Transaction $transaction,
-        int $menuId,
-        int $quantity,
-        array $addonOptionIds,
-    ): void {
-        $menu = MenuModel::query()
-            ->where('is_available', true)
-            ->with(['addonGroups.options'])
-            ->findOrFail($menuId);
-
-        $lineItem = $this->lineBuilder->build($menu, $quantity, $addonOptionIds);
-
-        TransactionItem::query()->create([
-            'transaction_id' => $transaction->id,
-            'menu_id' => $lineItem['menu_id'],
-            'menu_name' => $lineItem['menu_name'],
-            'quantity' => $lineItem['quantity'],
-            'unit_price' => $lineItem['unit_price'],
-            'line_total' => $lineItem['line_total'],
-            'addons' => $lineItem['addons'],
-        ]);
-
-        $transaction->recalculateTotal();
     }
 }

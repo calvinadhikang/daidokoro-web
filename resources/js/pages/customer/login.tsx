@@ -12,6 +12,7 @@ type Props = {
     phonePrefix: string;
     serviceType: 'dine_in' | 'takeaway' | null;
     customer: Customer | null;
+    hasActiveOrder: boolean;
 };
 
 function FieldError({ message }: { message?: string }) {
@@ -26,6 +27,7 @@ export default function CustomerLogin({
     phonePrefix,
     serviceType,
     customer,
+    hasActiveOrder,
 }: Props) {
     const form = useForm<CustomerLoginForm>({
         name: customer?.name ?? '',
@@ -58,9 +60,11 @@ export default function CustomerLogin({
                             Your details
                         </h1>
                         <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                            {orderLabel !== null
-                                ? `Continue your ${orderLabel.toLowerCase()} order`
-                                : 'Enter your name and phone number to continue'}
+                            {hasActiveOrder
+                                ? 'Enter your phone number to continue your open order.'
+                                : orderLabel !== null
+                                  ? `Continue your ${orderLabel.toLowerCase()} order`
+                                  : 'Enter your name and phone number to continue'}
                         </p>
                     </header>
 

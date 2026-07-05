@@ -32,6 +32,7 @@ class CustomerMenuOrderController extends Controller
         return Inertia::render('customer/menu/show', [
             'menu' => $menu,
             'serviceType' => session('service_type'),
+            'cartCount' => $this->cart->count(),
         ]);
     }
 
@@ -59,10 +60,10 @@ class CustomerMenuOrderController extends Controller
         $this->cart->addItem($lineItem);
 
         return redirect()
-            ->route('customer.menu.index')
+            ->route('customer.cart.index')
             ->with(
                 'success',
-                "Added {$lineItem['quantity']}× {$lineItem['menu_name']} to your order.",
+                "Added {$lineItem['quantity']}× {$lineItem['menu_name']} to your cart.",
             );
     }
 }

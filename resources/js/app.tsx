@@ -4,6 +4,7 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import type { ReactNode } from 'react';
 
 import AdminLayout from './layouts/admin-layout';
+import CustomerLayout from './layouts/customer-layout';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -21,6 +22,12 @@ createInertiaApp({
         if (name.startsWith('admin/')) {
             page.default.layout = (page: ReactNode) => (
                 <AdminLayout>{page}</AdminLayout>
+            );
+        }
+
+        if (name.startsWith('customer/') && name !== 'customer/login') {
+            page.default.layout = (page: ReactNode) => (
+                <CustomerLayout>{page}</CustomerLayout>
             );
         }
 

@@ -48,4 +48,19 @@ class CustomerCartService
     {
         return count($this->items());
     }
+
+    public function total(): int
+    {
+        return array_sum(array_column($this->items(), 'line_total'));
+    }
+
+    public function isEmpty(): bool
+    {
+        return $this->items() === [];
+    }
+
+    public function clear(): void
+    {
+        session()->forget(self::SESSION_KEY);
+    }
 }
