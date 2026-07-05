@@ -23,6 +23,7 @@ Route::prefix('transaction')->group(function () {
 
 Route::prefix('notification')->group(function () {
     Route::post('/register', [NotificationApiController::class, 'register']);
+    Route::get('/test', [NotificationApiController::class, 'testBroadcast']);
     Route::post('/test', [NotificationApiController::class, 'test']);
 });
 

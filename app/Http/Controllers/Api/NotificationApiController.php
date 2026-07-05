@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\PushDevice;
 use App\Services\ExpoPushService;
 use App\Services\PushDeviceService;
 use Illuminate\Http\JsonResponse;
@@ -44,6 +45,47 @@ class NotificationApiController extends Controller
                 'device_name' => $device->device_name,
                 'last_registered_at' => $device->last_registered_at?->toIso8601String(),
             ],
+        ]);
+    }
+
+    public function testBroadcast(): JsonResponse
+    {
+        $tokens = PushDevice::query()
+            ->pluck('expo_push_token')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($tokens === []) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No push devices registered.',
+            ], 422);
+        }
+
+        try {
+            $expoResponse = $this->expoPush->sendToMany(
+                $tokens,
+                'test',
+                'this is test',
+                [
+                    'screen' => 'index',
+                    'source' => 'api_test_broadcast',
+                ],
+            );
+        } catch (RuntimeException $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Test push notification sent to all registered devices.',
+            'device_count' => count($tokens),
+            'expo' => $expoResponse,
         ]);
     }
 
