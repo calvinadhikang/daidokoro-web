@@ -34,7 +34,7 @@ class NotificationApiTest extends TestCase
 
         Http::assertSent(function ($request) {
             return $request->url() === 'https://exp.host/--/api/v2/push/send'
-                && $request['to'] === 'ExponentPushToken[test-token]'
+                && $request['to'] === ['ExponentPushToken[test-token]']
                 && $request['title'] === 'Hello'
                 && $request['body'] === 'World'
                 && $request['data']['screen'] === 'index';

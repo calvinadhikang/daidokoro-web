@@ -11,15 +11,22 @@ class ExpoPushService
     private const PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
     /**
+     * @param  list<string>  $tokens
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    public function send(string $token, string $title, string $body, array $data = []): array
+    public function sendToMany(array $tokens, string $title, string $body, array $data = []): array
     {
+        $tokens = array_values(array_unique(array_filter($tokens)));
+
+        if ($tokens === []) {
+            return ['data' => []];
+        }
+
         $response = Http::acceptJson()
             ->asJson()
             ->post(self::PUSH_URL, [
-                'to' => $token,
+                'to' => $tokens,
                 'title' => $title,
                 'body' => $body,
                 'sound' => 'default',
@@ -27,6 +34,15 @@ class ExpoPushService
             ]);
 
         return $this->parseResponse($response);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function send(string $token, string $title, string $body, array $data = []): array
+    {
+        return $this->sendToMany([$token], $title, $body, $data);
     }
 
     /**
@@ -50,14 +66,20 @@ class ExpoPushService
             throw new RuntimeException('Expo push API returned an empty response.');
         }
 
-        $first = $results[0];
+        $errors = [];
 
-        if (($first['status'] ?? null) === 'error') {
-            $message = is_string($first['message'] ?? null)
-                ? $first['message']
+        foreach ($results as $result) {
+            if (($result['status'] ?? null) !== 'error') {
+                continue;
+            }
+
+            $errors[] = is_string($result['message'] ?? null)
+                ? $result['message']
                 : 'Expo rejected the push notification.';
+        }
 
-            throw new RuntimeException($message);
+        if ($errors !== [] && count($errors) === count($results)) {
+            throw new RuntimeException($errors[0]);
         }
 
         return $payload;

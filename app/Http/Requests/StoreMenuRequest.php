@@ -27,6 +27,8 @@ class StoreMenuRequest extends FormRequest
             'price' => ['required', 'integer', 'min:0'],
             'is_available' => ['boolean'],
             'is_recommended' => ['boolean'],
+            'category_ids' => ['nullable', 'array'],
+            'category_ids.*' => ['integer', 'exists:categories,id'],
             'addon_groups' => ['nullable', 'array'],
             'addon_groups.*.name' => ['required', 'string', 'max:255'],
             'addon_groups.*.selection_type' => ['required', 'in:single,multiple'],

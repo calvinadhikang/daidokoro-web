@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Services\CustomerCartService;
 use App\Services\CustomerTransactionService;
+use App\Services\TransactionPushNotificationService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\ValidationException;
@@ -16,6 +17,7 @@ class CustomerCartController extends Controller
     public function __construct(
         private CustomerCartService $cart,
         private CustomerTransactionService $transactions,
+        private TransactionPushNotificationService $pushNotifications,
     ) {}
 
     public function index(): Response
@@ -52,6 +54,8 @@ class CustomerCartController extends Controller
         $this->cart->clear();
 
         session(['transaction_id' => $transaction->id]);
+
+        $this->pushNotifications->notifyCustomerOrderCheckedOut($transaction);
 
         return redirect()
             ->route('customer.order.index')

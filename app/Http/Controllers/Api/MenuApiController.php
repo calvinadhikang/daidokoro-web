@@ -60,6 +60,7 @@ class MenuApiController extends Controller
             ]);
 
             $this->syncAddonGroups($menu, $validated['addon_groups'] ?? []);
+            $menu->categories()->sync($validated['category_ids'] ?? []);
 
             return $menu;
         });
@@ -86,6 +87,7 @@ class MenuApiController extends Controller
 
             $menuModel->addonGroups()->delete();
             $this->syncAddonGroups($menuModel, $validated['addon_groups'] ?? []);
+            $menuModel->categories()->sync($validated['category_ids'] ?? []);
         });
 
         $menuModel->load(['categories:id,name', 'addonGroups.options']);

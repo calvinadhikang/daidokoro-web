@@ -114,6 +114,64 @@ class MenuApiTest extends TestCase
         ]);
     }
 
+    public function test_create_menu_syncs_categories(): void
+    {
+        $sushi = Category::query()->create(['name' => 'Sushi']);
+        $drinks = Category::query()->create(['name' => 'Drinks']);
+
+        $response = $this->postJson('/api/menu/create', [
+            'name' => 'Salmon Roll',
+            'price' => 45000,
+            'is_available' => true,
+            'category_ids' => [$sushi->id, $drinks->id],
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('menu.categories.0.name', 'Drinks');
+        $response->assertJsonPath('menu.categories.1.name', 'Sushi');
+
+        $menu = MenuModel::query()->where('name', 'Salmon Roll')->firstOrFail();
+        $this->assertSame([$drinks->id, $sushi->id], $menu->categories()->pluck('categories.id')->all());
+    }
+
+    public function test_create_menu_with_addon_groups(): void
+    {
+        $response = $this->postJson('/api/menu/create', [
+            'name' => 'Iced Coffee',
+            'price' => 25000,
+            'is_available' => true,
+            'addon_groups' => [
+                [
+                    'name' => 'Size',
+                    'selection_type' => 'single',
+                    'is_required' => true,
+                    'options' => [
+                        ['name' => 'Regular', 'price' => 0, 'is_available' => true],
+                        ['name' => 'Large', 'price' => 5000, 'is_available' => true],
+                    ],
+                ],
+                [
+                    'name' => 'Toppings',
+                    'selection_type' => 'multiple',
+                    'is_required' => false,
+                    'options' => [
+                        ['name' => 'Pearl', 'price' => 3000, 'is_available' => true],
+                    ],
+                ],
+            ],
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('menu.addon_groups.0.name', 'Size');
+        $response->assertJsonPath('menu.addon_groups.0.selection_type', 'single');
+        $response->assertJsonPath('menu.addon_groups.0.is_required', true);
+        $response->assertJsonPath('menu.addon_groups.1.name', 'Toppings');
+        $response->assertJsonPath('menu.addon_groups.1.selection_type', 'multiple');
+
+        $menu = MenuModel::query()->where('name', 'Iced Coffee')->firstOrFail();
+        $this->assertSame(2, $menu->addonGroups()->count());
+    }
+
     public function test_update_menu_changes_fields(): void
     {
         $menu = MenuModel::query()->create([
