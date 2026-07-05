@@ -25,6 +25,11 @@ export type TransactionItem = {
     created_at: string;
 };
 
+export type TransactionItemGroup = {
+    ordered_at: string;
+    items: TransactionItem[];
+};
+
 export type Transaction = {
     id: number;
     customer_name: string;

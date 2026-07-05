@@ -1,12 +1,34 @@
 <?php
 
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CustomerCartController;
+use App\Http\Controllers\CustomerLoginController;
+use App\Http\Controllers\CustomerMenuController;
+use App\Http\Controllers\CustomerMenuOrderController;
+use App\Http\Controllers\CustomerOrderController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\MenuBrowseController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\OperationalHoursController;
 use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'welcome')->name('home');
+Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/menu', [MenuBrowseController::class, 'index'])->name('menu.index');
+
+Route::prefix('customer')->name('customer.')->group(function () {
+    Route::get('/login', [CustomerLoginController::class, 'create'])->name('login');
+    Route::post('/login', [CustomerLoginController::class, 'store'])->name('login.store');
+
+    Route::middleware('customer')->group(function () {
+        Route::get('/menu', [CustomerMenuController::class, 'index'])->name('menu.index');
+        Route::get('/menu/{menuModel}', [CustomerMenuOrderController::class, 'show'])->name('menu.show');
+        Route::post('/menu/{menuModel}', [CustomerMenuOrderController::class, 'store'])->name('menu.store');
+        Route::get('/cart', [CustomerCartController::class, 'index'])->name('cart.index');
+        Route::post('/cart/checkout', [CustomerCartController::class, 'checkout'])->name('cart.checkout');
+        Route::get('/order', [CustomerOrderController::class, 'index'])->name('order.index');
+    });
+});
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::redirect('/', '/admin/menus');

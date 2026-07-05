@@ -2,6 +2,7 @@ import type { Menu } from '@/types/menu';
 
 export type MenuAvailabilityFilter = 'all' | 'available' | 'unavailable';
 export type MenuRecommendedFilter = 'all' | 'recommended';
+export type MenuCategoryFilter = 'all' | number;
 
 export type MenuLetterGroup = {
     letter: string;
@@ -34,6 +35,7 @@ export function filterMenus(
     search: string,
     availability: MenuAvailabilityFilter,
     recommended: MenuRecommendedFilter,
+    category: MenuCategoryFilter = 'all',
 ): Menu[] {
     const query = search.trim().toLowerCase();
 
@@ -52,6 +54,14 @@ export function filterMenus(
 
         if (recommended === 'recommended' && !menu.is_recommended) {
             return false;
+        }
+
+        if (category !== 'all') {
+            const menuCategories = menu.categories ?? [];
+
+            if (!menuCategories.some((item) => item.id === category)) {
+                return false;
+            }
         }
 
         return true;
@@ -94,8 +104,15 @@ export function prepareMenuList(
     search: string,
     availability: MenuAvailabilityFilter,
     recommended: MenuRecommendedFilter,
+    category: MenuCategoryFilter = 'all',
 ): MenuLetterGroup[] {
-    const filtered = filterMenus(menus, search, availability, recommended);
+    const filtered = filterMenus(
+        menus,
+        search,
+        availability,
+        recommended,
+        category,
+    );
 
     return groupMenusByLetter(filtered);
 }

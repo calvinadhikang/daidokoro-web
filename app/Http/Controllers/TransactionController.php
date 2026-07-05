@@ -4,10 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreTransactionItemRequest;
 use App\Http\Requests\StoreTransactionRequest;
-use App\Models\MenuAddonOption;
 use App\Models\MenuModel;
 use App\Models\Transaction;
-use App\Models\TransactionItem;
+use App\Services\TransactionOrderService;
+use App\Support\TransactionItemGrouper;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +17,8 @@ use Inertia\Response;
 
 class TransactionController extends Controller
 {
+    public function __construct(private TransactionOrderService $orderService) {}
+
     public function index(): Response
     {
         $transactions = Transaction::query()
@@ -93,7 +95,7 @@ class TransactionController extends Controller
             ]);
 
             foreach ($validated['items'] ?? [] as $itemData) {
-                $this->addItemToTransaction(
+                $this->orderService->addMenuItem(
                     $transaction,
                     $itemData['menu_id'],
                     $itemData['quantity'],
@@ -121,6 +123,7 @@ class TransactionController extends Controller
 
         return Inertia::render('admin/transaction/show', [
             'transaction' => $transaction,
+            'itemGroups' => TransactionItemGrouper::groupByOrderedAt($transaction->items),
             'menus' => $menus,
         ]);
     }
@@ -136,7 +139,7 @@ class TransactionController extends Controller
         $validated = $request->validated();
 
         DB::transaction(function () use ($transaction, $validated) {
-            $this->addItemToTransaction(
+            $this->orderService->addMenuItem(
                 $transaction,
                 $validated['menu_id'],
                 $validated['quantity'],
@@ -177,118 +180,5 @@ class TransactionController extends Controller
         return redirect()
             ->route('admin.transaction.index')
             ->with('success', 'Transaction deleted successfully.');
-    }
-
-    /**
-     * @param  array<int, int>  $addonOptionIds
-     */
-    private function addItemToTransaction(
-        Transaction $transaction,
-        int $menuId,
-        int $quantity,
-        array $addonOptionIds,
-    ): void {
-        $menu = MenuModel::query()
-            ->where('is_available', true)
-            ->with(['addonGroups.options'])
-            ->findOrFail($menuId);
-
-        $addonSnapshots = $this->resolveAddonSelections($menu, $addonOptionIds);
-
-        $addonTotal = array_sum(array_column($addonSnapshots, 'price'));
-        $unitPrice = $menu->price + $addonTotal;
-        $lineTotal = $unitPrice * $quantity;
-
-        TransactionItem::query()->create([
-            'transaction_id' => $transaction->id,
-            'menu_id' => $menu->id,
-            'menu_name' => $menu->name,
-            'quantity' => $quantity,
-            'unit_price' => $unitPrice,
-            'line_total' => $lineTotal,
-            'addons' => $addonSnapshots,
-        ]);
-
-        $transaction->recalculateTotal();
-    }
-
-    /**
-     * @param  array<int, int>  $selectedOptionIds
-     * @return array<int, array<string, mixed>>
-     */
-    private function resolveAddonSelections(MenuModel $menu, array $selectedOptionIds): array
-    {
-        $menu->loadMissing(['addonGroups.options']);
-
-        $selectedOptionIds = array_values(array_unique($selectedOptionIds));
-        $validOptionIds = $menu->addonGroups
-            ->flatMap(fn ($group) => $group->options->where('is_available', true))
-            ->pluck('id')
-            ->all();
-
-        foreach ($selectedOptionIds as $optionId) {
-            if (! in_array($optionId, $validOptionIds, true)) {
-                throw ValidationException::withMessages([
-                    'addon_option_ids' => 'One or more add-on options are unavailable or invalid for this menu.',
-                ]);
-            }
-        }
-
-        $selectedByGroup = [];
-
-        foreach ($menu->addonGroups as $group) {
-            $availableOptionIds = $group->options
-                ->where('is_available', true)
-                ->pluck('id')
-                ->all();
-            $groupOptionIds = $group->options->pluck('id')->all();
-            $selectedForGroup = array_values(array_intersect($selectedOptionIds, $groupOptionIds));
-
-            if ($group->is_required && $selectedForGroup === [] && $availableOptionIds !== []) {
-                throw ValidationException::withMessages([
-                    'addon_option_ids' => "Please select an option for {$group->name}.",
-                ]);
-            }
-
-            if ($group->is_required && $availableOptionIds === []) {
-                throw ValidationException::withMessages([
-                    'addon_option_ids' => "No available options for {$group->name}.",
-                ]);
-            }
-
-            if ($group->selection_type === 'single' && count($selectedForGroup) > 1) {
-                throw ValidationException::withMessages([
-                    'addon_option_ids' => "Only one option can be selected for {$group->name}.",
-                ]);
-            }
-
-            foreach ($selectedForGroup as $optionId) {
-                $selectedByGroup[$group->id][] = $optionId;
-            }
-        }
-
-        $snapshots = [];
-
-        foreach ($menu->addonGroups as $group) {
-            $groupSelections = $selectedByGroup[$group->id] ?? [];
-
-            foreach ($groupSelections as $optionId) {
-                /** @var MenuAddonOption $option */
-                $option = $group->options->firstWhere('id', $optionId);
-
-                if ($option === null || ! $option->is_available) {
-                    continue;
-                }
-
-                $snapshots[] = [
-                    'menu_addon_option_id' => $option->id,
-                    'group_name' => $group->name,
-                    'name' => $option->name,
-                    'price' => $option->price,
-                ];
-            }
-        }
-
-        return $snapshots;
     }
 }

@@ -17,6 +17,11 @@ export type MenuAddonGroup = {
     options: MenuAddonOption[];
 };
 
+export type MenuCategory = {
+    id: number;
+    name: string;
+};
+
 export type Menu = {
     id: number;
     name: string;
@@ -25,6 +30,7 @@ export type Menu = {
     is_available: boolean;
     is_recommended: boolean;
     addon_groups: MenuAddonGroup[];
+    categories?: MenuCategory[];
 };
 
 export type MenuAddonOptionForm = {
