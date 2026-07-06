@@ -34,4 +34,23 @@ class MenuBrowseTest extends TestCase
             ->where('menus.1.name', 'Sold Out Dish')
         );
     }
+
+    public function test_menu_availability_can_be_toggled_from_public_menu_page(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Chicken Rice',
+            'price' => 35000,
+            'is_available' => true,
+        ]);
+
+        $response = $this->patch(route('menu.availability.toggle', $menu));
+
+        $response->assertRedirect(route('menu.index'));
+        $this->assertFalse($menu->fresh()->is_available);
+
+        $response = $this->patch(route('menu.availability.toggle', $menu));
+
+        $response->assertRedirect(route('menu.index'));
+        $this->assertTrue($menu->fresh()->is_available);
+    }
 }

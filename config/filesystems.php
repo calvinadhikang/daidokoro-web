@@ -60,6 +60,21 @@ return [
             'report' => false,
         ],
 
+        'gcs' => [
+            'driver' => 'gcs',
+            'project_id' => env('GOOGLE_CLOUD_PROJECT_ID'),
+            'key_file' => ($keyFile = env('GOOGLE_CLOUD_KEY_FILE'))
+                ? (str_starts_with($keyFile, DIRECTORY_SEPARATOR) ? $keyFile : base_path($keyFile))
+                : null,
+            'bucket' => env('GCS_BUCKET'),
+            'path_prefix' => env('GCS_PATH_PREFIX', 'menus/'),
+            'url' => env('GCS_PUBLIC_URL'),
+            'uniform_bucket_level_access' => env('GCS_UNIFORM_BUCKET_ACCESS', true),
+            'visibility' => 'public',
+            'throw' => true,
+            'report' => false,
+        ],
+
     ],
 
     /*

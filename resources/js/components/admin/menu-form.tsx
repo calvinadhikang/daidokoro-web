@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import type { useForm } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 
 import { MenuImage } from '@/components/admin/menu-image';
 import type {
@@ -74,6 +75,25 @@ export function MenuFormFields({
     imageSrc = null,
     onSubmit,
 }: MenuFormProps) {
+    const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!form.data.image) {
+            setLocalPreviewUrl(null);
+
+            return;
+        }
+
+        const objectUrl = URL.createObjectURL(form.data.image);
+        setLocalPreviewUrl(objectUrl);
+
+        return () => URL.revokeObjectURL(objectUrl);
+    }, [form.data.image]);
+
+    const previewSrc = form.data.remove_image
+        ? null
+        : localPreviewUrl ?? imageSrc ?? null;
+
     function addGroup() {
         form.setData('addon_groups', [...form.data.addon_groups, emptyGroup()]);
     }
@@ -151,10 +171,52 @@ export function MenuFormFields({
                     <h2 className="mb-4 text-base font-semibold">Menu details</h2>
 
                     <MenuImage
-                        src={imageSrc}
+                        src={previewSrc}
                         alt={form.data.name || 'Menu preview'}
                         className="mb-4 h-40 w-full rounded-md border border-[#e3e3e0] bg-[#FDFDFC] dark:border-[#3E3E3A] dark:bg-[#0a0a0a]"
                     />
+
+                    <div className="mb-4 space-y-3">
+                        <div>
+                            <label htmlFor="image" className={labelClassName}>
+                                Menu image
+                            </label>
+                            <input
+                                id="image"
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                onChange={(event) => {
+                                    const file = event.target.files?.[0] ?? null;
+                                    form.setData('image', file);
+                                    if (file) {
+                                        form.setData('remove_image', false);
+                                    }
+                                }}
+                                className="block w-full text-sm text-[#706f6c] file:mr-3 file:rounded-md file:border-0 file:bg-[#1b1b18] file:px-3 file:py-2 file:text-sm file:font-medium file:text-white dark:text-[#A1A09A] dark:file:bg-[#EDEDEC] dark:file:text-[#1b1b18]"
+                            />
+                            <p className="mt-1 text-xs text-[#706f6c] dark:text-[#A1A09A]">
+                                JPEG, PNG, or WebP up to 5 MB. Uploaded to Google Cloud Storage.
+                            </p>
+                            <FieldError message={form.errors.image} />
+                        </div>
+
+                        {imageSrc ? (
+                            <label className="flex items-center gap-3">
+                                <input
+                                    type="checkbox"
+                                    checked={form.data.remove_image}
+                                    onChange={(event) => {
+                                        form.setData('remove_image', event.target.checked);
+                                        if (event.target.checked) {
+                                            form.setData('image', null);
+                                        }
+                                    }}
+                                    className="size-4 rounded border-[#e3e3e0]"
+                                />
+                                <span className="text-sm">Remove current image</span>
+                            </label>
+                        ) : null}
+                    </div>
 
                     <div className="space-y-4">
                         <div>
@@ -563,5 +625,7 @@ export function menuToForm(menu: {
                 is_available: option.is_available,
             })),
         })),
+        image: null,
+        remove_image: false,
     };
 }

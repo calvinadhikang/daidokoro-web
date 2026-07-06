@@ -33,6 +33,7 @@ export default function MenuIndex({ menus }: Props) {
                         menus={menus}
                         availability="all"
                         showAvailabilityBadge
+                        enableAvailabilityToggle
                         emptyMessage="No menu items yet."
                     />
                 </main>

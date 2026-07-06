@@ -52,4 +52,6 @@ export type MenuForm = {
     is_available: boolean;
     is_recommended: boolean;
     addon_groups: MenuAddonGroupForm[];
+    image: File | null;
+    remove_image: boolean;
 };

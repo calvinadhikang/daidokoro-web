@@ -27,6 +27,8 @@ class StoreMenuRequest extends FormRequest
             'price' => ['required', 'integer', 'min:0'],
             'is_available' => ['boolean'],
             'is_recommended' => ['boolean'],
+            'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.config('media.menu_image_max_kb', 5120)],
+            'remove_image' => ['sometimes', 'boolean'],
             'category_ids' => ['nullable', 'array'],
             'category_ids.*' => ['integer', 'exists:categories,id'],
             'addon_groups' => ['nullable', 'array'],

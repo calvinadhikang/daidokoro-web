@@ -17,12 +17,14 @@ export default function AdminMenusCreate() {
         is_available: true,
         is_recommended: false,
         addon_groups: [],
+        image: null,
+        remove_image: false,
     });
 
     function handleSubmit(event: React.FormEvent) {
         event.preventDefault();
         form.transform((data) => normalizeMenuFormForSubmit(data));
-        form.post(store.url());
+        form.post(store.url(), { forceFormData: true });
     }
 
     return (

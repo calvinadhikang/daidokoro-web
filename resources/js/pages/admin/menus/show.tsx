@@ -20,8 +20,13 @@ export default function AdminMenusShow({ menu }: Props) {
 
     function handleSubmit(event: React.FormEvent) {
         event.preventDefault();
-        form.transform((data) => normalizeMenuFormForSubmit(data));
-        form.put(update.url(menu.id));
+        form.transform((data) => ({
+            ...normalizeMenuFormForSubmit(data),
+            _method: 'put',
+        }));
+        form.post(update.url(menu.id), {
+            forceFormData: true,
+        });
     }
 
     return (

@@ -1,9 +1,12 @@
-import { Link } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import { Link, router } from '@inertiajs/react';
+import { useCallback, useMemo, useState } from 'react';
 
+import { toggleAvailability } from '@/actions/App/Http/Controllers/MenuBrowseController';
 import { inputClassName } from '@/components/admin/menu-form';
 import { MenuImage } from '@/components/admin/menu-image';
+import { ConfirmDialog } from '@/components/admin/confirm-dialog';
 import { cn } from '@/lib/utils';
+import { useLongPress } from '@/lib/use-long-press';
 import {
     prepareMenuList,
     type MenuAvailabilityFilter,
@@ -45,11 +48,21 @@ function MenuCard({
     menu,
     showAvailabilityBadge,
     href,
+    onLongPress,
 }: {
     menu: Menu;
     showAvailabilityBadge: boolean;
     href?: string;
+    onLongPress?: () => void;
 }) {
+    const handleLongPress = useCallback(() => {
+        onLongPress?.();
+    }, [onLongPress]);
+
+    const { handlers: longPressHandlers } = useLongPress({
+        onLongPress: handleLongPress,
+    });
+
     const addonSummary =
         menu.addon_groups.length > 0
             ? menu.addon_groups.map((group) => group.name).join(' · ')
@@ -104,17 +117,24 @@ function MenuCard({
         showAvailabilityBadge && !menu.is_available && 'opacity-70',
         href &&
             'active:bg-[#FDFDFC] dark:active:bg-[#0a0a0a]',
+        onLongPress && 'select-none touch-manipulation',
     );
+
+    const interactiveProps = onLongPress ? longPressHandlers : undefined;
 
     if (href) {
         return (
-            <Link href={href} className={className}>
+            <Link href={href} className={className} {...interactiveProps}>
                 {content}
             </Link>
         );
     }
 
-    return <article className={className}>{content}</article>;
+    return (
+        <article className={className} {...interactiveProps}>
+            {content}
+        </article>
+    );
 }
 
 type MenuBrowsePanelProps = {
@@ -122,6 +142,7 @@ type MenuBrowsePanelProps = {
     availability: MenuAvailabilityFilter;
     categories?: MenuCategory[];
     showAvailabilityBadge?: boolean;
+    enableAvailabilityToggle?: boolean;
     summaryLabel?: string;
     emptyMessage?: string;
     menuHref?: (menu: Menu) => string;
@@ -132,6 +153,7 @@ export function MenuBrowsePanel({
     availability,
     categories = [],
     showAvailabilityBadge = false,
+    enableAvailabilityToggle = false,
     summaryLabel,
     emptyMessage = 'No menu items available right now.',
     menuHref,
@@ -140,6 +162,8 @@ export function MenuBrowsePanel({
     const [recommended, setRecommended] =
         useState<MenuRecommendedFilter>('all');
     const [category, setCategory] = useState<MenuCategoryFilter>('all');
+    const [toggleTarget, setToggleTarget] = useState<Menu | null>(null);
+    const [toggleLoading, setToggleLoading] = useState(false);
 
     const groupedMenus = useMemo(
         () =>
@@ -168,8 +192,53 @@ export function MenuBrowsePanel({
             ? `${menus.length} item${menus.length === 1 ? '' : 's'} available`
             : `${availableCount} of ${menus.length} items available`;
 
+    function handleConfirmToggle() {
+        if (toggleTarget === null) {
+            return;
+        }
+
+        setToggleLoading(true);
+        router.patch(
+            toggleAvailability.url(toggleTarget.id),
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    setToggleLoading(false);
+                    setToggleTarget(null);
+                },
+            },
+        );
+    }
+
     return (
         <>
+            <ConfirmDialog
+                open={toggleTarget !== null}
+                title={
+                    toggleTarget?.is_available
+                        ? 'Mark as unavailable?'
+                        : 'Mark as available?'
+                }
+                description={
+                    toggleTarget === null
+                        ? ''
+                        : `Toggle availability for "${toggleTarget.name}".`
+                }
+                confirmLabel={
+                    toggleTarget?.is_available
+                        ? 'Mark unavailable'
+                        : 'Mark available'
+                }
+                loading={toggleLoading}
+                onConfirm={handleConfirmToggle}
+                onCancel={() => {
+                    if (!toggleLoading) {
+                        setToggleTarget(null);
+                    }
+                }}
+            />
+
             <p className="mb-4 text-sm text-[#706f6c] dark:text-[#A1A09A]">
                 {isFiltering
                     ? `${filteredCount} of ${menus.length} items`
@@ -242,6 +311,11 @@ export function MenuBrowsePanel({
                                                 showAvailabilityBadge
                                             }
                                             href={menuHref?.(menu)}
+                                            onLongPress={
+                                                enableAvailabilityToggle
+                                                    ? () => setToggleTarget(menu)
+                                                    : undefined
+                                            }
                                         />
                                     </li>
                                 ))}

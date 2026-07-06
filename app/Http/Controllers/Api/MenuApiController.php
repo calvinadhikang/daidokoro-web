@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\ManagesMenuImages;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreMenuRequest;
 use App\Http\Requests\UpdateMenuRequest;
@@ -9,12 +10,19 @@ use App\Models\Category;
 use App\Models\MenuAddonGroup;
 use App\Models\MenuAddonOption;
 use App\Models\MenuModel;
+use App\Services\MenuImageService;
 use App\Support\MenuApiFormatter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
 class MenuApiController extends Controller
 {
+    use ManagesMenuImages;
+
+    public function __construct(
+        private MenuImageService $menuImages,
+    ) {}
+
     public function index(): JsonResponse
     {
         $menus = MenuModel::query()
@@ -51,9 +59,10 @@ class MenuApiController extends Controller
     {
         $validated = $request->validated();
 
-        $menu = DB::transaction(function () use ($validated) {
+        $menu = DB::transaction(function () use ($validated, $request) {
             $menu = MenuModel::query()->create([
                 'name' => $validated['name'],
+                'image' => $this->resolveMenuImageUrl($request, $this->menuImages),
                 'price' => $validated['price'],
                 'is_available' => $validated['is_available'] ?? true,
                 'is_recommended' => $validated['is_recommended'] ?? false,
@@ -77,9 +86,10 @@ class MenuApiController extends Controller
     {
         $validated = $request->validated();
 
-        DB::transaction(function () use ($menuModel, $validated) {
+        DB::transaction(function () use ($menuModel, $validated, $request) {
             $menuModel->update([
                 'name' => $validated['name'],
+                'image' => $this->resolveMenuImageUrl($request, $this->menuImages, $menuModel->image),
                 'price' => $validated['price'],
                 'is_available' => $validated['is_available'] ?? true,
                 'is_recommended' => $validated['is_recommended'] ?? false,

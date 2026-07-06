@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/menu', [MenuBrowseController::class, 'index'])->name('menu.index');
+Route::patch('/menu/{menuModel}/availability', [MenuBrowseController::class, 'toggleAvailability'])->name('menu.availability.toggle');
 
 Route::prefix('customer')->name('customer.')->group(function () {
     Route::get('/login', [CustomerLoginController::class, 'create'])->name('login');
