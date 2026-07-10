@@ -24,7 +24,7 @@ class OmakaseSeeder extends Seeder
 
         $session = OmakaseSession::query()->firstOrCreate(
             ['date' => '2026-07-10'],
-            ['name' => fake()->randomElement($sessionNames)],
+            ['name' => $sessionNames[array_rand($sessionNames)]],
         );
 
         $menus = [
