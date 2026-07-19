@@ -214,6 +214,9 @@ export default function AdminReportsSales({
                             <p className="mt-1 text-base font-semibold tabular-nums">
                                 {summary.paid_count}
                             </p>
+                            <p className="mt-0.5 text-xs tabular-nums text-[#706f6c] dark:text-[#A1A09A]">
+                                {formatPrice(summary.revenue)}
+                            </p>
                         </div>
                     </section>
                 </div>
