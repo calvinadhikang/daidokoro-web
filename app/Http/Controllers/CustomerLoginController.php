@@ -15,6 +15,14 @@ class CustomerLoginController extends Controller
 
     public function create(): Response
     {
+        $queryTable = request()->query('table');
+        if (is_string($queryTable) && $queryTable !== '') {
+            session([
+                'table_code' => $queryTable,
+                'service_type' => request()->query('service_type') ?? session('service_type') ?? 'dine_in',
+            ]);
+        }
+
         $customerId = session('customer_id');
         $customer = $customerId !== null
             ? Customer::query()->find($customerId)
@@ -25,7 +33,8 @@ class CustomerLoginController extends Controller
             : null;
 
         return Inertia::render('customer/login', [
-            'serviceType' => request()->query('service_type'),
+            'serviceType' => request()->query('service_type') ?? session('service_type'),
+            'tableCode' => session('table_code'),
             'customer' => $customer === null ? null : [
                 'id' => $customer->id,
                 'name' => $customer->name,
@@ -46,9 +55,16 @@ class CustomerLoginController extends Controller
             ['name' => $validated['name']],
         );
 
+        $tableCode = session('table_code');
+        $queryTable = request()->query('table');
+        if (is_string($queryTable) && $queryTable !== '') {
+            $tableCode = $queryTable;
+        }
+
         session([
             'customer_id' => $customer->id,
             'service_type' => $validated['service_type'] ?? session('service_type'),
+            'table_code' => $tableCode,
         ]);
 
         $activeTransaction = $this->transactions->syncSessionTransaction(

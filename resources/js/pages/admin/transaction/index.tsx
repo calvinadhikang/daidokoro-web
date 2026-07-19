@@ -113,6 +113,9 @@ export default function AdminTransactionIndex({ transactions }: Props) {
                                                     {serviceTypeLabel(
                                                         transaction.service_type,
                                                     )}
+                                                    {transaction.table_code
+                                                        ? ` · Table ${transaction.table_code}`
+                                                        : ''}
                                                 </p>
                                             </div>
                                             <div className="flex shrink-0 flex-col items-end gap-1.5">

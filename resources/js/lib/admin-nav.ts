@@ -1,6 +1,7 @@
 import { edit as hoursEdit } from '@/routes/admin/hours';
 import { index as menusIndex } from '@/routes/admin/menus';
 import { index as categoriesIndex } from '@/routes/admin/categories';
+import { index as mejasIndex } from '@/routes/admin/mejas';
 import { history as transactionHistory, index as transactionsIndex } from '@/routes/admin/transaction';
 
 export const primaryNavItems = [
@@ -18,6 +19,12 @@ export const primaryNavItems = [
 ] as const;
 
 export const secondaryNavItems = [
+    {
+        label: 'Tables',
+        description: 'Table codes & ordering QR',
+        href: mejasIndex.url(),
+        match: 'mejas' as const,
+    },
     {
         label: 'Hours',
         description: 'Operating hours & closures',
@@ -52,6 +59,10 @@ export function isNavActive(url: string, item: NavItem): boolean {
     }
 
     if (item.match === 'categories') {
+        return url === item.href || url.startsWith(`${item.href}/`);
+    }
+
+    if (item.match === 'mejas') {
         return url === item.href || url.startsWith(`${item.href}/`);
     }
 

@@ -7,15 +7,18 @@ use App\Http\Controllers\CustomerMenuController;
 use App\Http\Controllers\CustomerMenuOrderController;
 use App\Http\Controllers\CustomerOrderController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\MejaController;
 use App\Http\Controllers\MenuBrowseController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\OperationalHoursController;
+use App\Http\Controllers\TableEntryController;
 use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/menu', [MenuBrowseController::class, 'index'])->name('menu.index');
 Route::patch('/menu/{menuModel}/availability', [MenuBrowseController::class, 'toggleAvailability'])->name('menu.availability.toggle');
+Route::get('/t/{code}', TableEntryController::class)->name('table.entry');
 
 Route::prefix('customer')->name('customer.')->group(function () {
     Route::get('/login', [CustomerLoginController::class, 'create'])->name('login');
@@ -46,6 +49,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/categories/{category}', [CategoryController::class, 'show'])->name('categories.show');
     Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
     Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+
+    Route::get('/mejas', [MejaController::class, 'index'])->name('mejas.index');
+    Route::get('/mejas/create', [MejaController::class, 'create'])->name('mejas.create');
+    Route::post('/mejas', [MejaController::class, 'store'])->name('mejas.store');
+    Route::get('/mejas/{meja}', [MejaController::class, 'show'])->name('mejas.show');
+    Route::put('/mejas/{meja}', [MejaController::class, 'update'])->name('mejas.update');
+    Route::delete('/mejas/{meja}', [MejaController::class, 'destroy'])->name('mejas.destroy');
 
     Route::get('/hours', [OperationalHoursController::class, 'edit'])->name('hours.edit');
     Route::put('/hours', [OperationalHoursController::class, 'update'])->name('hours.update');

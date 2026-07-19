@@ -155,6 +155,16 @@ export default function AdminTransactionShow({
                                 Order type
                             </p>
                             <p>{serviceTypeLabel(transaction.service_type)}</p>
+                            {transaction.table_code && (
+                                <>
+                                    <p className="mt-2 text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                                        Table
+                                    </p>
+                                    <p className="font-medium tabular-nums">
+                                        {transaction.table_code}
+                                    </p>
+                                </>
+                            )}
                         </div>
                         <div className="flex flex-col items-end gap-1.5">
                             {transaction.is_admin_created && (
@@ -193,7 +203,7 @@ export default function AdminTransactionShow({
                     <button
                         type="button"
                         onClick={() => setMarkPaidOpen(true)}
-                        className="mb-4 w-full shrink-0 rounded-md border border-[#1b1b18] bg-[#1b1b18] px-4 py-3 text-sm font-medium text-white dark:border-[#EDEDEC] dark:bg-[#EDEDEC] dark:text-[#1b1b18]"
+                        className="mb-4 w-full shrink-0 rounded-md border border-[#f5c518] bg-[#f5c518] px-4 py-3 text-sm font-semibold text-[#1b1b18] dark:border-[#f5c518] dark:bg-[#f5c518] dark:text-[#1b1b18]"
                     >
                         Mark as paid
                     </button>

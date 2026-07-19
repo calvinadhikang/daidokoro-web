@@ -162,6 +162,9 @@ export default function AdminTransactionHistory({
                                                     {serviceTypeLabel(
                                                         transaction.service_type,
                                                     )}
+                                                    {transaction.table_code
+                                                        ? ` · Table ${transaction.table_code}`
+                                                        : ''}
                                                 </p>
                                                 <p className="mt-1 text-xs text-[#706f6c] dark:text-[#A1A09A]">
                                                     {formatDate(

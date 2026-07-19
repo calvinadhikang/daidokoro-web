@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\MenuApiController;
 use App\Http\Controllers\Api\NotificationApiController;
+use App\Http\Controllers\Api\OperatingHoursApiController;
 use App\Http\Controllers\Api\TransactionApiController;
 use App\Http\Controllers\OmakaseController;
 use Illuminate\Support\Facades\Route;
@@ -39,6 +40,13 @@ Route::prefix('omakase')->group(function () {
     Route::post('/menu/create', [OmakaseController::class, 'createOmakaseMenu']);
     Route::post('/menu/delete/{id}', [OmakaseController::class, 'deleteOmakaseMenu']);
     Route::post('/menu/update/{id}', [OmakaseController::class, 'updateOmakaseMenu']);
+});
+
+Route::prefix('hours')->group(function () {
+    Route::get('/', [OperatingHoursApiController::class, 'index']);
+    Route::post('/update', [OperatingHoursApiController::class, 'update']);
+    Route::post('/closures/create', [OperatingHoursApiController::class, 'storeClosure']);
+    Route::post('/closures/delete/{closure}', [OperatingHoursApiController::class, 'destroyClosure']);
 });
 
 Route::get('/ping', function () {

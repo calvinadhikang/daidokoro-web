@@ -31,9 +31,11 @@ class CustomerTransactionService
     ): Transaction {
         return DB::transaction(function () use ($customer, $serviceType) {
             $transaction = $this->findActiveByPhone($customer->phone);
+            $tableCode = session('table_code');
+            $tableCode = is_string($tableCode) && $tableCode !== '' ? $tableCode : null;
 
             if ($transaction !== null) {
-                $this->syncCustomerDetails($transaction, $customer, $serviceType);
+                $this->syncCustomerDetails($transaction, $customer, $serviceType, $tableCode);
 
                 return $transaction;
             }
@@ -42,6 +44,7 @@ class CustomerTransactionService
                 'customer_name' => $customer->name,
                 'customer_phone' => $customer->phone,
                 'service_type' => $serviceType ?? 'dine_in',
+                'table_code' => $tableCode,
                 'status' => 'in_progress',
                 'total_bill' => 0,
             ]);
@@ -162,10 +165,14 @@ class CustomerTransactionService
             return null;
         }
 
+        $tableCode = session('table_code');
+        $tableCode = is_string($tableCode) && $tableCode !== '' ? $tableCode : null;
+
         $this->syncCustomerDetails(
             $transaction,
             $customer,
             $serviceType ?? session('service_type'),
+            $tableCode,
         );
 
         session(['transaction_id' => $transaction->id]);
@@ -177,6 +184,7 @@ class CustomerTransactionService
         Transaction $transaction,
         Customer $customer,
         ?string $serviceType,
+        ?string $tableCode = null,
     ): void {
         $updates = [];
 
@@ -186,6 +194,10 @@ class CustomerTransactionService
 
         if ($serviceType !== null && $transaction->service_type !== $serviceType) {
             $updates['service_type'] = $serviceType;
+        }
+
+        if ($tableCode !== null && $transaction->table_code !== $tableCode) {
+            $updates['table_code'] = $tableCode;
         }
 
         if ($updates !== []) {

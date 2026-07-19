@@ -21,6 +21,7 @@ class TransactionApiFormatter
             'is_admin_created' => (bool) $transaction->is_admin_created,
             'deleted_at' => null,
             'service_type' => $transaction->service_type,
+            'table_code' => $transaction->table_code,
         ];
     }
 
@@ -39,6 +40,7 @@ class TransactionApiFormatter
             'name' => $transaction->customer_name,
             'customer_phone' => $transaction->customer_phone,
             'service_type' => $transaction->service_type,
+            'table_code' => $transaction->table_code,
             'status' => $transaction->status,
             'total_amount' => (string) $transaction->total_bill,
             'is_admin_created' => (bool) $transaction->is_admin_created,

@@ -38,6 +38,7 @@ export type Transaction = {
     customer_name: string;
     customer_phone: string;
     service_type: TransactionServiceType;
+    table_code: string | null;
     status: TransactionStatus;
     total_bill: number;
     is_admin_created: boolean;

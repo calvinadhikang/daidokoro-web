@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
  * @property string $customer_name
  * @property string $customer_phone
  * @property 'dine_in'|'takeaway' $service_type
+ * @property string|null $table_code
  * @property 'in_progress'|'paid' $status
  * @property int $total_bill
  * @property bool $is_admin_created
@@ -30,6 +31,7 @@ use Illuminate\Support\Carbon;
     'customer_name',
     'customer_phone',
     'service_type',
+    'table_code',
     'status',
     'total_bill',
     'is_admin_created',

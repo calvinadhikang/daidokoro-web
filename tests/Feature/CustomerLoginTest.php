@@ -21,6 +21,7 @@ class CustomerLoginTest extends TestCase
             ->component('customer/login')
             ->missing('phonePrefix')
             ->where('serviceType', 'takeaway')
+            ->where('tableCode', null)
         );
     }
 

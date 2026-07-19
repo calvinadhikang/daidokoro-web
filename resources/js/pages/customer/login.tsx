@@ -9,6 +9,7 @@ import { serviceTypeLabel } from '@/types/transaction';
 
 type Props = {
     serviceType: 'dine_in' | 'takeaway' | null;
+    tableCode: string | null;
     customer: Customer | null;
     hasActiveOrder: boolean;
 };
@@ -23,6 +24,7 @@ function FieldError({ message }: { message?: string }) {
 
 export default function CustomerLogin({
     serviceType,
+    tableCode,
     customer,
     hasActiveOrder,
 }: Props) {
@@ -63,6 +65,14 @@ export default function CustomerLogin({
                                   ? `Continue your ${orderLabel.toLowerCase()} order`
                                   : 'Enter your name and phone number to continue'}
                         </p>
+                        {tableCode && (
+                            <p className="mt-3 rounded-md border border-[#e3e3e0] bg-white px-3 py-2 text-sm dark:border-[#3E3E3A] dark:bg-[#161615]">
+                                Table{' '}
+                                <span className="font-semibold tabular-nums">
+                                    {tableCode}
+                                </span>
+                            </p>
+                        )}
                     </header>
 
                     <form
