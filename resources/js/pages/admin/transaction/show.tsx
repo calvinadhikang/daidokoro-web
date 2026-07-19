@@ -7,6 +7,7 @@ import {
     index as transactionsIndex,
     updateStatus,
 } from '@/actions/App/Http/Controllers/TransactionController';
+import { sales as salesReport } from '@/actions/App/Http/Controllers/ReportController';
 import {
     OrderItemGroups,
     formatPrice,
@@ -54,7 +55,9 @@ export default function AdminTransactionShow({
     const { url } = usePage();
     const backHref = url.includes('from=history')
         ? transactionHistory.url()
-        : transactionsIndex.url();
+        : url.includes('from=reports')
+          ? salesReport.url()
+          : transactionsIndex.url();
 
     const isPaid = transaction.status === 'paid';
     const itemCount =

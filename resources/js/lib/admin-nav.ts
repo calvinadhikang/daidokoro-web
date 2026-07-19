@@ -2,6 +2,7 @@ import { edit as hoursEdit } from '@/routes/admin/hours';
 import { index as menusIndex } from '@/routes/admin/menus';
 import { index as categoriesIndex } from '@/routes/admin/categories';
 import { index as mejasIndex } from '@/routes/admin/mejas';
+import { index as reportsIndex } from '@/routes/admin/reports';
 import { history as transactionHistory, index as transactionsIndex } from '@/routes/admin/transaction';
 
 export const primaryNavItems = [
@@ -37,6 +38,12 @@ export const secondaryNavItems = [
         href: transactionHistory.url(),
         match: 'history' as const,
     },
+    {
+        label: 'Laporan',
+        description: 'Sales & income reports',
+        href: reportsIndex.url(),
+        match: 'reports' as const,
+    },
 ] as const;
 
 export type NavMatch =
@@ -56,6 +63,14 @@ export function isNavActive(url: string, item: NavItem): boolean {
 
     if (item.match === 'hours') {
         return url === item.href || url.startsWith(`${item.href}?`);
+    }
+
+    if (item.match === 'reports') {
+        return (
+            url === item.href ||
+            url.startsWith(`${item.href}/`) ||
+            url.startsWith(`${item.href}?`)
+        );
     }
 
     if (item.match === 'categories') {

@@ -75,6 +75,20 @@ export default function TableEntry({ tableCode, storeStatus }: Props) {
                         .
                     </section>
 
+                    {!storeStatus.is_open && (
+                        <section className="mb-6">
+                            <p className="mb-3 text-center text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                                {storeStatus.message}
+                            </p>
+                            <Link
+                                href="/menu"
+                                className="flex w-full items-center justify-center rounded-md border border-[#1b1b18] bg-[#1b1b18] px-4 py-3 text-sm font-medium text-white dark:border-[#EDEDEC] dark:bg-[#EDEDEC] dark:text-[#1b1b18]"
+                            >
+                                Lihat Menu
+                            </Link>
+                        </section>
+                    )}
+
                     <section className="mt-auto">
                         <p className="mb-3 text-sm font-medium">
                             Choose service type
@@ -93,7 +107,8 @@ export default function TableEntry({ tableCode, storeStatus }: Props) {
                         </div>
                         {!storeStatus.is_open && (
                             <p className="mt-3 text-center text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                                {storeStatus.message}
+                                Ordering is available during operating hours
+                                only.
                             </p>
                         )}
                     </section>

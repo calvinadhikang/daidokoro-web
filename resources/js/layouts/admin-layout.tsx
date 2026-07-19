@@ -42,7 +42,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                             <p className="truncate text-sm font-medium">
                                 {url.startsWith('/admin/hours')
                                     ? 'Hours'
-                                    : 'History'}
+                                    : url.startsWith('/admin/reports')
+                                      ? 'Laporan'
+                                      : url.startsWith('/admin/mejas')
+                                        ? 'Tables'
+                                        : 'History'}
                             </p>
                         )}
                     </div>

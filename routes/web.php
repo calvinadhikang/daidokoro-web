@@ -11,6 +11,7 @@ use App\Http\Controllers\MejaController;
 use App\Http\Controllers\MenuBrowseController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\OperationalHoursController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TableEntryController;
 use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
@@ -65,6 +66,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::put('/hours', [OperationalHoursController::class, 'update'])->name('hours.update');
     Route::post('/hours/closures', [OperationalHoursController::class, 'storeClosure'])->name('hours.closures.store');
     Route::delete('/hours/closures/{closure}', [OperationalHoursController::class, 'destroyClosure'])->name('hours.closures.destroy');
+
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/sales', [ReportController::class, 'sales'])->name('reports.sales');
 
     Route::get('/transaction', [TransactionController::class, 'index'])->name('transaction.index');
     Route::get('/transaction/history', [TransactionController::class, 'history'])->name('transaction.history');
