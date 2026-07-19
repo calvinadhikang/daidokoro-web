@@ -83,4 +83,34 @@ class CustomerLoginTest extends TestCase
 
         $response->assertSessionHasErrors(['phone']);
     }
+
+    public function test_logout_clears_customer_session_and_redirects_home(): void
+    {
+        $customer = Customer::query()->create([
+            'name' => 'Alex Tan',
+            'phone' => '6281234567890',
+        ]);
+
+        $response = $this->withSession([
+            'customer_id' => $customer->id,
+            'service_type' => 'dine_in',
+            'table_code' => 'A1',
+            'customer_cart' => [['menu_id' => 1]],
+            'transaction_id' => 99,
+        ])->post(route('customer.logout'));
+
+        $response->assertRedirect(route('home'));
+        $this->assertFalse(session()->has('customer_id'));
+        $this->assertFalse(session()->has('service_type'));
+        $this->assertFalse(session()->has('table_code'));
+        $this->assertFalse(session()->has('customer_cart'));
+        $this->assertFalse(session()->has('transaction_id'));
+    }
+
+    public function test_logout_requires_customer_session(): void
+    {
+        $response = $this->post(route('customer.logout'));
+
+        $response->assertRedirect(route('customer.login'));
+    }
 }

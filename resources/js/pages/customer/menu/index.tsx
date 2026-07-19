@@ -1,16 +1,11 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 
 import { MenuBrowsePanel } from '@/components/menu/menu-browse-panel';
-import type { Customer } from '@/types/customer';
 import type { Menu, MenuCategory } from '@/types/menu';
 import {
     serviceTypeLabel,
     type TransactionServiceType,
 } from '@/types/transaction';
-
-type PageProps = {
-    customer: Customer | null;
-};
 
 type Props = {
     menus: Menu[];
@@ -23,8 +18,6 @@ export default function CustomerMenuIndex({
     categories,
     serviceType,
 }: Props) {
-    const { customer } = usePage<PageProps>().props;
-
     return (
         <>
             <Head title="Menu" />
@@ -38,14 +31,7 @@ export default function CustomerMenuIndex({
                         ← Home
                     </Link>
                     <div className="mt-2 flex items-start justify-between gap-3">
-                        <div>
-                            <h1 className="text-2xl font-semibold">Menu</h1>
-                            {customer !== null && (
-                                <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                    Hi, {customer.name}
-                                </p>
-                            )}
-                        </div>
+                        <h1 className="text-2xl font-semibold">Menu</h1>
                         {serviceType !== null && (
                             <span className="shrink-0 rounded-full bg-[#eff8ff] px-2.5 py-1 text-xs font-medium text-[#175cd3] dark:bg-[#102a56] dark:text-[#84caff]">
                                 {serviceTypeLabel(serviceType)}
@@ -57,8 +43,13 @@ export default function CustomerMenuIndex({
                 <MenuBrowsePanel
                     menus={menus}
                     categories={categories}
-                    availability="available"
-                    menuHref={(menu) => `/customer/menu/${menu.id}`}
+                    availability="all"
+                    unavailableLabel="Sold out"
+                    menuHref={(menu) =>
+                        menu.is_available
+                            ? `/customer/menu/${menu.id}`
+                            : undefined
+                    }
                     emptyMessage="No menu items available right now."
                 />
             </div>

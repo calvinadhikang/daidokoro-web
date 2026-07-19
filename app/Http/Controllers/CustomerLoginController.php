@@ -80,4 +80,17 @@ class CustomerLoginController extends Controller
             ->route('customer.menu.index')
             ->with('success', $message);
     }
+
+    public function destroy(): RedirectResponse
+    {
+        session()->forget([
+            'customer_id',
+            'service_type',
+            'table_code',
+            'customer_cart',
+            'transaction_id',
+        ]);
+
+        return redirect()->route('home');
+    }
 }

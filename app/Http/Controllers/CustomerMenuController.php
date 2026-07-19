@@ -13,8 +13,8 @@ class CustomerMenuController extends Controller
     public function index(): Response
     {
         return Inertia::render('customer/menu/index', [
-            'menus' => $this->menuCatalog->availableForOrdering(),
-            'categories' => $this->menuCatalog->categoriesForOrdering(),
+            'menus' => $this->menuCatalog->allForBrowse(),
+            'categories' => $this->menuCatalog->categoriesForBrowse(),
             'serviceType' => session('service_type'),
         ]);
     }

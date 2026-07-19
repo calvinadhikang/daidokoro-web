@@ -47,11 +47,13 @@ function FilterButton({
 function MenuCard({
     menu,
     showAvailabilityBadge,
+    unavailableLabel,
     href,
     onLongPress,
 }: {
     menu: Menu;
     showAvailabilityBadge: boolean;
+    unavailableLabel: string;
     href?: string;
     onLongPress?: () => void;
 }) {
@@ -98,7 +100,7 @@ function MenuCard({
                                     : 'shrink-0 rounded-full bg-[#fef3f2] px-2.5 py-1 text-xs font-medium text-[#b42318] dark:bg-[#55160c] dark:text-[#fda29b]'
                             }
                         >
-                            {menu.is_available ? 'Available' : 'Unavailable'}
+                            {menu.is_available ? 'Available' : unavailableLabel}
                         </span>
                     )}
                 </div>
@@ -114,7 +116,7 @@ function MenuCard({
 
     const className = cn(
         'block rounded-lg border border-[#e3e3e0] bg-white p-4 dark:border-[#3E3E3A] dark:bg-[#161615]',
-        showAvailabilityBadge && !menu.is_available && 'opacity-70',
+        !menu.is_available && 'opacity-70',
         href &&
             'active:bg-[#FDFDFC] dark:active:bg-[#0a0a0a]',
         onLongPress && 'select-none touch-manipulation',
@@ -143,9 +145,10 @@ type MenuBrowsePanelProps = {
     categories?: MenuCategory[];
     showAvailabilityBadge?: boolean;
     enableAvailabilityToggle?: boolean;
+    unavailableLabel?: string;
     summaryLabel?: string;
     emptyMessage?: string;
-    menuHref?: (menu: Menu) => string;
+    menuHref?: (menu: Menu) => string | undefined;
 };
 
 export function MenuBrowsePanel({
@@ -154,6 +157,7 @@ export function MenuBrowsePanel({
     categories = [],
     showAvailabilityBadge = false,
     enableAvailabilityToggle = false,
+    unavailableLabel = 'Unavailable',
     summaryLabel,
     emptyMessage = 'No menu items available right now.',
     menuHref,
@@ -296,7 +300,7 @@ export function MenuBrowsePanel({
                         <section key={`${groupIndex}-${group.letter}`}>
                             {group.showUnavailableDivider && (
                                 <p className="mb-3 text-xs font-medium tracking-wide text-[#706f6c] uppercase dark:text-[#A1A09A]">
-                                    Unavailable
+                                    {unavailableLabel}
                                 </p>
                             )}
                             <h2 className="mb-3 text-sm font-semibold text-[#706f6c] dark:text-[#A1A09A]">
@@ -310,6 +314,7 @@ export function MenuBrowsePanel({
                                             showAvailabilityBadge={
                                                 showAvailabilityBadge
                                             }
+                                            unavailableLabel={unavailableLabel}
                                             href={menuHref?.(menu)}
                                             onLongPress={
                                                 enableAvailabilityToggle

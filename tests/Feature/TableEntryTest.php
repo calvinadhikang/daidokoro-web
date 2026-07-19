@@ -13,18 +13,20 @@ class TableEntryTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_table_entry_sets_session_and_redirects_to_login(): void
+    public function test_table_entry_shows_service_type_choice(): void
     {
         Meja::query()->create(['code' => 'A1']);
 
         $response = $this->get(route('table.entry', ['code' => 'A1']));
 
-        $response->assertRedirect(route('customer.login', [
-            'service_type' => 'dine_in',
-            'table' => 'A1',
-        ]));
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('table-entry')
+            ->where('tableCode', 'A1')
+            ->has('storeStatus')
+        );
         $this->assertSame('A1', session('table_code'));
-        $this->assertSame('dine_in', session('service_type'));
+        $this->assertFalse(session()->has('service_type'));
     }
 
     public function test_table_entry_returns_404_for_unknown_code(): void
@@ -34,7 +36,41 @@ class TableEntryTest extends TestCase
         $response->assertNotFound();
     }
 
-    public function test_table_entry_skips_login_when_customer_session_exists(): void
+    public function test_selecting_dine_in_redirects_to_login(): void
+    {
+        Meja::query()->create(['code' => 'A1']);
+
+        $response = $this->get(route('table.entry.select', [
+            'code' => 'A1',
+            'serviceType' => 'dine_in',
+        ]));
+
+        $response->assertRedirect(route('customer.login', [
+            'service_type' => 'dine_in',
+            'table' => 'A1',
+        ]));
+        $this->assertSame('A1', session('table_code'));
+        $this->assertSame('dine_in', session('service_type'));
+    }
+
+    public function test_selecting_dine_out_redirects_to_login(): void
+    {
+        Meja::query()->create(['code' => 'A1']);
+
+        $response = $this->get(route('table.entry.select', [
+            'code' => 'A1',
+            'serviceType' => 'takeaway',
+        ]));
+
+        $response->assertRedirect(route('customer.login', [
+            'service_type' => 'takeaway',
+            'table' => 'A1',
+        ]));
+        $this->assertSame('A1', session('table_code'));
+        $this->assertSame('takeaway', session('service_type'));
+    }
+
+    public function test_select_skips_login_when_customer_session_exists(): void
     {
         Meja::query()->create(['code' => 'A1']);
         $customer = Customer::query()->create([
@@ -43,10 +79,14 @@ class TableEntryTest extends TestCase
         ]);
 
         $response = $this->withSession(['customer_id' => $customer->id])
-            ->get(route('table.entry', ['code' => 'A1']));
+            ->get(route('table.entry.select', [
+                'code' => 'A1',
+                'serviceType' => 'dine_in',
+            ]));
 
         $response->assertRedirect(route('customer.menu.index'));
         $this->assertSame('A1', session('table_code'));
+        $this->assertSame('dine_in', session('service_type'));
     }
 
     public function test_checkout_records_table_code_from_session(): void
@@ -105,7 +145,7 @@ class TableEntryTest extends TestCase
         $this->assertSame('A1', session('table_code'));
     }
 
-    public function test_sync_updates_open_transaction_table_code(): void
+    public function test_sync_updates_open_transaction_table_code_on_select(): void
     {
         Meja::query()->create(['code' => 'B2']);
         $customer = Customer::query()->create([
@@ -121,11 +161,15 @@ class TableEntryTest extends TestCase
         ]);
 
         $this->withSession(['customer_id' => $customer->id])
-            ->get(route('table.entry', ['code' => 'B2']));
+            ->get(route('table.entry.select', [
+                'code' => 'B2',
+                'serviceType' => 'takeaway',
+            ]));
 
         $this->assertDatabaseHas('transactions', [
             'customer_phone' => $customer->phone,
             'table_code' => 'B2',
+            'service_type' => 'takeaway',
             'status' => 'in_progress',
         ]);
     }

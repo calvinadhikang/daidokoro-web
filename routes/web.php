@@ -18,13 +18,17 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/menu', [MenuBrowseController::class, 'index'])->name('menu.index');
 Route::patch('/menu/{menuModel}/availability', [MenuBrowseController::class, 'toggleAvailability'])->name('menu.availability.toggle');
-Route::get('/t/{code}', TableEntryController::class)->name('table.entry');
+Route::get('/t/{code}', [TableEntryController::class, 'show'])->name('table.entry');
+Route::get('/t/{code}/{serviceType}', [TableEntryController::class, 'select'])
+    ->whereIn('serviceType', ['dine_in', 'takeaway'])
+    ->name('table.entry.select');
 
 Route::prefix('customer')->name('customer.')->group(function () {
     Route::get('/login', [CustomerLoginController::class, 'create'])->name('login');
     Route::post('/login', [CustomerLoginController::class, 'store'])->name('login.store');
 
     Route::middleware('customer')->group(function () {
+        Route::post('/logout', [CustomerLoginController::class, 'destroy'])->name('logout');
         Route::get('/menu', [CustomerMenuController::class, 'index'])->name('menu.index');
         Route::get('/menu/{menuModel}', [CustomerMenuOrderController::class, 'show'])->name('menu.show');
         Route::post('/menu/{menuModel}', [CustomerMenuOrderController::class, 'store'])->name('menu.store');

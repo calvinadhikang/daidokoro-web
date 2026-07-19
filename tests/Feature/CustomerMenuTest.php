@@ -19,7 +19,7 @@ class CustomerMenuTest extends TestCase
         $response->assertRedirect(route('customer.login'));
     }
 
-    public function test_menu_page_shows_available_menus_and_categories(): void
+    public function test_menu_page_shows_available_and_sold_out_menus(): void
     {
         $customer = Customer::query()->create([
             'name' => 'Alex Tan',
@@ -50,8 +50,11 @@ class CustomerMenuTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->component('customer/menu/index')
             ->where('serviceType', 'takeaway')
-            ->has('menus', 1)
+            ->has('menus', 2)
             ->where('menus.0.name', 'Chicken Rice')
+            ->where('menus.0.is_available', true)
+            ->where('menus.1.name', 'Sold Out Dish')
+            ->where('menus.1.is_available', false)
             ->has('categories', 1)
             ->where('categories.0.name', 'Mains')
         );

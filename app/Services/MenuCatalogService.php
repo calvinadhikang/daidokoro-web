@@ -44,4 +44,15 @@ class MenuCatalogService
             ->orderBy('name')
             ->get(['id', 'name']);
     }
+
+    /**
+     * @return Collection<int, Category>
+     */
+    public function categoriesForBrowse(): Collection
+    {
+        return Category::query()
+            ->whereHas('menus')
+            ->orderBy('name')
+            ->get(['id', 'name']);
+    }
 }
