@@ -343,7 +343,7 @@ export function MenuOrderForm({
             </div>
 
             <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                Line total:{' '}
+                Total:{' '}
                 <span className="font-medium tabular-nums text-[#1b1b18] dark:text-[#EDEDEC]">
                     {formatPrice(estimatedUnitPrice * quantity)}
                 </span>

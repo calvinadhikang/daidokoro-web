@@ -103,6 +103,9 @@ export function CustomerCartPanel({
             '/customer/cart/checkout',
             {},
             {
+                onSuccess: () => {
+                    router.reload({ only: ['customerNav'] });
+                },
                 onFinish: () => setCheckingOut(false),
             },
         );

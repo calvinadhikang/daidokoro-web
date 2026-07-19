@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Services\CustomerCartService;
 use App\Services\CustomerTransactionService;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -45,7 +46,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'customer' => fn () => $this->resolveCustomer($request),
-            'customerNav' => fn () => $this->resolveCustomerNav($request),
+            'customerNav' => Inertia::always(fn () => $this->resolveCustomerNav($request)),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
             ],

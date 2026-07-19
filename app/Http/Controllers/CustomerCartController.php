@@ -72,6 +72,8 @@ class CustomerCartController extends Controller
 
         $this->pushNotifications->notifyCustomerOrderCheckedOut($transaction);
 
+        Inertia::clearHistory();
+
         return redirect()
             ->route('customer.order.index')
             ->with('success', 'Order sent! A new bill has been created for your items.');
