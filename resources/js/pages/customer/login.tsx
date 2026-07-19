@@ -4,12 +4,10 @@ import {
     inputClassName,
     labelClassName,
 } from '@/components/admin/menu-form';
-import { cn } from '@/lib/utils';
 import type { Customer, CustomerLoginForm } from '@/types/customer';
 import { serviceTypeLabel } from '@/types/transaction';
 
 type Props = {
-    phonePrefix: string;
     serviceType: 'dine_in' | 'takeaway' | null;
     customer: Customer | null;
     hasActiveOrder: boolean;
@@ -24,14 +22,13 @@ function FieldError({ message }: { message?: string }) {
 }
 
 export default function CustomerLogin({
-    phonePrefix,
     serviceType,
     customer,
     hasActiveOrder,
 }: Props) {
     const form = useForm<CustomerLoginForm>({
         name: customer?.name ?? '',
-        phone: customer?.phone_local ?? '',
+        phone: customer?.phone_display ?? '',
         service_type: serviceType ?? '',
     });
 
@@ -95,38 +92,23 @@ export default function CustomerLogin({
                             <label htmlFor="phone" className={labelClassName}>
                                 Phone number
                             </label>
-                            <div className="flex">
-                                <span
-                                    className={cn(
-                                        inputClassName,
-                                        'w-auto shrink-0 rounded-r-none border-r-0 text-[#706f6c] dark:text-[#A1A09A]',
-                                    )}
-                                >
-                                    {phonePrefix}
-                                </span>
-                                <input
-                                    id="phone"
-                                    type="tel"
-                                    inputMode="numeric"
-                                    value={form.data.phone}
-                                    onChange={(event) =>
-                                        form.setData(
-                                            'phone',
-                                            event.target.value,
-                                        )
-                                    }
-                                    className={cn(
-                                        inputClassName,
-                                        'rounded-l-none',
-                                    )}
-                                    placeholder="81234567890"
-                                    autoComplete="tel-national"
-                                    required
-                                />
-                            </div>
-                            <p className="mt-1.5 text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                                Enter your number without the leading 0.
-                            </p>
+                            <input
+                                id="phone"
+                                type="tel"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                value={form.data.phone}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'phone',
+                                        event.target.value.replace(/\D/g, ''),
+                                    )
+                                }
+                                className={inputClassName}
+                                placeholder="081234567890"
+                                autoComplete="tel"
+                                required
+                            />
                             <FieldError message={form.errors.phone} />
                         </div>
 

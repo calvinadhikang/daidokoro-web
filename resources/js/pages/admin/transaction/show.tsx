@@ -43,6 +43,9 @@ function statusClassName(status: Transaction['status']): string {
         : 'rounded-full bg-[#fffaeb] px-2.5 py-1 text-xs font-medium text-[#b54708] dark:bg-[#4e1d09] dark:text-[#fec84b]';
 }
 
+const adminPillClassName =
+    'rounded-full bg-[#eff8ff] px-2.5 py-1 text-xs font-medium text-[#175cd3] dark:bg-[#102a56] dark:text-[#84caff]';
+
 export default function AdminTransactionShow({
     transaction,
     itemGroups,
@@ -54,6 +57,9 @@ export default function AdminTransactionShow({
         : transactionsIndex.url();
 
     const isPaid = transaction.status === 'paid';
+    const itemCount =
+        transaction.items?.length ??
+        itemGroups.reduce((sum, group) => sum + group.items.length, 0);
     const [markPaidOpen, setMarkPaidOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [markPaidLoading, setMarkPaidLoading] = useState(false);
@@ -86,12 +92,12 @@ export default function AdminTransactionShow({
 
     return (
         <>
-            <Head title={`${transaction.customer_name} · Transaction`} />
+            <Head title={`#${transaction.transaction_number} · ${transaction.customer_name}`} />
 
             <ConfirmDialog
                 open={markPaidOpen}
                 title="Mark as paid?"
-                description={`Confirm payment of ${formatPrice(transaction.total_bill)} for ${transaction.customer_name}. This cannot be undone.`}
+                description={`Confirm payment of ${formatPrice(transaction.total_bill)} for #${transaction.transaction_number} · ${transaction.customer_name}. This cannot be undone.`}
                 confirmLabel="Mark paid"
                 loading={markPaidLoading}
                 onConfirm={handleConfirmMarkPaid}
@@ -101,7 +107,7 @@ export default function AdminTransactionShow({
             <ConfirmDialog
                 open={deleteOpen}
                 title="Delete transaction?"
-                description={`Delete the in-progress transaction for ${transaction.customer_name}? All ordered items will be removed.`}
+                description={`Delete the in-progress transaction #${transaction.transaction_number} for ${transaction.customer_name}? All ordered items will be removed.`}
                 confirmLabel="Delete"
                 variant="danger"
                 loading={deleteLoading}
@@ -118,16 +124,24 @@ export default function AdminTransactionShow({
                         Back
                     </Link>
                     <h1 className="truncate text-lg font-semibold">
+                        #{transaction.transaction_number}
+                        {' · '}
                         {transaction.customer_name}
                     </h1>
                 </div>
             </header>
 
             <div className="mx-auto flex h-[calc(100dvh-8.5rem)] max-w-lg flex-col px-4 py-4">
-                <section className="mb-4 shrink-0 rounded-lg border border-[#e3e3e0] bg-white p-4 dark:border-[#3E3E3A] dark:bg-[#161615]">
+                <section className="mb-3 shrink-0 rounded-lg border border-[#e3e3e0] bg-white p-4 dark:border-[#3E3E3A] dark:bg-[#161615]">
                     <div className="flex items-start justify-between gap-3">
                         <div>
                             <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                                Transaction number
+                            </p>
+                            <p className="font-medium tabular-nums">
+                                #{transaction.transaction_number}
+                            </p>
+                            <p className="mt-2 text-sm text-[#706f6c] dark:text-[#A1A09A]">
                                 Customer
                             </p>
                             <p className="font-medium">
@@ -142,12 +156,25 @@ export default function AdminTransactionShow({
                             </p>
                             <p>{serviceTypeLabel(transaction.service_type)}</p>
                         </div>
-                        <span className={statusClassName(transaction.status)}>
-                            {statusLabel(transaction.status)}
-                        </span>
+                        <div className="flex flex-col items-end gap-1.5">
+                            {transaction.is_admin_created && (
+                                <span className={adminPillClassName}>Admin</span>
+                            )}
+                            <span className={statusClassName(transaction.status)}>
+                                {statusLabel(transaction.status)}
+                            </span>
+                        </div>
                     </div>
 
-                    <div className="mt-4 flex items-end justify-between border-t border-[#e3e3e0] pt-4 dark:border-[#3E3E3A]">
+                    <div className="mt-4 grid grid-cols-2 gap-3 border-t border-[#e3e3e0] pt-4 dark:border-[#3E3E3A]">
+                        <div>
+                            <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                                Total items
+                            </p>
+                            <p className="text-xl font-semibold tabular-nums">
+                                {itemCount}
+                            </p>
+                        </div>
                         <div>
                             <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
                                 Total bill
@@ -155,22 +182,22 @@ export default function AdminTransactionShow({
                             <p className="text-xl font-semibold tabular-nums">
                                 {formatPrice(transaction.total_bill)}
                             </p>
-                            <p className="mt-1 text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                                {formatDate(transaction.created_at)}
-                            </p>
                         </div>
-
-                        {!isPaid && (
-                            <button
-                                type="button"
-                                onClick={() => setMarkPaidOpen(true)}
-                                className="rounded-md border border-[#e3e3e0] px-3 py-2 text-sm font-medium dark:border-[#3E3E3A]"
-                            >
-                                Mark paid
-                            </button>
-                        )}
                     </div>
+                    <p className="mt-2 text-xs text-[#706f6c] dark:text-[#A1A09A]">
+                        {formatDate(transaction.created_at)}
+                    </p>
                 </section>
+
+                {!isPaid && (
+                    <button
+                        type="button"
+                        onClick={() => setMarkPaidOpen(true)}
+                        className="mb-4 w-full shrink-0 rounded-md border border-[#1b1b18] bg-[#1b1b18] px-4 py-3 text-sm font-medium text-white dark:border-[#EDEDEC] dark:bg-[#EDEDEC] dark:text-[#1b1b18]"
+                    >
+                        Mark as paid
+                    </button>
+                )}
 
                 <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4">
                     <h2 className="mb-3 text-base font-semibold">Ordered items</h2>

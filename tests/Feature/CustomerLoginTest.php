@@ -19,7 +19,7 @@ class CustomerLoginTest extends TestCase
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
             ->component('customer/login')
-            ->where('phonePrefix', '+62')
+            ->missing('phonePrefix')
             ->where('serviceType', 'takeaway')
         );
     }

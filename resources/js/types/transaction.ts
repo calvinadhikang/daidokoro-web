@@ -32,11 +32,15 @@ export type TransactionItemGroup = {
 
 export type Transaction = {
     id: number;
+    business_date?: string;
+    daily_number?: number;
+    transaction_number: string;
     customer_name: string;
     customer_phone: string;
     service_type: TransactionServiceType;
     status: TransactionStatus;
     total_bill: number;
+    is_admin_created: boolean;
     created_at: string;
     updated_at: string;
     items?: TransactionItem[];

@@ -33,7 +33,7 @@ class PhoneNumberTest extends TestCase
     public function test_format_for_display(): void
     {
         $this->assertSame(
-            '+62 81234567890',
+            '081234567890',
             PhoneNumber::formatForDisplay('6281234567890'),
         );
     }

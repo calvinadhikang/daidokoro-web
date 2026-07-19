@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreCustomerLoginRequest;
 use App\Models\Customer;
 use App\Services\CustomerTransactionService;
-use App\Support\PhoneNumber;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,7 +25,6 @@ class CustomerLoginController extends Controller
             : null;
 
         return Inertia::render('customer/login', [
-            'phonePrefix' => PhoneNumber::DISPLAY_PREFIX,
             'serviceType' => request()->query('service_type'),
             'customer' => $customer === null ? null : [
                 'id' => $customer->id,

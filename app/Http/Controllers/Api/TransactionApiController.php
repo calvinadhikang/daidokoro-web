@@ -5,12 +5,23 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use App\Services\StoreHoursService;
+use App\Services\TransactionNumberService;
 use App\Support\TransactionApiFormatter;
 use Illuminate\Http\JsonResponse;
 
 class TransactionApiController extends Controller
 {
-    public function __construct(private StoreHoursService $storeHours) {}
+    public function __construct(
+        private StoreHoursService $storeHours,
+        private TransactionNumberService $transactionNumbers,
+    ) {}
+
+    public function nextNumber(): JsonResponse
+    {
+        return response()->json([
+            'transaction_number' => $this->transactionNumbers->peekNextFormatted(),
+        ]);
+    }
 
     public function today(): JsonResponse
     {

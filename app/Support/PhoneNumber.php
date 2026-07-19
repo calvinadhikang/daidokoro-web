@@ -6,8 +6,6 @@ class PhoneNumber
 {
     public const COUNTRY_CODE = '62';
 
-    public const DISPLAY_PREFIX = '+62';
-
     public static function normalize(?string $phone): ?string
     {
         if ($phone === null || trim($phone) === '') {
@@ -42,8 +40,6 @@ class PhoneNumber
 
     public static function formatForDisplay(string $normalizedPhone): string
     {
-        $local = self::toLocalInput($normalizedPhone);
-
-        return self::DISPLAY_PREFIX.' '.$local;
+        return '0'.self::toLocalInput($normalizedPhone);
     }
 }

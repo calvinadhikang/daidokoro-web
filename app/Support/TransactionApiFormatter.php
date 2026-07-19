@@ -14,10 +14,11 @@ class TransactionApiFormatter
     {
         return [
             'id' => $transaction->id,
-            'transaction_number' => self::formatTransactionNumber($transaction->id),
+            'transaction_number' => self::formatTransactionNumber($transaction),
             'name' => $transaction->customer_name,
             'status' => $transaction->status,
             'total_amount' => (string) $transaction->total_bill,
+            'is_admin_created' => (bool) $transaction->is_admin_created,
             'deleted_at' => null,
             'service_type' => $transaction->service_type,
         ];
@@ -34,12 +35,13 @@ class TransactionApiFormatter
 
         return [
             'id' => $transaction->id,
-            'transaction_number' => self::formatTransactionNumber($transaction->id),
+            'transaction_number' => self::formatTransactionNumber($transaction),
             'name' => $transaction->customer_name,
             'customer_phone' => $transaction->customer_phone,
             'service_type' => $transaction->service_type,
             'status' => $transaction->status,
             'total_amount' => (string) $transaction->total_bill,
+            'is_admin_created' => (bool) $transaction->is_admin_created,
             'created_at' => $transaction->created_at?->toIso8601String(),
             'deleted_at' => null,
             'order_items' => $transaction->items
@@ -84,8 +86,8 @@ class TransactionApiFormatter
         ];
     }
 
-    private static function formatTransactionNumber(int $id): string
+    private static function formatTransactionNumber(Transaction $transaction): string
     {
-        return str_pad((string) $id, 4, '0', STR_PAD_LEFT);
+        return $transaction->transaction_number;
     }
 }

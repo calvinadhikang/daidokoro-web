@@ -22,11 +22,26 @@ class CustomerCartController extends Controller
 
     public function index(): Response
     {
+        $this->cart->syncPrices();
+
         return Inertia::render('customer/cart/index', [
             'serviceType' => session('service_type'),
             'cart' => $this->cart->items(),
             'cartTotal' => $this->cart->total(),
         ]);
+    }
+
+    public function destroy(int $index): RedirectResponse
+    {
+        if (! $this->cart->removeItem($index)) {
+            throw ValidationException::withMessages([
+                'cart' => 'That item is no longer in your cart.',
+            ]);
+        }
+
+        return redirect()
+            ->route('customer.cart.index')
+            ->with('success', 'Item removed from your cart.');
     }
 
     public function checkout(): RedirectResponse

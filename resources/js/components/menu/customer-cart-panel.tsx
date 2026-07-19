@@ -2,15 +2,18 @@ import { router } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 
+import { ConfirmDialog } from '@/components/admin/confirm-dialog';
 import { formatPrice } from '@/components/menu/order-item-groups';
 import type { CartItem } from '@/types/customer';
 
 type CartItemRowProps = {
     item: CartItem;
     index: number;
+    removing: boolean;
+    onRemove: (index: number) => void;
 };
 
-function CartItemRow({ item, index }: CartItemRowProps) {
+function CartItemRow({ item, index, removing, onRemove }: CartItemRowProps) {
     return (
         <li className="rounded-md border border-[#e3e3e0] bg-white p-3 dark:border-[#3E3E3A] dark:bg-[#161615]">
             <div className="flex items-start justify-between gap-3">
@@ -34,6 +37,14 @@ function CartItemRow({ item, index }: CartItemRowProps) {
                             ))}
                         </ul>
                     )}
+                    <button
+                        type="button"
+                        onClick={() => onRemove(index)}
+                        disabled={removing}
+                        className="mt-2 text-xs font-medium text-[#b42318] disabled:opacity-50"
+                    >
+                        Remove
+                    </button>
                 </div>
                 <p className="shrink-0 text-sm font-medium tabular-nums">
                     {formatPrice(item.line_total)}
@@ -50,6 +61,9 @@ type CustomerCartPanelProps = {
     emptyAction?: ReactNode;
 };
 
+const CHECKOUT_NOTICE =
+    'Mohon maaf tidak menerima tambahan order, semua order masuk di awal terima kasih, DAIDOKORO';
+
 export function CustomerCartPanel({
     cart,
     cartTotal,
@@ -57,6 +71,8 @@ export function CustomerCartPanel({
     emptyAction,
 }: CustomerCartPanelProps) {
     const [checkingOut, setCheckingOut] = useState(false);
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [removingIndex, setRemovingIndex] = useState<number | null>(null);
 
     if (cart.length === 0) {
         if (emptyMessage === undefined) {
@@ -73,7 +89,15 @@ export function CustomerCartPanel({
         );
     }
 
+    function handleRemove(index: number) {
+        setRemovingIndex(index);
+        router.delete(`/customer/cart/items/${index}`, {
+            onFinish: () => setRemovingIndex(null),
+        });
+    }
+
     function handleCheckout() {
+        setConfirmOpen(false);
         setCheckingOut(true);
         router.post(
             '/customer/cart/checkout',
@@ -102,6 +126,8 @@ export function CustomerCartPanel({
                             key={`${item.menu_id}-${index}`}
                             item={item}
                             index={index}
+                            removing={removingIndex === index}
+                            onRemove={handleRemove}
                         />
                     ))}
                 </ul>
@@ -109,14 +135,25 @@ export function CustomerCartPanel({
 
             <button
                 type="button"
-                onClick={handleCheckout}
-                disabled={checkingOut}
+                onClick={() => setConfirmOpen(true)}
+                disabled={checkingOut || removingIndex !== null}
                 className="w-full rounded-md border border-[#1b1b18] bg-[#1b1b18] px-4 py-3 text-sm font-medium text-white disabled:opacity-50 dark:border-[#EDEDEC] dark:bg-[#EDEDEC] dark:text-[#1b1b18]"
             >
                 {checkingOut
                     ? 'Sending order...'
                     : `Checkout · ${formatPrice(cartTotal)}`}
             </button>
+
+            <ConfirmDialog
+                open={confirmOpen}
+                title="Perhatian"
+                description={CHECKOUT_NOTICE}
+                confirmLabel="Lanjut pesan"
+                cancelLabel="Batal"
+                loading={checkingOut}
+                onConfirm={handleCheckout}
+                onCancel={() => setConfirmOpen(false)}
+            />
         </div>
     );
 }

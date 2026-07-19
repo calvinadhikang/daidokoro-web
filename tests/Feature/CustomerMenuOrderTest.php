@@ -102,6 +102,110 @@ class CustomerMenuOrderTest extends TestCase
         $this->assertSame(70000, $cart[0]['line_total']);
     }
 
+    public function test_cart_page_syncs_prices_from_current_menu(): void
+    {
+        $customer = Customer::query()->create([
+            'name' => 'Alex Tan',
+            'phone' => '6281234567890',
+        ]);
+
+        $menu = MenuModel::query()->create([
+            'name' => 'Chicken Rice',
+            'price' => 1000,
+            'is_available' => true,
+        ]);
+
+        $session = [
+            'customer_id' => $customer->id,
+            'service_type' => 'takeaway',
+            'customer_cart' => [[
+                'menu_id' => $menu->id,
+                'menu_name' => 'Chicken Rice',
+                'quantity' => 2,
+                'unit_price' => 1000,
+                'line_total' => 2000,
+                'addon_option_ids' => [],
+                'addons' => [],
+            ]],
+        ];
+
+        $menu->update(['price' => 2000]);
+
+        $response = $this
+            ->withSession($session)
+            ->get(route('customer.cart.index'));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('customer/cart/index')
+            ->where('cart.0.unit_price', 2000)
+            ->where('cart.0.line_total', 4000)
+            ->where('cartTotal', 4000)
+        );
+
+        $cart = session('customer_cart');
+        $this->assertIsArray($cart);
+        $this->assertSame(2000, $cart[0]['unit_price']);
+        $this->assertSame(4000, $cart[0]['line_total']);
+    }
+
+    public function test_cart_item_can_be_removed(): void
+    {
+        $customer = Customer::query()->create([
+            'name' => 'Alex Tan',
+            'phone' => '6281234567890',
+        ]);
+
+        $firstMenu = MenuModel::query()->create([
+            'name' => 'Chicken Rice',
+            'price' => 35000,
+            'is_available' => true,
+        ]);
+
+        $secondMenu = MenuModel::query()->create([
+            'name' => 'Iced Tea',
+            'price' => 15000,
+            'is_available' => true,
+        ]);
+
+        $session = [
+            'customer_id' => $customer->id,
+            'service_type' => 'takeaway',
+            'customer_cart' => [
+                [
+                    'menu_id' => $firstMenu->id,
+                    'menu_name' => 'Chicken Rice',
+                    'quantity' => 1,
+                    'unit_price' => 35000,
+                    'line_total' => 35000,
+                    'addon_option_ids' => [],
+                    'addons' => [],
+                ],
+                [
+                    'menu_id' => $secondMenu->id,
+                    'menu_name' => 'Iced Tea',
+                    'quantity' => 2,
+                    'unit_price' => 15000,
+                    'line_total' => 30000,
+                    'addon_option_ids' => [],
+                    'addons' => [],
+                ],
+            ],
+        ];
+
+        $response = $this
+            ->withSession($session)
+            ->delete(route('customer.cart.items.destroy', ['index' => 0]));
+
+        $response->assertRedirect(route('customer.cart.index'));
+        $response->assertSessionHas('success', 'Item removed from your cart.');
+
+        $cart = session('customer_cart');
+        $this->assertIsArray($cart);
+        $this->assertCount(1, $cart);
+        $this->assertSame('Iced Tea', $cart[0]['menu_name']);
+    }
+
     public function test_checkout_creates_transaction_from_cart(): void
     {
         $customer = Customer::query()->create([

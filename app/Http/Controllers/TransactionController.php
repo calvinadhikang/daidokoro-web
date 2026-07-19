@@ -92,6 +92,7 @@ class TransactionController extends Controller
                 'service_type' => $validated['service_type'] ?? 'dine_in',
                 'status' => 'in_progress',
                 'total_bill' => 0,
+                'is_admin_created' => true,
             ]);
 
             foreach ($validated['items'] ?? [] as $itemData) {

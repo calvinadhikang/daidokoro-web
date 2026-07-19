@@ -47,12 +47,22 @@ export default function CustomerOrderIndex({
                 {hasOrder && transaction !== null ? (
                     <section className="rounded-lg border border-[#e3e3e0] bg-white p-4 dark:border-[#3E3E3A] dark:bg-[#161615]">
                         <div className="mb-4 flex items-end justify-between gap-3">
-                            <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                Current bill
-                            </p>
-                            <p className="text-xl font-semibold tabular-nums">
-                                {formatPrice(transaction.total_bill)}
-                            </p>
+                            <div>
+                                <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                                    Transaction
+                                </p>
+                                <p className="text-lg font-semibold tabular-nums">
+                                    #{transaction.transaction_number}
+                                </p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                                    Current bill
+                                </p>
+                                <p className="text-xl font-semibold tabular-nums">
+                                    {formatPrice(transaction.total_bill)}
+                                </p>
+                            </div>
                         </div>
 
                         <OrderItemGroups groups={itemGroups} compact />
