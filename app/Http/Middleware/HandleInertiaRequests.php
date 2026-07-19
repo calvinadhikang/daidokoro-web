@@ -94,12 +94,12 @@ class HandleInertiaRequests extends Middleware
             return null;
         }
 
-        $transaction = app(CustomerTransactionService::class)
-            ->findActiveByPhone($customer->phone);
+        $hasOrder = app(CustomerTransactionService::class)
+            ->hasTodayOrdersByPhone($customer->phone);
 
         return [
             'cartCount' => $cart->count(),
-            'hasOrder' => $transaction !== null && $transaction->items()->exists(),
+            'hasOrder' => $hasOrder,
         ];
     }
 }

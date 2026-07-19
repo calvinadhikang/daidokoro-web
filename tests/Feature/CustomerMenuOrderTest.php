@@ -244,7 +244,7 @@ class CustomerMenuOrderTest extends TestCase
         $this->assertSame([], session('customer_cart') ?? []);
     }
 
-    public function test_checkout_adds_cart_items_to_existing_transaction(): void
+    public function test_checkout_creates_separate_transaction_for_each_checkout(): void
     {
         $customer = Customer::query()->create([
             'name' => 'Alex Tan',
@@ -275,12 +275,19 @@ class CustomerMenuOrderTest extends TestCase
             ->withSession(array_merge($session, ['customer_cart' => session('customer_cart')]))
             ->post(route('customer.cart.checkout'));
 
-        $this->assertDatabaseCount('transactions', 1);
-
-        $transaction = Transaction::query()->first();
-        $this->assertNotNull($transaction);
-        $this->assertSame(65000, $transaction->total_bill);
+        $this->assertDatabaseCount('transactions', 2);
         $this->assertDatabaseCount('transaction_items', 2);
+
+        $this->assertDatabaseHas('transactions', [
+            'customer_phone' => '6281234567890',
+            'status' => 'in_progress',
+            'total_bill' => 35000,
+        ]);
+        $this->assertDatabaseHas('transactions', [
+            'customer_phone' => '6281234567890',
+            'status' => 'in_progress',
+            'total_bill' => 30000,
+        ]);
     }
 
     public function test_customer_can_add_menu_with_addons_to_cart(): void
@@ -467,7 +474,7 @@ class CustomerMenuOrderTest extends TestCase
         );
     }
 
-    public function test_order_page_shows_active_transaction(): void
+    public function test_order_page_shows_todays_transactions_with_status(): void
     {
         $customer = Customer::query()->create([
             'name' => 'Alex Tan',
@@ -480,7 +487,7 @@ class CustomerMenuOrderTest extends TestCase
             'is_available' => true,
         ]);
 
-        $transaction = Transaction::query()->create([
+        $openTransaction = Transaction::query()->create([
             'customer_name' => 'Alex Tan',
             'customer_phone' => '6281234567890',
             'service_type' => 'dine_in',
@@ -489,12 +496,30 @@ class CustomerMenuOrderTest extends TestCase
         ]);
 
         TransactionItem::query()->create([
-            'transaction_id' => $transaction->id,
+            'transaction_id' => $openTransaction->id,
             'menu_id' => $menu->id,
             'menu_name' => 'Chicken Rice',
             'quantity' => 1,
             'unit_price' => 35000,
             'line_total' => 35000,
+            'addons' => null,
+        ]);
+
+        $paidTransaction = Transaction::query()->create([
+            'customer_name' => 'Alex Tan',
+            'customer_phone' => '6281234567890',
+            'service_type' => 'takeaway',
+            'status' => 'paid',
+            'total_bill' => 15000,
+        ]);
+
+        TransactionItem::query()->create([
+            'transaction_id' => $paidTransaction->id,
+            'menu_id' => $menu->id,
+            'menu_name' => 'Chicken Rice',
+            'quantity' => 1,
+            'unit_price' => 15000,
+            'line_total' => 15000,
             'addons' => null,
         ]);
 
@@ -505,8 +530,12 @@ class CustomerMenuOrderTest extends TestCase
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
             ->component('customer/order/index')
-            ->where('transaction.id', $transaction->id)
-            ->has('itemGroups', 1)
+            ->has('transactions', 2)
+            ->where('transactions.0.id', $paidTransaction->id)
+            ->where('transactions.0.status', 'paid')
+            ->where('transactions.1.id', $openTransaction->id)
+            ->where('transactions.1.status', 'in_progress')
+            ->has('transactions.1.item_groups', 1)
         );
     }
 }

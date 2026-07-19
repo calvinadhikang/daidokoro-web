@@ -13,6 +13,7 @@ Route::prefix('menu')->group(function () {
     Route::get('/detail/{menuModel}', [MenuApiController::class, 'show']);
     Route::post('/create', [MenuApiController::class, 'store']);
     Route::post('/update/{menuModel}', [MenuApiController::class, 'update']);
+    Route::post('/toggle-availability/{menuModel}', [MenuApiController::class, 'toggleAvailability']);
     Route::post('/delete/{menuModel}', [MenuApiController::class, 'destroy']);
 });
 

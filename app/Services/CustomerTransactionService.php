@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\MenuModel;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -14,6 +15,7 @@ class CustomerTransactionService
     public function __construct(
         private TransactionOrderService $orderService,
         private MenuOrderLineBuilder $lineBuilder,
+        private StoreHoursService $storeHours,
     ) {}
 
     public function findActiveByPhone(string $phone): ?Transaction
@@ -21,34 +23,49 @@ class CustomerTransactionService
         return Transaction::query()
             ->where('customer_phone', $phone)
             ->where('status', 'in_progress')
+            ->whereDate('business_date', $this->storeHours->today())
             ->latest()
             ->first();
     }
 
-    public function getOrCreateForCustomer(
+    /**
+     * @return Collection<int, Transaction>
+     */
+    public function listTodayByPhone(string $phone): Collection
+    {
+        return Transaction::query()
+            ->where('customer_phone', $phone)
+            ->whereDate('business_date', $this->storeHours->today())
+            ->with('items')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->get();
+    }
+
+    public function hasTodayOrdersByPhone(string $phone): bool
+    {
+        return Transaction::query()
+            ->where('customer_phone', $phone)
+            ->whereDate('business_date', $this->storeHours->today())
+            ->whereHas('items')
+            ->exists();
+    }
+
+    public function createForCustomer(
         Customer $customer,
         ?string $serviceType,
     ): Transaction {
-        return DB::transaction(function () use ($customer, $serviceType) {
-            $transaction = $this->findActiveByPhone($customer->phone);
-            $tableCode = session('table_code');
-            $tableCode = is_string($tableCode) && $tableCode !== '' ? $tableCode : null;
+        $tableCode = session('table_code');
+        $tableCode = is_string($tableCode) && $tableCode !== '' ? $tableCode : null;
 
-            if ($transaction !== null) {
-                $this->syncCustomerDetails($transaction, $customer, $serviceType, $tableCode);
-
-                return $transaction;
-            }
-
-            return Transaction::query()->create([
-                'customer_name' => $customer->name,
-                'customer_phone' => $customer->phone,
-                'service_type' => $serviceType ?? 'dine_in',
-                'table_code' => $tableCode,
-                'status' => 'in_progress',
-                'total_bill' => 0,
-            ]);
-        });
+        return Transaction::query()->create([
+            'customer_name' => $customer->name,
+            'customer_phone' => $customer->phone,
+            'service_type' => $serviceType ?? 'dine_in',
+            'table_code' => $tableCode,
+            'status' => 'in_progress',
+            'total_bill' => 0,
+        ]);
     }
 
     /**
@@ -70,7 +87,7 @@ class CustomerTransactionService
         $this->assertCartItemsAvailable($cartItems);
 
         return DB::transaction(function () use ($customer, $serviceType, $cartItems) {
-            $transaction = $this->getOrCreateForCustomer($customer, $serviceType);
+            $transaction = $this->createForCustomer($customer, $serviceType);
 
             foreach ($cartItems as $lineItem) {
                 $this->orderService->addMenuItem(
@@ -147,7 +164,7 @@ class CustomerTransactionService
         array $lineItem,
     ): TransactionItem {
         return DB::transaction(function () use ($customer, $serviceType, $lineItem) {
-            $transaction = $this->getOrCreateForCustomer($customer, $serviceType);
+            $transaction = $this->createForCustomer($customer, $serviceType);
 
             return $this->orderService->addLineItem($transaction, $lineItem);
         });

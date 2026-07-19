@@ -213,4 +213,32 @@ class MenuApiTest extends TestCase
         $response->assertJson(['success' => true]);
         $this->assertDatabaseMissing('menus', ['id' => $menu->id]);
     }
+
+    public function test_toggle_availability_flips_is_available(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Salmon Nigiri',
+            'price' => 25000,
+            'is_available' => true,
+        ]);
+
+        $response = $this->postJson("/api/menu/toggle-availability/{$menu->id}");
+
+        $response->assertOk();
+        $response->assertJson([
+            'success' => true,
+            'menu' => [
+                'id' => $menu->id,
+                'name' => 'Salmon Nigiri',
+                'is_available' => false,
+            ],
+        ]);
+        $this->assertFalse($menu->fresh()->is_available);
+
+        $response = $this->postJson("/api/menu/toggle-availability/{$menu->id}");
+
+        $response->assertOk();
+        $response->assertJsonPath('menu.is_available', true);
+        $this->assertTrue($menu->fresh()->is_available);
+    }
 }

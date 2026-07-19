@@ -74,6 +74,6 @@ class CustomerCartController extends Controller
 
         return redirect()
             ->route('customer.order.index')
-            ->with('success', 'Order sent! Your items have been added to your bill.');
+            ->with('success', 'Order sent! A new bill has been created for your items.');
     }
 }

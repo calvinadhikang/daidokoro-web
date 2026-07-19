@@ -118,6 +118,21 @@ class MenuApiController extends Controller
         ]);
     }
 
+    public function toggleAvailability(MenuModel $menuModel): JsonResponse
+    {
+        $menuModel->update([
+            'is_available' => ! $menuModel->is_available,
+        ]);
+
+        $menuModel->load(['categories:id,name', 'addonGroups.options']);
+
+        return response()->json([
+            'success' => true,
+            'message' => $menuModel->name.' is now '.($menuModel->is_available ? 'available' : 'unavailable').'.',
+            'menu' => MenuApiFormatter::formatListItem($menuModel),
+        ]);
+    }
+
     /**
      * @param  array<int, array<string, mixed>>  $addonGroups
      */
