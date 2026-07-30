@@ -11,12 +11,14 @@ import { cn } from '@/lib/utils';
 import {
     prepareMenuList,
     type MenuAvailabilityFilter,
+    type MenuCategoryFilter,
     type MenuRecommendedFilter,
 } from '@/lib/menu-list';
-import type { Menu } from '@/types/menu';
+import type { Menu, MenuCategory } from '@/types/menu';
 
 type Props = {
     menus: Menu[];
+    categories: MenuCategory[];
 };
 
 function formatPrice(price: number): string {
@@ -121,16 +123,24 @@ function MenuListItem({ menu }: { menu: Menu }) {
     );
 }
 
-export default function AdminMenusIndex({ menus }: Props) {
+export default function AdminMenusIndex({ menus, categories }: Props) {
     const [search, setSearch] = useState('');
     const [availability, setAvailability] =
         useState<MenuAvailabilityFilter>('all');
     const [recommended, setRecommended] =
         useState<MenuRecommendedFilter>('all');
+    const [category, setCategory] = useState<MenuCategoryFilter>('all');
 
     const groupedMenus = useMemo(
-        () => prepareMenuList(menus, search, availability, recommended),
-        [menus, search, availability, recommended],
+        () =>
+            prepareMenuList(
+                menus,
+                search,
+                availability,
+                recommended,
+                category,
+            ),
+        [menus, search, availability, recommended, category],
     );
 
     const filteredCount = useMemo(
@@ -142,7 +152,8 @@ export default function AdminMenusIndex({ menus }: Props) {
     const isFiltering =
         search.trim() !== '' ||
         availability !== 'all' ||
-        recommended !== 'all';
+        recommended !== 'all' ||
+        category !== 'all';
 
     return (
         <>
@@ -186,6 +197,20 @@ export default function AdminMenusIndex({ menus }: Props) {
                                     active={recommended === filter.value}
                                     label={filter.label}
                                     onClick={() => setRecommended(filter.value)}
+                                />
+                            ))}
+                            {categories.map((item) => (
+                                <FilterButton
+                                    key={item.id}
+                                    active={category === item.id}
+                                    label={item.name}
+                                    onClick={() =>
+                                        setCategory(
+                                            category === item.id
+                                                ? 'all'
+                                                : item.id,
+                                        )
+                                    }
                                 />
                             ))}
                         </div>

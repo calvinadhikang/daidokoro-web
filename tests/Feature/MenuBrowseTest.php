@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\MenuModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -12,11 +13,14 @@ class MenuBrowseTest extends TestCase
 
     public function test_public_menu_page_does_not_require_login(): void
     {
-        MenuModel::query()->create([
+        $category = Category::query()->create(['name' => 'Mains']);
+
+        $availableMenu = MenuModel::query()->create([
             'name' => 'Chicken Rice',
             'price' => 35000,
             'is_available' => true,
         ]);
+        $availableMenu->categories()->attach($category);
 
         MenuModel::query()->create([
             'name' => 'Sold Out Dish',
@@ -32,6 +36,8 @@ class MenuBrowseTest extends TestCase
             ->has('menus', 2)
             ->where('menus.0.name', 'Chicken Rice')
             ->where('menus.1.name', 'Sold Out Dish')
+            ->has('categories', 1)
+            ->where('categories.0.name', 'Mains')
         );
     }
 

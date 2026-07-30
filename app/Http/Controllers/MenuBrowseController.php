@@ -16,6 +16,7 @@ class MenuBrowseController extends Controller
     {
         return Inertia::render('menu/index', [
             'menus' => $this->menuCatalog->allForBrowse(),
+            'categories' => $this->menuCatalog->categoriesForBrowse(),
         ]);
     }
 

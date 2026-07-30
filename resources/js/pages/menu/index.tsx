@@ -1,13 +1,14 @@
 import { Head, Link } from '@inertiajs/react';
 
 import { MenuBrowsePanel } from '@/components/menu/menu-browse-panel';
-import type { Menu } from '@/types/menu';
+import type { Menu, MenuCategory } from '@/types/menu';
 
 type Props = {
     menus: Menu[];
+    categories: MenuCategory[];
 };
 
-export default function MenuIndex({ menus }: Props) {
+export default function MenuIndex({ menus, categories }: Props) {
     return (
         <>
             <Head title="Menu" />
@@ -31,6 +32,7 @@ export default function MenuIndex({ menus }: Props) {
                 <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 py-4">
                     <MenuBrowsePanel
                         menus={menus}
+                        categories={categories}
                         availability="all"
                         showAvailabilityBadge
                         enableAvailabilityToggle

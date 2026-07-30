@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateMenuRequest;
 use App\Models\MenuAddonGroup;
 use App\Models\MenuAddonOption;
 use App\Models\MenuModel;
+use App\Services\MenuCatalogService;
 use App\Services\MenuImageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -20,18 +21,20 @@ class MenuController extends Controller
 
     public function __construct(
         private MenuImageService $menuImages,
+        private MenuCatalogService $menuCatalog,
     ) {}
 
     public function index(): Response
     {
         $menus = MenuModel::query()
-            ->with(['addonGroups.options'])
+            ->with(['addonGroups.options', 'categories:id,name'])
             ->orderByDesc('is_available')
             ->orderBy('name')
             ->get();
 
         return Inertia::render('admin/menus/index', [
             'menus' => $menus,
+            'categories' => $this->menuCatalog->categoriesForBrowse(),
         ]);
     }
 
