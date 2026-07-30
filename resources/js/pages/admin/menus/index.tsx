@@ -56,7 +56,7 @@ function FilterButton({
             type="button"
             onClick={onClick}
             className={cn(
-                'rounded-full border px-3 py-1.5 text-xs font-medium',
+                'shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium',
                 active
                     ? 'border-[#1b1b18] bg-[#1b1b18] text-white dark:border-[#EDEDEC] dark:bg-[#EDEDEC] dark:text-[#1b1b18]'
                     : 'border-[#e3e3e0] text-[#706f6c] dark:border-[#3E3E3A] dark:text-[#A1A09A]',
@@ -199,21 +199,25 @@ export default function AdminMenusIndex({ menus, categories }: Props) {
                                     onClick={() => setRecommended(filter.value)}
                                 />
                             ))}
-                            {categories.map((item) => (
-                                <FilterButton
-                                    key={item.id}
-                                    active={category === item.id}
-                                    label={item.name}
-                                    onClick={() =>
-                                        setCategory(
-                                            category === item.id
-                                                ? 'all'
-                                                : item.id,
-                                        )
-                                    }
-                                />
-                            ))}
                         </div>
+                        {categories.length > 0 && (
+                            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 scrollbar-none">
+                                {categories.map((item) => (
+                                    <FilterButton
+                                        key={item.id}
+                                        active={category === item.id}
+                                        label={item.name}
+                                        onClick={() =>
+                                            setCategory(
+                                                category === item.id
+                                                    ? 'all'
+                                                    : item.id,
+                                            )
+                                        }
+                                    />
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     <Link

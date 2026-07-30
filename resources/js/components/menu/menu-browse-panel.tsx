@@ -33,7 +33,7 @@ function FilterButton({
             type="button"
             onClick={onClick}
             className={cn(
-                'rounded-full border px-3 py-1.5 text-xs font-medium',
+                'shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium',
                 active
                     ? 'border-[#1b1b18] bg-[#1b1b18] text-white dark:border-[#EDEDEC] dark:bg-[#EDEDEC] dark:text-[#1b1b18]'
                     : 'border-[#e3e3e0] text-[#706f6c] dark:border-[#3E3E3A] dark:text-[#A1A09A]',
@@ -145,6 +145,7 @@ type MenuBrowsePanelProps = {
     categories?: MenuCategory[];
     showAvailabilityBadge?: boolean;
     enableAvailabilityToggle?: boolean;
+    stickyFilters?: boolean;
     unavailableLabel?: string;
     summaryLabel?: string;
     emptyMessage?: string;
@@ -157,6 +158,7 @@ export function MenuBrowsePanel({
     categories = [],
     showAvailabilityBadge = false,
     enableAvailabilityToggle = false,
+    stickyFilters = false,
     unavailableLabel = 'Unavailable',
     summaryLabel,
     emptyMessage = 'No menu items available right now.',
@@ -215,6 +217,103 @@ export function MenuBrowsePanel({
         );
     }
 
+    const filters = (
+        <>
+            <p className="mb-4 text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                {isFiltering
+                    ? `${filteredCount} of ${menus.length} items`
+                    : (summaryLabel ?? defaultSummary)}
+            </p>
+
+            <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search menu..."
+                className={`${inputClassName} mb-3`}
+            />
+
+            <div className="mb-3 flex flex-wrap gap-2">
+                <FilterButton
+                    active={recommended === 'all'}
+                    label="All"
+                    onClick={() => setRecommended('all')}
+                />
+                <FilterButton
+                    active={recommended === 'recommended'}
+                    label="Recommended"
+                    onClick={() => setRecommended('recommended')}
+                />
+            </div>
+
+            {categories.length > 0 && (
+                <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 scrollbar-none">
+                    {categories.map((item) => (
+                        <FilterButton
+                            key={item.id}
+                            active={category === item.id}
+                            label={item.name}
+                            onClick={() =>
+                                setCategory(
+                                    category === item.id ? 'all' : item.id,
+                                )
+                            }
+                        />
+                    ))}
+                </div>
+            )}
+        </>
+    );
+
+    const list =
+        menus.length === 0 ? (
+            <div className="rounded-lg border border-[#e3e3e0] bg-white p-10 text-center dark:border-[#3E3E3A] dark:bg-[#161615]">
+                <p className="text-[#706f6c] dark:text-[#A1A09A]">
+                    {emptyMessage}
+                </p>
+            </div>
+        ) : filteredCount === 0 ? (
+            <div className="rounded-lg border border-[#e3e3e0] bg-white p-10 text-center dark:border-[#3E3E3A] dark:bg-[#161615]">
+                <p className="text-[#706f6c] dark:text-[#A1A09A]">
+                    No menus match your search.
+                </p>
+            </div>
+        ) : (
+            <div className={cn('space-y-6', stickyFilters ? 'pb-4' : 'pb-8')}>
+                {groupedMenus.map((group, groupIndex) => (
+                    <section key={`${groupIndex}-${group.letter}`}>
+                        {group.showUnavailableDivider && (
+                            <p className="mb-3 text-xs font-medium tracking-wide text-[#706f6c] uppercase dark:text-[#A1A09A]">
+                                {unavailableLabel}
+                            </p>
+                        )}
+                        <h2 className="mb-3 text-sm font-semibold text-[#706f6c] dark:text-[#A1A09A]">
+                            {group.letter}
+                        </h2>
+                        <ul className="space-y-3">
+                            {group.menus.map((menu) => (
+                                <li key={menu.id}>
+                                    <MenuCard
+                                        menu={menu}
+                                        showAvailabilityBadge={
+                                            showAvailabilityBadge
+                                        }
+                                        unavailableLabel={unavailableLabel}
+                                        href={menuHref?.(menu)}
+                                        onLongPress={
+                                            enableAvailabilityToggle
+                                                ? () => setToggleTarget(menu)
+                                                : undefined
+                                        }
+                                    />
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+                ))}
+            </div>
+        );
+
     return (
         <>
             <ConfirmDialog
@@ -243,91 +342,18 @@ export function MenuBrowsePanel({
                 }}
             />
 
-            <p className="mb-4 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                {isFiltering
-                    ? `${filteredCount} of ${menus.length} items`
-                    : (summaryLabel ?? defaultSummary)}
-            </p>
-
-            <input
-                type="search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search menu..."
-                className={`${inputClassName} mb-3`}
-            />
-
-            <div className="mb-4 flex flex-wrap gap-2">
-                <FilterButton
-                    active={recommended === 'all'}
-                    label="All"
-                    onClick={() => setRecommended('all')}
-                />
-                <FilterButton
-                    active={recommended === 'recommended'}
-                    label="Recommended"
-                    onClick={() => setRecommended('recommended')}
-                />
-                {categories.map((item) => (
-                    <FilterButton
-                        key={item.id}
-                        active={category === item.id}
-                        label={item.name}
-                        onClick={() =>
-                            setCategory(
-                                category === item.id ? 'all' : item.id,
-                            )
-                        }
-                    />
-                ))}
-            </div>
-
-            {menus.length === 0 ? (
-                <div className="rounded-lg border border-[#e3e3e0] bg-white p-10 text-center dark:border-[#3E3E3A] dark:bg-[#161615]">
-                    <p className="text-[#706f6c] dark:text-[#A1A09A]">
-                        {emptyMessage}
-                    </p>
-                </div>
-            ) : filteredCount === 0 ? (
-                <div className="rounded-lg border border-[#e3e3e0] bg-white p-10 text-center dark:border-[#3E3E3A] dark:bg-[#161615]">
-                    <p className="text-[#706f6c] dark:text-[#A1A09A]">
-                        No menus match your search.
-                    </p>
+            {stickyFilters ? (
+                <div className="flex min-h-0 flex-1 flex-col">
+                    <div className="shrink-0">{filters}</div>
+                    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                        {list}
+                    </div>
                 </div>
             ) : (
-                <div className="space-y-6 pb-8">
-                    {groupedMenus.map((group, groupIndex) => (
-                        <section key={`${groupIndex}-${group.letter}`}>
-                            {group.showUnavailableDivider && (
-                                <p className="mb-3 text-xs font-medium tracking-wide text-[#706f6c] uppercase dark:text-[#A1A09A]">
-                                    {unavailableLabel}
-                                </p>
-                            )}
-                            <h2 className="mb-3 text-sm font-semibold text-[#706f6c] dark:text-[#A1A09A]">
-                                {group.letter}
-                            </h2>
-                            <ul className="space-y-3">
-                                {group.menus.map((menu) => (
-                                    <li key={menu.id}>
-                                        <MenuCard
-                                            menu={menu}
-                                            showAvailabilityBadge={
-                                                showAvailabilityBadge
-                                            }
-                                            unavailableLabel={unavailableLabel}
-                                            href={menuHref?.(menu)}
-                                            onLongPress={
-                                                enableAvailabilityToggle
-                                                    ? () => setToggleTarget(menu)
-                                                    : undefined
-                                            }
-                                        />
-                                    </li>
-                                ))}
-                            </ul>
-                        </section>
-                    ))}
-                </div>
+                <>
+                    {filters}
+                    {list}
+                </>
             )}
         </>
     );

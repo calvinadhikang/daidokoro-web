@@ -22,8 +22,8 @@ export default function CustomerMenuIndex({
         <>
             <Head title="Menu" />
 
-            <div className="mx-auto max-w-md px-4 py-4">
-                <header className="mb-4">
+            <div className="mx-auto -mb-24 flex h-[calc(100dvh-8rem)] max-w-md flex-col px-4 py-4">
+                <header className="mb-4 shrink-0">
                     <Link
                         href="/"
                         className="text-sm text-[#706f6c] dark:text-[#A1A09A]"
@@ -44,6 +44,7 @@ export default function CustomerMenuIndex({
                     menus={menus}
                     categories={categories}
                     availability="all"
+                    stickyFilters
                     unavailableLabel="Sold out"
                     menuHref={(menu) =>
                         menu.is_available
