@@ -75,6 +75,7 @@ jobs:
 
             /opt/plesk/php/8.3/bin/php artisan storage:link --force
             /opt/plesk/php/8.3/bin/php artisan migrate --force
+            /opt/plesk/php/8.3/bin/php artisan db:seed --class=MenuSeeder --force
             /opt/plesk/php/8.3/bin/php artisan db:seed --class=OmakaseSeeder --force
             /opt/plesk/php/8.3/bin/php artisan config:cache
             /opt/plesk/php/8.3/bin/php artisan route:cache

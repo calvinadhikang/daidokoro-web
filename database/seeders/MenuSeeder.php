@@ -2,88 +2,88 @@
 
 namespace Database\Seeders;
 
-use App\Models\MenuAddonGroup;
-use App\Models\MenuAddonOption;
+use App\Models\Category;
 use App\Models\MenuModel;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
+use RuntimeException;
 
 class MenuSeeder extends Seeder
 {
     /**
-     * Seed the application's menu data.
+     * Seed categories and menus from the products CSV.
+     *
+     * Clears existing menus/categories first so re-runs (e.g. staging deploy) stay idempotent.
      */
     public function run(): void
     {
-        $sundae = MenuModel::query()->create([
-            'name' => 'Sundae',
-            'image' => null,
-            'price' => 6,
-            'is_available' => true,
-            'is_recommended' => true,
-        ]);
+        $path = database_path('data/products.csv');
 
-        $size = MenuAddonGroup::query()->create([
-            'menu_id' => $sundae->id,
-            'name' => 'Size',
-            'selection_type' => 'single',
-            'is_required' => true,
-            'sort_order' => 0,
-        ]);
-
-        foreach ([
-            ['name' => 'Small', 'price' => 0, 'sort_order' => 0],
-            ['name' => 'Medium', 'price' => 1, 'sort_order' => 1],
-            ['name' => 'Big', 'price' => 2, 'sort_order' => 2],
-        ] as $option) {
-            MenuAddonOption::query()->create([
-                'menu_addon_group_id' => $size->id,
-                ...$option,
-            ]);
+        if (! is_readable($path)) {
+            throw new RuntimeException("Products CSV not found or unreadable at {$path}");
         }
 
-        $toppings = MenuAddonGroup::query()->create([
-            'menu_id' => $sundae->id,
-            'name' => 'Toppings',
-            'selection_type' => 'multiple',
-            'is_required' => false,
-            'sort_order' => 1,
-        ]);
+        $handle = fopen($path, 'r');
 
-        foreach ([
-            ['name' => 'Choco sauce', 'price' => 1, 'sort_order' => 0],
-            ['name' => 'Strawberry jam', 'price' => 1, 'sort_order' => 1],
-            ['name' => 'Oreo cookies', 'price' => 1, 'sort_order' => 2],
-        ] as $option) {
-            MenuAddonOption::query()->create([
-                'menu_addon_group_id' => $toppings->id,
-                ...$option,
-            ]);
+        if ($handle === false) {
+            throw new RuntimeException("Unable to open products CSV at {$path}");
         }
 
-        $coffee = MenuModel::query()->create([
-            'name' => 'Iced Coffee',
-            'image' => null,
-            'price' => 4,
-            'is_available' => true,
-        ]);
+        try {
+            $header = fgetcsv($handle, 0, ';');
 
-        $coffeeSize = MenuAddonGroup::query()->create([
-            'menu_id' => $coffee->id,
-            'name' => 'Size',
-            'selection_type' => 'single',
-            'is_required' => true,
-            'sort_order' => 0,
-        ]);
+            if ($header === false) {
+                throw new RuntimeException('Products CSV is empty');
+            }
 
-        foreach ([
-            ['name' => 'Small', 'price' => 0, 'sort_order' => 0],
-            ['name' => 'Medium', 'price' => 1, 'sort_order' => 1],
-            ['name' => 'Big', 'price' => 1, 'sort_order' => 2],
-        ] as $option) {
-            MenuAddonOption::query()->create([
-                'menu_addon_group_id' => $coffeeSize->id,
-                ...$option,
-            ]);
+            $header = array_map(static fn (string $column): string => trim($column), $header);
+            $indexes = array_flip($header);
+
+            foreach (['Category', 'Name', 'Price', 'Status'] as $required) {
+                if (! array_key_exists($required, $indexes)) {
+                    throw new RuntimeException("Products CSV missing required column: {$required}");
+                }
+            }
+
+            Schema::disableForeignKeyConstraints();
+            MenuModel::query()->delete();
+            Category::query()->delete();
+            Schema::enableForeignKeyConstraints();
+
+            /** @var array<string, Category> $categories */
+            $categories = [];
+
+            while (($row = fgetcsv($handle, 0, ';')) !== false) {
+                $name = trim((string) ($row[$indexes['Name']] ?? ''));
+
+                if ($name === '') {
+                    continue;
+                }
+
+                $categoryName = trim((string) ($row[$indexes['Category']] ?? ''));
+                $price = (int) ($row[$indexes['Price']] ?? 0);
+                $status = strtoupper(trim((string) ($row[$indexes['Status']] ?? 'ACTIVE')));
+
+                if ($categoryName !== '' && ! isset($categories[$categoryName])) {
+                    $categories[$categoryName] = Category::query()->create([
+                        'name' => $categoryName,
+                    ]);
+                }
+
+                $menu = MenuModel::query()->create([
+                    'name' => $name,
+                    'image' => null,
+                    'price' => $price,
+                    'is_available' => $status === 'ACTIVE',
+                    'is_recommended' => $categoryName === 'Recommended',
+                ]);
+
+                if ($categoryName !== '' && isset($categories[$categoryName])) {
+                    $menu->categories()->attach($categories[$categoryName]->id);
+                }
+            }
+        } finally {
+            fclose($handle);
         }
     }
 }
