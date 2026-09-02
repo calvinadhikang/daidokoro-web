@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Category;
 use App\Models\MenuModel;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 class MenuCatalogService
@@ -39,7 +40,7 @@ class MenuCatalogService
      */
     public function categoriesForOrdering(): Collection
     {
-        return Category::query()
+        return $this->categoryFilterQuery()
             ->whereHas('menus', fn ($query) => $query->where('is_available', true))
             ->orderBy('name')
             ->get(['id', 'name']);
@@ -50,9 +51,31 @@ class MenuCatalogService
      */
     public function categoriesForBrowse(): Collection
     {
-        return Category::query()
+        return $this->categoryFilterQuery()
             ->whereHas('menus')
             ->orderBy('name')
             ->get(['id', 'name']);
+    }
+
+    /**
+     * All assignable categories for filters and menu forms, excluding the
+     * hardcoded Recommended label (that is the is_recommended flag).
+     *
+     * @return Collection<int, Category>
+     */
+    public function categoriesForFilters(): Collection
+    {
+        return $this->categoryFilterQuery()
+            ->orderBy('name')
+            ->get(['id', 'name']);
+    }
+
+    /**
+     * @return Builder<Category>
+     */
+    private function categoryFilterQuery(): Builder
+    {
+        return Category::query()
+            ->whereRaw('LOWER(name) <> ?', [strtolower(Category::HARDCODED_RECOMMENDED_NAME)]);
     }
 }

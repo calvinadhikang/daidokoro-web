@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
 import { create as createTransaction, show as showTransaction } from '@/actions/App/Http/Controllers/TransactionController';
+import { TableCodeBadge } from '@/components/admin/table-code-badge';
 import { inputClassName } from '@/components/admin/menu-form';
 import type { Transaction } from '@/types/transaction';
 import { serviceTypeLabel } from '@/types/transaction';
@@ -42,7 +43,10 @@ export default function AdminTransactionIndex({ transactions }: Props) {
                 transaction.customer_name.toLowerCase().includes(query) ||
                 transaction.customer_phone.includes(query) ||
                 transaction.transaction_number.includes(query) ||
-                `#${transaction.transaction_number}`.includes(query),
+                `#${transaction.transaction_number}`.includes(query) ||
+                (transaction.table_code ?? '')
+                    .toLowerCase()
+                    .includes(query),
         );
     }, [transactions, search]);
 
@@ -67,7 +71,7 @@ export default function AdminTransactionIndex({ transactions }: Props) {
                         type="search"
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
-                        placeholder="Search by number, name, or phone..."
+                        placeholder="Search by number, name, phone, or table..."
                         className={`${inputClassName} mb-4`}
                     />
 
@@ -113,12 +117,12 @@ export default function AdminTransactionIndex({ transactions }: Props) {
                                                     {serviceTypeLabel(
                                                         transaction.service_type,
                                                     )}
-                                                    {transaction.table_code
-                                                        ? ` · Table ${transaction.table_code}`
-                                                        : ''}
                                                 </p>
                                             </div>
                                             <div className="flex shrink-0 flex-col items-end gap-1.5">
+                                                <TableCodeBadge
+                                                    code={transaction.table_code}
+                                                />
                                                 {transaction.is_admin_created && (
                                                     <span className={adminPillClassName}>
                                                         Admin

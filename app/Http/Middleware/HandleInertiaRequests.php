@@ -80,7 +80,7 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * @return array{cartCount: int, hasOrder: bool}|null
+     * @return array{cartCount: int, cartTotal: int, hasOrder: bool}|null
      */
     private function resolveCustomerNav(Request $request): ?array
     {
@@ -99,7 +99,8 @@ class HandleInertiaRequests extends Middleware
             ->hasTodayOrdersByPhone($customer->phone);
 
         return [
-            'cartCount' => $cart->count(),
+            'cartCount' => $cart->quantity(),
+            'cartTotal' => $cart->total(),
             'hasOrder' => $hasOrder,
         ];
     }

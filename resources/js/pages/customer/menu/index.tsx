@@ -1,11 +1,15 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 
 import { MenuBrowsePanel } from '@/components/menu/menu-browse-panel';
+import { cn } from '@/lib/utils';
+import type { CustomerNav } from '@/types/customer';
 import type { Menu, MenuCategory } from '@/types/menu';
-import {
-    serviceTypeLabel,
-    type TransactionServiceType,
-} from '@/types/transaction';
+import { serviceTypeLabel } from '@/types/transaction';
+import type { TransactionServiceType } from '@/types/transaction';
+
+type PageProps = {
+    customerNav: CustomerNav | null;
+};
 
 type Props = {
     menus: Menu[];
@@ -18,11 +22,21 @@ export default function CustomerMenuIndex({
     categories,
     serviceType,
 }: Props) {
+    const { customerNav } = usePage<PageProps>().props;
+    const showCartBar = (customerNav?.cartCount ?? 0) > 0;
+
     return (
         <>
             <Head title="Menu" />
 
-            <div className="mx-auto -mb-24 flex h-[calc(100dvh-8rem)] max-w-md flex-col px-4 py-4">
+            <div
+                className={cn(
+                    'mx-auto flex max-w-md min-w-0 flex-col px-4 py-4',
+                    showCartBar
+                        ? '-mb-40 h-[calc(100dvh-10.5rem)]'
+                        : '-mb-24 h-[calc(100dvh-8rem)]',
+                )}
+            >
                 <header className="mb-4 shrink-0">
                     <Link
                         href="/"

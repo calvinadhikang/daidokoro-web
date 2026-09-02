@@ -41,6 +41,21 @@ class CustomerCartService
         return true;
     }
 
+    public function updateQuantity(int $index, int $quantity): bool
+    {
+        $cart = $this->items();
+
+        if (! array_key_exists($index, $cart)) {
+            return false;
+        }
+
+        $cart[$index]['quantity'] = $quantity;
+        $cart[$index]['line_total'] = ((int) $cart[$index]['unit_price']) * $quantity;
+        session([self::SESSION_KEY => $cart]);
+
+        return true;
+    }
+
     /**
      * @return list<array{
      *     menu_id: int,
@@ -95,6 +110,11 @@ class CustomerCartService
     public function count(): int
     {
         return count($this->items());
+    }
+
+    public function quantity(): int
+    {
+        return (int) array_sum(array_column($this->items(), 'quantity'));
     }
 
     public function total(): int

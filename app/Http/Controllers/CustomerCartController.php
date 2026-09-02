@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateCustomerCartItemRequest;
 use App\Models\Customer;
 use App\Services\CustomerCartService;
 use App\Services\CustomerTransactionService;
@@ -29,6 +30,17 @@ class CustomerCartController extends Controller
             'cart' => $this->cart->items(),
             'cartTotal' => $this->cart->total(),
         ]);
+    }
+
+    public function update(UpdateCustomerCartItemRequest $request, int $index): RedirectResponse
+    {
+        if (! $this->cart->updateQuantity($index, (int) $request->validated('quantity'))) {
+            throw ValidationException::withMessages([
+                'cart' => 'That item is no longer in your cart.',
+            ]);
+        }
+
+        return redirect()->route('customer.cart.index');
     }
 
     public function destroy(int $index): RedirectResponse

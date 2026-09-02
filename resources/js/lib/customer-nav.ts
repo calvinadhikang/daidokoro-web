@@ -12,7 +12,10 @@ type CustomerNavItem = {
     match: CustomerNavMatch;
 };
 
-export function isCustomerNavActive(url: string, item: CustomerNavItem): boolean {
+export function isCustomerNavActive(
+    url: string,
+    item: CustomerNavItem,
+): boolean {
     if (item.match === 'menu') {
         return url === item.href || url.startsWith(`${item.href}/`);
     }
@@ -26,4 +29,8 @@ export function isCustomerNavActive(url: string, item: CustomerNavItem): boolean
 
 export function isCustomerAppUrl(url: string): boolean {
     return url.startsWith('/customer/') && !url.startsWith('/customer/login');
+}
+
+export function isCustomerCartUrl(url: string): boolean {
+    return url === '/customer/cart' || url.startsWith('/customer/cart?');
 }

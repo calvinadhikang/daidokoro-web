@@ -37,6 +37,8 @@ class TransactionApiTest extends TestCase
             'customer_phone' => '081234567890',
             'status' => 'in_progress',
             'total_bill' => 45000,
+            'service_type' => 'dine_in',
+            'table_code' => 'A1',
         ]);
         $inSession->created_at = Carbon::parse('2026-07-06 09:30:00', StoreHoursService::TIMEZONE);
         $inSession->saveQuietly();
@@ -77,6 +79,7 @@ class TransactionApiTest extends TestCase
             'name' => 'Alex Tan',
             'status' => 'in_progress',
             'total_amount' => '45000',
+            'table_code' => 'A1',
         ]);
         $response->assertJsonMissing(['id' => $outsideSession->id]);
     }
@@ -115,6 +118,7 @@ class TransactionApiTest extends TestCase
             'customer_name' => 'Alex Tan',
             'customer_phone' => '081234567890',
             'service_type' => 'dine_in',
+            'table_code' => 'B2',
             'status' => 'in_progress',
             'total_bill' => 70000,
         ]);
@@ -136,6 +140,7 @@ class TransactionApiTest extends TestCase
             'name' => 'Alex Tan',
             'customer_phone' => '081234567890',
             'service_type' => 'dine_in',
+            'table_code' => 'B2',
             'status' => 'in_progress',
             'total_amount' => '70000',
         ]);

@@ -13,6 +13,7 @@ import {
     formatPrice,
 } from '@/components/menu/order-item-groups';
 import { ConfirmDialog } from '@/components/admin/confirm-dialog';
+import { TableCodeBadge } from '@/components/admin/table-code-badge';
 import { TransactionOrderForm } from '@/components/admin/transaction-order-form';
 import type { Menu } from '@/types/menu';
 import type {
@@ -130,6 +131,9 @@ export default function AdminTransactionShow({
                         #{transaction.transaction_number}
                         {' · '}
                         {transaction.customer_name}
+                        {transaction.table_code
+                            ? ` · Meja ${transaction.table_code}`
+                            : ''}
                     </h1>
                 </div>
             </header>
@@ -161,7 +165,7 @@ export default function AdminTransactionShow({
                             {transaction.table_code && (
                                 <>
                                     <p className="mt-2 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                        Table
+                                        Meja
                                     </p>
                                     <p className="font-medium tabular-nums">
                                         {transaction.table_code}
@@ -170,6 +174,7 @@ export default function AdminTransactionShow({
                             )}
                         </div>
                         <div className="flex flex-col items-end gap-1.5">
+                            <TableCodeBadge code={transaction.table_code} />
                             {transaction.is_admin_created && (
                                 <span className={adminPillClassName}>Admin</span>
                             )}

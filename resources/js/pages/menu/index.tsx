@@ -29,7 +29,7 @@ export default function MenuIndex({ menus, categories }: Props) {
                     </div>
                 </header>
 
-                <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 py-4">
+                <main className="mx-auto flex w-full min-w-0 max-w-md flex-1 flex-col px-4 py-4">
                     <MenuBrowsePanel
                         menus={menus}
                         categories={categories}

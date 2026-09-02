@@ -11,6 +11,16 @@ use RuntimeException;
 class MenuSeeder extends Seeder
 {
     /**
+     * Categories present in the CSV that should not be seeded.
+     *
+     * @var list<string>
+     */
+    private const SKIPPED_CATEGORIES = [
+        'Special Uni',
+        'Hampers Platter',
+    ];
+
+    /**
      * Seed categories and menus from the products CSV.
      *
      * Clears existing menus/categories first so re-runs (e.g. staging deploy) stay idempotent.
@@ -61,10 +71,20 @@ class MenuSeeder extends Seeder
                 }
 
                 $categoryName = trim((string) ($row[$indexes['Category']] ?? ''));
+
+                if ($this->shouldSkipCategory($categoryName)) {
+                    continue;
+                }
+
                 $price = (int) ($row[$indexes['Price']] ?? 0);
                 $status = strtoupper(trim((string) ($row[$indexes['Status']] ?? 'ACTIVE')));
+                $isRecommended = Category::isHardcodedRecommended($categoryName);
 
-                if ($categoryName !== '' && ! isset($categories[$categoryName])) {
+                if (
+                    $categoryName !== ''
+                    && ! $isRecommended
+                    && ! isset($categories[$categoryName])
+                ) {
                     $categories[$categoryName] = Category::query()->create([
                         'name' => $categoryName,
                     ]);
@@ -75,15 +95,30 @@ class MenuSeeder extends Seeder
                     'image' => null,
                     'price' => $price,
                     'is_available' => $status === 'ACTIVE',
-                    'is_recommended' => $categoryName === 'Recommended',
+                    'is_recommended' => $isRecommended,
                 ]);
 
-                if ($categoryName !== '' && isset($categories[$categoryName])) {
+                if (
+                    $categoryName !== ''
+                    && ! $isRecommended
+                    && isset($categories[$categoryName])
+                ) {
                     $menu->categories()->attach($categories[$categoryName]->id);
                 }
             }
         } finally {
             fclose($handle);
         }
+    }
+
+    private function shouldSkipCategory(string $name): bool
+    {
+        foreach (self::SKIPPED_CATEGORIES as $skipped) {
+            if (strcasecmp($name, $skipped) === 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

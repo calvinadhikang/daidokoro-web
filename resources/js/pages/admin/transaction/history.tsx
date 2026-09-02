@@ -9,6 +9,7 @@ import {
     inputClassName,
     labelClassName,
 } from '@/components/admin/menu-form';
+import { TableCodeBadge } from '@/components/admin/table-code-badge';
 import type { Transaction } from '@/types/transaction';
 import { serviceTypeLabel } from '@/types/transaction';
 
@@ -162,9 +163,6 @@ export default function AdminTransactionHistory({
                                                     {serviceTypeLabel(
                                                         transaction.service_type,
                                                     )}
-                                                    {transaction.table_code
-                                                        ? ` · Table ${transaction.table_code}`
-                                                        : ''}
                                                 </p>
                                                 <p className="mt-1 text-xs text-[#706f6c] dark:text-[#A1A09A]">
                                                     {formatDate(
@@ -173,6 +171,9 @@ export default function AdminTransactionHistory({
                                                 </p>
                                             </div>
                                             <div className="flex shrink-0 flex-col items-end gap-1.5">
+                                                <TableCodeBadge
+                                                    code={transaction.table_code}
+                                                />
                                                 {transaction.is_admin_created && (
                                                     <span className={adminPillClassName}>
                                                         Admin

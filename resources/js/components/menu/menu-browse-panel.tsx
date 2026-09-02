@@ -4,44 +4,19 @@ import { useCallback, useMemo, useState } from 'react';
 import { toggleAvailability } from '@/actions/App/Http/Controllers/MenuBrowseController';
 import { inputClassName } from '@/components/admin/menu-form';
 import { MenuImage } from '@/components/admin/menu-image';
+import { CategoryFilterRow } from '@/components/menu/category-filter-row';
 import { ConfirmDialog } from '@/components/admin/confirm-dialog';
 import { cn } from '@/lib/utils';
 import { useLongPress } from '@/lib/use-long-press';
 import {
     prepareMenuList,
     type MenuAvailabilityFilter,
-    type MenuCategoryFilter,
-    type MenuRecommendedFilter,
+    type MenuBrowseFilter,
 } from '@/lib/menu-list';
 import type { Menu, MenuCategory } from '@/types/menu';
 
 function formatPrice(price: number): string {
     return price.toLocaleString();
-}
-
-function FilterButton({
-    active,
-    label,
-    onClick,
-}: {
-    active: boolean;
-    label: string;
-    onClick: () => void;
-}) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            className={cn(
-                'shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium',
-                active
-                    ? 'border-[#1b1b18] bg-[#1b1b18] text-white dark:border-[#EDEDEC] dark:bg-[#EDEDEC] dark:text-[#1b1b18]'
-                    : 'border-[#e3e3e0] text-[#706f6c] dark:border-[#3E3E3A] dark:text-[#A1A09A]',
-            )}
-        >
-            {label}
-        </button>
-    );
 }
 
 function MenuCard({
@@ -165,22 +140,13 @@ export function MenuBrowsePanel({
     menuHref,
 }: MenuBrowsePanelProps) {
     const [search, setSearch] = useState('');
-    const [recommended, setRecommended] =
-        useState<MenuRecommendedFilter>('all');
-    const [category, setCategory] = useState<MenuCategoryFilter>('all');
+    const [browseFilter, setBrowseFilter] = useState<MenuBrowseFilter>('all');
     const [toggleTarget, setToggleTarget] = useState<Menu | null>(null);
     const [toggleLoading, setToggleLoading] = useState(false);
 
     const groupedMenus = useMemo(
-        () =>
-            prepareMenuList(
-                menus,
-                search,
-                availability,
-                recommended,
-                category,
-            ),
-        [menus, search, availability, recommended, category],
+        () => prepareMenuList(menus, search, availability, browseFilter),
+        [menus, search, availability, browseFilter],
     );
 
     const filteredCount = useMemo(
@@ -188,10 +154,7 @@ export function MenuBrowsePanel({
         [groupedMenus],
     );
 
-    const isFiltering =
-        search.trim() !== '' ||
-        recommended !== 'all' ||
-        category !== 'all';
+    const isFiltering = search.trim() !== '' || browseFilter !== 'all';
     const availableCount = menus.filter((menu) => menu.is_available).length;
     const defaultSummary =
         availability === 'available'
@@ -233,35 +196,12 @@ export function MenuBrowsePanel({
                 className={`${inputClassName} mb-3`}
             />
 
-            <div className="mb-3 flex flex-wrap gap-2">
-                <FilterButton
-                    active={recommended === 'all'}
-                    label="All"
-                    onClick={() => setRecommended('all')}
-                />
-                <FilterButton
-                    active={recommended === 'recommended'}
-                    label="Recommended"
-                    onClick={() => setRecommended('recommended')}
-                />
-            </div>
-
-            {categories.length > 0 && (
-                <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 scrollbar-none">
-                    {categories.map((item) => (
-                        <FilterButton
-                            key={item.id}
-                            active={category === item.id}
-                            label={item.name}
-                            onClick={() =>
-                                setCategory(
-                                    category === item.id ? 'all' : item.id,
-                                )
-                            }
-                        />
-                    ))}
-                </div>
-            )}
+            <CategoryFilterRow
+                categories={categories}
+                value={browseFilter}
+                onChange={setBrowseFilter}
+                className="mb-4"
+            />
         </>
     );
 
@@ -343,8 +283,8 @@ export function MenuBrowsePanel({
             />
 
             {stickyFilters ? (
-                <div className="flex min-h-0 flex-1 flex-col">
-                    <div className="shrink-0">{filters}</div>
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                    <div className="min-w-0 shrink-0">{filters}</div>
                     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
                         {list}
                     </div>

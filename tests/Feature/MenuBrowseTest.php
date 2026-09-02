@@ -41,6 +41,29 @@ class MenuBrowseTest extends TestCase
         );
     }
 
+    public function test_public_menu_page_excludes_hardcoded_recommended_category(): void
+    {
+        $mains = Category::query()->create(['name' => 'Mains']);
+        Category::query()->create(['name' => 'Recommended']);
+
+        $menu = MenuModel::query()->create([
+            'name' => 'Chicken Rice',
+            'price' => 35000,
+            'is_available' => true,
+            'is_recommended' => true,
+        ]);
+        $menu->categories()->attach($mains);
+
+        $response = $this->get(route('menu.index'));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('menu/index')
+            ->has('categories', 1)
+            ->where('categories.0.name', 'Mains')
+        );
+    }
+
     public function test_menu_availability_can_be_toggled_from_public_menu_page(): void
     {
         $menu = MenuModel::query()->create([

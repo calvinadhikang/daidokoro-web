@@ -6,10 +6,10 @@ use App\Http\Controllers\Concerns\ManagesMenuImages;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreMenuRequest;
 use App\Http\Requests\UpdateMenuRequest;
-use App\Models\Category;
 use App\Models\MenuAddonGroup;
 use App\Models\MenuAddonOption;
 use App\Models\MenuModel;
+use App\Services\MenuCatalogService;
 use App\Services\MenuImageService;
 use App\Support\MenuApiFormatter;
 use Illuminate\Http\JsonResponse;
@@ -21,6 +21,7 @@ class MenuApiController extends Controller
 
     public function __construct(
         private MenuImageService $menuImages,
+        private MenuCatalogService $menuCatalog,
     ) {}
 
     public function index(): JsonResponse
@@ -41,11 +42,7 @@ class MenuApiController extends Controller
 
     public function categories(): JsonResponse
     {
-        $categories = Category::query()
-            ->orderBy('name')
-            ->get(['id', 'name']);
-
-        return response()->json($categories);
+        return response()->json($this->menuCatalog->categoriesForFilters());
     }
 
     public function show(MenuModel $menuModel): JsonResponse

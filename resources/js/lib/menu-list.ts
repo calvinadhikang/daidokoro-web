@@ -1,8 +1,7 @@
-import type { Menu } from '@/types/menu';
+import type { Menu, MenuCategory } from '@/types/menu';
 
 export type MenuAvailabilityFilter = 'all' | 'available' | 'unavailable';
-export type MenuRecommendedFilter = 'all' | 'recommended';
-export type MenuCategoryFilter = 'all' | number;
+export type MenuBrowseFilter = 'all' | 'recommended' | number;
 
 export type MenuLetterGroup = {
     letter: string;
@@ -20,6 +19,18 @@ function getMenuLetter(name: string): string {
     return /[A-Z]/.test(first) ? first : '#';
 }
 
+export function isHardcodedRecommendedCategory(name: string): boolean {
+    return name.trim().toLowerCase() === 'recommended';
+}
+
+export function visibleMenuCategories(
+    categories: MenuCategory[],
+): MenuCategory[] {
+    return categories.filter(
+        (item) => !isHardcodedRecommendedCategory(item.name),
+    );
+}
+
 export function sortMenus(menus: Menu[]): Menu[] {
     return [...menus].sort((a, b) => {
         if (a.is_available !== b.is_available) {
@@ -34,8 +45,7 @@ export function filterMenus(
     menus: Menu[],
     search: string,
     availability: MenuAvailabilityFilter,
-    recommended: MenuRecommendedFilter,
-    category: MenuCategoryFilter = 'all',
+    browseFilter: MenuBrowseFilter = 'all',
 ): Menu[] {
     const query = search.trim().toLowerCase();
 
@@ -52,14 +62,14 @@ export function filterMenus(
             return false;
         }
 
-        if (recommended === 'recommended' && !menu.is_recommended) {
-            return false;
+        if (browseFilter === 'recommended') {
+            return menu.is_recommended;
         }
 
-        if (category !== 'all') {
+        if (browseFilter !== 'all') {
             const menuCategories = menu.categories ?? [];
 
-            if (!menuCategories.some((item) => item.id === category)) {
+            if (!menuCategories.some((item) => item.id === browseFilter)) {
                 return false;
             }
         }
@@ -103,16 +113,9 @@ export function prepareMenuList(
     menus: Menu[],
     search: string,
     availability: MenuAvailabilityFilter,
-    recommended: MenuRecommendedFilter,
-    category: MenuCategoryFilter = 'all',
+    browseFilter: MenuBrowseFilter = 'all',
 ): MenuLetterGroup[] {
-    const filtered = filterMenus(
-        menus,
-        search,
-        availability,
-        recommended,
-        category,
-    );
+    const filtered = filterMenus(menus, search, availability, browseFilter);
 
     return groupMenusByLetter(filtered);
 }

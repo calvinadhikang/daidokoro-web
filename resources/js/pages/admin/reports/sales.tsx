@@ -10,6 +10,7 @@ import {
     inputClassName,
     labelClassName,
 } from '@/components/admin/menu-form';
+import { TableCodeBadge } from '@/components/admin/table-code-badge';
 import { cn } from '@/lib/utils';
 import type { Transaction } from '@/types/transaction';
 import { serviceTypeLabel } from '@/types/transaction';
@@ -266,9 +267,6 @@ export default function AdminReportsSales({
                                                                     {serviceTypeLabel(
                                                                         transaction.service_type,
                                                                     )}
-                                                                    {transaction.table_code
-                                                                        ? ` · Table ${transaction.table_code}`
-                                                                        : ''}
                                                                     {' · '}
                                                                     {formatTime(
                                                                         transaction.created_at,
@@ -276,6 +274,11 @@ export default function AdminReportsSales({
                                                                 </p>
                                                             </div>
                                                             <div className="flex shrink-0 flex-col items-end gap-1.5">
+                                                                <TableCodeBadge
+                                                                    code={
+                                                                        transaction.table_code
+                                                                    }
+                                                                />
                                                                 {transaction.is_admin_created && (
                                                                     <span
                                                                         className={

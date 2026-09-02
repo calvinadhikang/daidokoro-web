@@ -34,6 +34,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
         Route::get('/menu/{menuModel}', [CustomerMenuOrderController::class, 'show'])->name('menu.show');
         Route::post('/menu/{menuModel}', [CustomerMenuOrderController::class, 'store'])->name('menu.store');
         Route::get('/cart', [CustomerCartController::class, 'index'])->name('cart.index');
+        Route::patch('/cart/items/{index}', [CustomerCartController::class, 'update'])->name('cart.items.update');
         Route::delete('/cart/items/{index}', [CustomerCartController::class, 'destroy'])->name('cart.items.destroy');
         Route::post('/cart/checkout', [CustomerCartController::class, 'checkout'])->name('cart.checkout');
         Route::get('/order', [CustomerOrderController::class, 'index'])->name('order.index');

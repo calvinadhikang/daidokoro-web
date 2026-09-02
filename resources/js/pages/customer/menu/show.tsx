@@ -1,37 +1,20 @@
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 
 import { MenuOrderForm } from '@/components/menu/menu-order-form';
 import type { Menu } from '@/types/menu';
-import {
-    serviceTypeLabel,
-    type TransactionServiceType,
-} from '@/types/transaction';
-
-type PageProps = {
-    customerNav: {
-        cartCount: number;
-        hasOrder: boolean;
-    } | null;
-};
+import { serviceTypeLabel } from '@/types/transaction';
+import type { TransactionServiceType } from '@/types/transaction';
 
 type Props = {
     menu: Menu;
     serviceType: TransactionServiceType | null;
-    cartCount: number;
 };
 
-export default function CustomerMenuShow({
-    menu,
-    serviceType,
-    cartCount,
-}: Props) {
-    const { customerNav } = usePage<PageProps>().props;
+export default function CustomerMenuShow({ menu, serviceType }: Props) {
     const form = useForm({
         quantity: 1,
         addon_option_ids: [] as number[],
     });
-
-    const badgeCount = customerNav?.cartCount ?? cartCount;
 
     function handleSubmit(item: {
         quantity: number;
@@ -69,23 +52,12 @@ export default function CustomerMenuShow({
                             </span>
                         )}
                     </div>
-                    {badgeCount > 0 && (
-                        <Link
-                            href="/customer/cart"
-                            className="mt-3 inline-flex rounded-full bg-[#f5f5f4] px-2.5 py-1 text-xs font-medium text-[#44403c] dark:bg-[#292524] dark:text-[#d6d3d1]"
-                        >
-                            Cart · {badgeCount}{' '}
-                            {badgeCount === 1 ? 'item' : 'items'}
-                        </Link>
-                    )}
                 </header>
 
                 <MenuOrderForm
                     menu={menu}
                     onSubmit={handleSubmit}
-                    submitLabel={
-                        form.processing ? 'Adding...' : 'Add to cart'
-                    }
+                    submitLabel={form.processing ? 'Adding...' : 'Add to cart'}
                     disabled={form.processing}
                     errors={{
                         quantity: form.errors.quantity,

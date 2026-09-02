@@ -91,7 +91,11 @@ class CustomerMenuOrderTest extends TestCase
                 'quantity' => 2,
             ]);
 
-        $response->assertRedirect(route('customer.cart.index'));
+        $response->assertRedirect(route('customer.menu.index'));
+        $response->assertSessionHas(
+            'success',
+            'Added 2× Chicken Rice to your cart.',
+        );
         $this->assertDatabaseCount('transaction_items', 0);
 
         $cart = session('customer_cart');
@@ -100,6 +104,14 @@ class CustomerMenuOrderTest extends TestCase
         $this->assertSame('Chicken Rice', $cart[0]['menu_name']);
         $this->assertSame(2, $cart[0]['quantity']);
         $this->assertSame(70000, $cart[0]['line_total']);
+
+        $this->get(route('customer.menu.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('customer/menu/index')
+                ->where('customerNav.cartCount', 2)
+                ->where('customerNav.cartTotal', 70000)
+            );
     }
 
     public function test_cart_page_syncs_prices_from_current_menu(): void
@@ -204,6 +216,85 @@ class CustomerMenuOrderTest extends TestCase
         $this->assertIsArray($cart);
         $this->assertCount(1, $cart);
         $this->assertSame('Iced Tea', $cart[0]['menu_name']);
+    }
+
+    public function test_cart_item_quantity_can_be_updated(): void
+    {
+        $customer = Customer::query()->create([
+            'name' => 'Alex Tan',
+            'phone' => '6281234567890',
+        ]);
+
+        $menu = MenuModel::query()->create([
+            'name' => 'Chicken Rice',
+            'price' => 35000,
+            'is_available' => true,
+        ]);
+
+        $session = [
+            'customer_id' => $customer->id,
+            'service_type' => 'takeaway',
+            'customer_cart' => [[
+                'menu_id' => $menu->id,
+                'menu_name' => 'Chicken Rice',
+                'quantity' => 3,
+                'unit_price' => 35000,
+                'line_total' => 105000,
+                'addon_option_ids' => [],
+                'addons' => [],
+            ]],
+        ];
+
+        $response = $this
+            ->withSession($session)
+            ->patch(route('customer.cart.items.update', ['index' => 0]), [
+                'quantity' => 1,
+            ]);
+
+        $response->assertRedirect(route('customer.cart.index'));
+
+        $cart = session('customer_cart');
+        $this->assertIsArray($cart);
+        $this->assertCount(1, $cart);
+        $this->assertSame(1, $cart[0]['quantity']);
+        $this->assertSame(35000, $cart[0]['line_total']);
+    }
+
+    public function test_cart_item_quantity_cannot_be_zero(): void
+    {
+        $customer = Customer::query()->create([
+            'name' => 'Alex Tan',
+            'phone' => '6281234567890',
+        ]);
+
+        $menu = MenuModel::query()->create([
+            'name' => 'Chicken Rice',
+            'price' => 35000,
+            'is_available' => true,
+        ]);
+
+        $session = [
+            'customer_id' => $customer->id,
+            'service_type' => 'takeaway',
+            'customer_cart' => [[
+                'menu_id' => $menu->id,
+                'menu_name' => 'Chicken Rice',
+                'quantity' => 2,
+                'unit_price' => 35000,
+                'line_total' => 70000,
+                'addon_option_ids' => [],
+                'addons' => [],
+            ]],
+        ];
+
+        $response = $this
+            ->withSession($session)
+            ->patch(route('customer.cart.items.update', ['index' => 0]), [
+                'quantity' => 0,
+            ]);
+
+        $response->assertSessionHasErrors(['quantity']);
+        $this->assertSame(2, session('customer_cart')[0]['quantity']);
     }
 
     public function test_checkout_creates_transaction_from_cart(): void
@@ -326,7 +417,7 @@ class CustomerMenuOrderTest extends TestCase
                 'addon_option_ids' => [$option->id],
             ]);
 
-        $response->assertRedirect(route('customer.cart.index'));
+        $response->assertRedirect(route('customer.menu.index'));
 
         $cart = session('customer_cart');
         $this->assertIsArray($cart);

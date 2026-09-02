@@ -6,6 +6,12 @@ export type Customer = {
     phone_local: string;
 };
 
+export type CustomerNav = {
+    cartCount: number;
+    cartTotal: number;
+    hasOrder: boolean;
+};
+
 export type CustomerLoginForm = {
     name: string;
     phone: string;

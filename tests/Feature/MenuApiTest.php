@@ -39,17 +39,17 @@ class MenuApiTest extends TestCase
         ]);
     }
 
-    public function test_categories_endpoint_returns_all_categories(): void
+    public function test_categories_endpoint_excludes_hardcoded_recommended_category(): void
     {
         $sushi = Category::query()->create(['name' => 'Sushi']);
-        $drinks = Category::query()->create(['name' => 'Drinks']);
+        Category::query()->create(['name' => 'Recommended']);
 
         $response = $this->getJson('/api/menu/categories');
 
         $response->assertOk();
-        $response->assertJsonCount(2);
+        $response->assertJsonCount(1);
         $response->assertJsonFragment(['id' => $sushi->id, 'name' => 'Sushi']);
-        $response->assertJsonFragment(['id' => $drinks->id, 'name' => 'Drinks']);
+        $response->assertJsonMissing(['name' => 'Recommended']);
     }
 
     public function test_detail_returns_menu_with_addon_groups(): void
