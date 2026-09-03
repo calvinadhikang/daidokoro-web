@@ -49,6 +49,11 @@ export function OrderItemRow({ item, compact = false }: OrderItemRowProps) {
                     Qty {item.quantity} · {formatPrice(item.unit_price)} each
                 </p>
                 <ItemAddons item={item} />
+                {item.note ? (
+                    <p className="mt-2 text-xs italic text-[#706f6c] dark:text-[#A1A09A]">
+                        Note: {item.note}
+                    </p>
+                ) : null}
             </div>
             <p className="shrink-0 font-medium tabular-nums">
                 {formatPrice(item.line_total)}

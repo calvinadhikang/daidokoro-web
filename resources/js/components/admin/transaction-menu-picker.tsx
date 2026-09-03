@@ -17,6 +17,7 @@ export type TransactionMenuPickerItem = {
     line_total: number;
     addon_option_ids: number[];
     addons: TransactionAddon[];
+    note: string | null;
 };
 
 type Props = {
@@ -107,6 +108,7 @@ export function TransactionMenuPicker({
     const [selectedMenuId, setSelectedMenuId] = useState('');
     const [quantity, setQuantity] = useState(1);
     const [addonOptionIds, setAddonOptionIds] = useState<number[]>([]);
+    const [note, setNote] = useState('');
     const [error, setError] = useState<string | null>(null);
 
     const selectedMenu = useMemo(
@@ -142,6 +144,7 @@ export function TransactionMenuPicker({
         setSelectedMenuId(menuId);
         setQuantity(1);
         setAddonOptionIds([]);
+        setNote('');
         setError(null);
     }
 
@@ -185,11 +188,13 @@ export function TransactionMenuPicker({
             line_total: unitPrice * quantity,
             addon_option_ids: [...addonOptionIds],
             addons,
+            note: note.trim() === '' ? null : note.trim(),
         });
 
         setSelectedMenuId('');
         setQuantity(1);
         setAddonOptionIds([]);
+        setNote('');
         setError(null);
     }
 
@@ -398,6 +403,22 @@ export function TransactionMenuPicker({
                                 +
                             </button>
                         </div>
+                    </div>
+
+                    <div>
+                        <label htmlFor="picker-note" className={labelClassName}>
+                            Note{' '}
+                            <span className="font-normal">(optional)</span>
+                        </label>
+                        <textarea
+                            id="picker-note"
+                            rows={3}
+                            maxLength={500}
+                            value={note}
+                            onChange={(event) => setNote(event.target.value)}
+                            placeholder="e.g. no onions, extra spicy"
+                            className={inputClassName}
+                        />
                     </div>
 
                     <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">

@@ -101,6 +101,7 @@ class TransactionController extends Controller
                     $itemData['menu_id'],
                     $itemData['quantity'],
                     $itemData['addon_option_ids'] ?? [],
+                    $itemData['note'] ?? null,
                 );
             }
 
@@ -145,6 +146,7 @@ class TransactionController extends Controller
                 $validated['menu_id'],
                 $validated['quantity'],
                 $validated['addon_option_ids'] ?? [],
+                $validated['note'] ?? null,
             );
         });
 

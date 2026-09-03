@@ -27,6 +27,7 @@ class StoreTransactionItemRequest extends FormRequest
             'quantity' => ['required', 'integer', 'min:1', 'max:99'],
             'addon_option_ids' => ['nullable', 'array'],
             'addon_option_ids.*' => ['integer', 'exists:menu_addon_options,id'],
+            'note' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

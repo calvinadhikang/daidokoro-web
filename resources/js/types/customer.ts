@@ -31,4 +31,5 @@ export type CartItem = {
         name: string;
         price: number;
     }>;
+    note?: string | null;
 };

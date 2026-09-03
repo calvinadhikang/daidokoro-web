@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
  * @property int $unit_price
  * @property int $line_total
  * @property array<int, array<string, mixed>>|null $addons
+ * @property string|null $note
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Transaction $transaction
@@ -29,6 +30,7 @@ use Illuminate\Support\Carbon;
     'unit_price',
     'line_total',
     'addons',
+    'note',
 ])]
 class TransactionItem extends Model
 {

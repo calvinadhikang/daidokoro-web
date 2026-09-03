@@ -22,6 +22,7 @@ export type TransactionItem = {
     unit_price: number;
     line_total: number;
     addons: TransactionAddon[] | null;
+    note?: string | null;
     created_at: string;
 };
 
@@ -51,6 +52,7 @@ export type TransactionOrderForm = {
     menu_id: string;
     quantity: number;
     addon_option_ids: number[];
+    note?: string;
 };
 
 export type CreateTransactionForm = {
@@ -61,5 +63,6 @@ export type CreateTransactionForm = {
         menu_id: number;
         quantity: number;
         addon_option_ids: number[];
+        note?: string | null;
     }>;
 };

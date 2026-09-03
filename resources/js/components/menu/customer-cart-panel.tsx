@@ -71,6 +71,11 @@ function CartItemRow({
                             ))}
                         </ul>
                     )}
+                    {item.note ? (
+                        <p className="mt-2 text-xs italic text-[#706f6c] dark:text-[#A1A09A]">
+                            Note: {item.note}
+                        </p>
+                    ) : null}
                 </div>
                 <p className="shrink-0 text-sm font-medium tabular-nums">
                     {formatPrice(item.line_total)}

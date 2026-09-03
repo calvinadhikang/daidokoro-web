@@ -76,7 +76,8 @@ class CustomerTransactionService
      *     unit_price: int,
      *     line_total: int,
      *     addon_option_ids?: array<int, int>,
-     *     addons: array<int, array<string, mixed>>
+     *     addons: array<int, array<string, mixed>>,
+     *     note?: string|null
      * }>  $cartItems
      */
     public function checkoutCart(
@@ -95,6 +96,7 @@ class CustomerTransactionService
                     $lineItem['menu_id'],
                     $lineItem['quantity'],
                     $lineItem['addon_option_ids'] ?? [],
+                    $lineItem['note'] ?? null,
                 );
             }
 
@@ -110,7 +112,8 @@ class CustomerTransactionService
      *     unit_price: int,
      *     line_total: int,
      *     addon_option_ids?: array<int, int>,
-     *     addons: array<int, array<string, mixed>>
+     *     addons: array<int, array<string, mixed>>,
+     *     note?: string|null
      * }>  $cartItems
      */
     private function assertCartItemsAvailable(array $cartItems): void
@@ -155,7 +158,8 @@ class CustomerTransactionService
      *     unit_price: int,
      *     line_total: int,
      *     addon_option_ids?: array<int, int>,
-     *     addons: array<int, array<string, mixed>>
+     *     addons: array<int, array<string, mixed>>,
+     *     note?: string|null
      * }  $lineItem
      */
     public function addItem(

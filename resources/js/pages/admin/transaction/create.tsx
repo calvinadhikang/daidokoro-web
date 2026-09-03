@@ -106,6 +106,7 @@ export default function AdminTransactionCreate({ menus }: Props) {
                 menu_id: item.menu_id,
                 quantity: item.quantity,
                 addon_option_ids: item.addon_option_ids,
+                note: item.note,
             })),
         }));
 
@@ -265,6 +266,11 @@ export default function AdminTransactionCreate({ menus }: Props) {
                                                     each
                                                 </p>
                                                 <ItemAddons addons={item.addons} />
+                                                {item.note ? (
+                                                    <p className="mt-2 text-xs italic text-[#706f6c] dark:text-[#A1A09A]">
+                                                        Note: {item.note}
+                                                    </p>
+                                                ) : null}
                                             </div>
                                             <div className="flex shrink-0 flex-col items-end gap-2">
                                                 <p className="font-medium tabular-nums">

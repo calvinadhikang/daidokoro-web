@@ -83,7 +83,7 @@ class TransactionApiFormatter
             'weight_grams' => null,
             'unit_price' => (string) $item->unit_price,
             'line_total' => (string) $item->line_total,
-            'note' => null,
+            'note' => $item->note,
             'addons' => $item->addons ?? [],
         ];
     }

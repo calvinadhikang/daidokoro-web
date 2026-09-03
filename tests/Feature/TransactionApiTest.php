@@ -146,11 +146,73 @@ class TransactionApiTest extends TestCase
         ]);
         $response->assertJsonStructure([
             'order_items' => [
-                ['id', 'menu_id', 'menu', 'quantity', 'line_total'],
+                ['id', 'menu_id', 'menu', 'quantity', 'line_total', 'note'],
             ],
             'item_groups' => [
                 ['ordered_at', 'items'],
             ],
+        ]);
+        $response->assertJsonPath('order_items.0.note', null);
+    }
+
+    public function test_detail_returns_item_note_for_receipts(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Chicken Rice',
+            'price' => 35000,
+            'is_available' => true,
+        ]);
+
+        $transaction = Transaction::query()->create([
+            'customer_name' => 'Alex Tan',
+            'customer_phone' => '081234567890',
+            'service_type' => 'dine_in',
+            'status' => 'in_progress',
+            'total_bill' => 35000,
+        ]);
+
+        TransactionItem::query()->create([
+            'transaction_id' => $transaction->id,
+            'menu_id' => $menu->id,
+            'menu_name' => $menu->name,
+            'quantity' => 1,
+            'unit_price' => 35000,
+            'line_total' => 35000,
+            'note' => 'no onions',
+        ]);
+
+        $response = $this->getJson("/api/transaction/detail/{$transaction->id}");
+
+        $response->assertOk();
+        $response->assertJsonPath('order_items.0.note', 'no onions');
+        $response->assertJsonPath('item_groups.0.items.0.note', 'no onions');
+    }
+
+    public function test_admin_create_persists_item_note(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Chicken Rice',
+            'price' => 35000,
+            'is_available' => true,
+        ]);
+
+        $response = $this->post(route('admin.transaction.store'), [
+            'customer_name' => 'Alex Tan',
+            'customer_phone' => '081234567890',
+            'service_type' => 'dine_in',
+            'items' => [
+                [
+                    'menu_id' => $menu->id,
+                    'quantity' => 1,
+                    'note' => 'extra spicy',
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('transaction_items', [
+            'menu_id' => $menu->id,
+            'note' => 'extra spicy',
         ]);
     }
 

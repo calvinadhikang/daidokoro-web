@@ -14,15 +14,18 @@ export default function CustomerMenuShow({ menu, serviceType }: Props) {
     const form = useForm({
         quantity: 1,
         addon_option_ids: [] as number[],
+        note: '' as string | null,
     });
 
     function handleSubmit(item: {
         quantity: number;
         addon_option_ids: number[];
+        note: string | null;
     }) {
         form.transform(() => ({
             quantity: item.quantity,
             addon_option_ids: item.addon_option_ids,
+            note: item.note,
         }));
 
         form.post(`/customer/menu/${menu.id}`);
@@ -62,6 +65,7 @@ export default function CustomerMenuShow({ menu, serviceType }: Props) {
                     errors={{
                         quantity: form.errors.quantity,
                         addon_option_ids: form.errors.addon_option_ids,
+                        note: form.errors.note,
                     }}
                 />
             </div>

@@ -16,7 +16,8 @@ class CustomerCartService
      *     unit_price: int,
      *     line_total: int,
      *     addon_option_ids: array<int, int>,
-     *     addons: array<int, array<string, mixed>>
+     *     addons: array<int, array<string, mixed>>,
+     *     note?: string|null
      * }  $item
      */
     public function addItem(array $item): void
@@ -64,7 +65,8 @@ class CustomerCartService
      *     unit_price: int,
      *     line_total: int,
      *     addon_option_ids: array<int, int>,
-     *     addons: array<int, array<string, mixed>>
+     *     addons: array<int, array<string, mixed>>,
+     *     note?: string|null
      * }>
      */
     public function items(): array
@@ -140,7 +142,8 @@ class CustomerCartService
      *     unit_price: int,
      *     line_total: int,
      *     addon_option_ids?: array<int, int>,
-     *     addons: array<int, array<string, mixed>>
+     *     addons: array<int, array<string, mixed>>,
+     *     note?: string|null
      * }  $item
      * @return array{
      *     menu_id: int,
@@ -149,7 +152,8 @@ class CustomerCartService
      *     unit_price: int,
      *     line_total: int,
      *     addon_option_ids: array<int, int>,
-     *     addons: array<int, array<string, mixed>>
+     *     addons: array<int, array<string, mixed>>,
+     *     note: string|null
      * }
      */
     private function repriceItem(MenuModel $menu, array $item): array
@@ -185,6 +189,9 @@ class CustomerCartService
             'line_total' => $unitPrice * $quantity,
             'addon_option_ids' => $addonOptionIds,
             'addons' => $addons,
+            'note' => TransactionOrderService::normalizeNote(
+                isset($item['note']) && is_string($item['note']) ? $item['note'] : null,
+            ),
         ];
     }
 }

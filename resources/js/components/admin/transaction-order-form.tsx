@@ -17,6 +17,7 @@ export function TransactionOrderForm({ transactionId, menus }: Props) {
         menu_id: 0,
         quantity: 1,
         addon_option_ids: [] as number[],
+        note: '' as string | null,
     });
 
     function handleAdd(item: TransactionMenuPickerItem) {
@@ -24,6 +25,7 @@ export function TransactionOrderForm({ transactionId, menus }: Props) {
             menu_id: item.menu_id,
             quantity: item.quantity,
             addon_option_ids: item.addon_option_ids,
+            note: item.note,
         }));
 
         form.post(storeItem.url(transactionId), {

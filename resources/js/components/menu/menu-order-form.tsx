@@ -17,6 +17,7 @@ export type MenuOrderLineItem = {
     line_total: number;
     addon_option_ids: number[];
     addons: TransactionAddon[];
+    note: string | null;
 };
 
 type Props = {
@@ -27,6 +28,7 @@ type Props = {
     errors?: {
         quantity?: string;
         addon_option_ids?: string;
+        note?: string;
     };
 };
 
@@ -111,6 +113,7 @@ export function MenuOrderForm({
 }: Props) {
     const [quantity, setQuantity] = useState(1);
     const [addonOptionIds, setAddonOptionIds] = useState<number[]>([]);
+    const [note, setNote] = useState('');
     const [error, setError] = useState<string | null>(null);
 
     const estimatedUnitPrice = useMemo(() => {
@@ -170,6 +173,7 @@ export function MenuOrderForm({
             line_total: unitPrice * quantity,
             addon_option_ids: [...addonOptionIds],
             addons,
+            note: note.trim() === '' ? null : note.trim(),
         });
     }
 
@@ -340,6 +344,23 @@ export function MenuOrderForm({
                     </button>
                 </div>
                 <FieldError message={errors?.quantity} />
+            </div>
+
+            <div>
+                <label htmlFor="order-note" className={labelClassName}>
+                    Note{' '}
+                    <span className="font-normal">(optional)</span>
+                </label>
+                <textarea
+                    id="order-note"
+                    rows={3}
+                    maxLength={500}
+                    value={note}
+                    onChange={(event) => setNote(event.target.value)}
+                    placeholder="e.g. no onions, extra spicy"
+                    className={inputClassName}
+                />
+                <FieldError message={errors?.note} />
             </div>
 
             <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">

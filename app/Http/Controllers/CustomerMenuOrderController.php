@@ -6,6 +6,7 @@ use App\Http\Requests\StoreCustomerCartItemRequest;
 use App\Models\MenuModel;
 use App\Services\CustomerCartService;
 use App\Services\MenuOrderLineBuilder;
+use App\Services\TransactionOrderService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -55,6 +56,7 @@ class CustomerMenuOrderController extends Controller
             $validated['quantity'],
             $validated['addon_option_ids'] ?? [],
         );
+        $lineItem['note'] = TransactionOrderService::normalizeNote($validated['note'] ?? null);
 
         $this->cart->addItem($lineItem);
 
