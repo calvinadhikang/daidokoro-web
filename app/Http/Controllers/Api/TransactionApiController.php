@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreApiTransactionRequest;
 use App\Models\Transaction;
 use App\Services\StoreHoursService;
 use App\Services\TransactionNumberService;
+use App\Services\TransactionOrderService;
 use App\Support\TransactionApiFormatter;
 use Illuminate\Http\JsonResponse;
 
@@ -14,7 +16,19 @@ class TransactionApiController extends Controller
     public function __construct(
         private StoreHoursService $storeHours,
         private TransactionNumberService $transactionNumbers,
+        private TransactionOrderService $orderService,
     ) {}
+
+    public function store(StoreApiTransactionRequest $request): JsonResponse
+    {
+        $transaction = $this->orderService->createAdminTransaction($request->validated());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Transaction created successfully.',
+            'transaction' => TransactionApiFormatter::formatDetail($transaction),
+        ], 201);
+    }
 
     public function nextNumber(): JsonResponse
     {

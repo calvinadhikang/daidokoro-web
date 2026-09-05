@@ -10,7 +10,6 @@ use App\Services\TransactionOrderService;
 use App\Support\TransactionItemGrouper;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -83,30 +82,7 @@ class TransactionController extends Controller
 
     public function store(StoreTransactionRequest $request): RedirectResponse
     {
-        $validated = $request->validated();
-
-        $transaction = DB::transaction(function () use ($validated) {
-            $transaction = Transaction::query()->create([
-                'customer_name' => $validated['customer_name'],
-                'customer_phone' => $validated['customer_phone'],
-                'service_type' => $validated['service_type'] ?? 'dine_in',
-                'status' => 'in_progress',
-                'total_bill' => 0,
-                'is_admin_created' => true,
-            ]);
-
-            foreach ($validated['items'] ?? [] as $itemData) {
-                $this->orderService->addMenuItem(
-                    $transaction,
-                    $itemData['menu_id'],
-                    $itemData['quantity'],
-                    $itemData['addon_option_ids'] ?? [],
-                    $itemData['note'] ?? null,
-                );
-            }
-
-            return $transaction;
-        });
+        $transaction = $this->orderService->createAdminTransaction($request->validated());
 
         return redirect()
             ->route('admin.transaction.show', $transaction)
@@ -140,15 +116,13 @@ class TransactionController extends Controller
 
         $validated = $request->validated();
 
-        DB::transaction(function () use ($transaction, $validated) {
-            $this->orderService->addMenuItem(
-                $transaction,
-                $validated['menu_id'],
-                $validated['quantity'],
-                $validated['addon_option_ids'] ?? [],
-                $validated['note'] ?? null,
-            );
-        });
+        $this->orderService->addMenuItem(
+            $transaction,
+            $validated['menu_id'],
+            $validated['quantity'],
+            $validated['addon_option_ids'] ?? [],
+            $validated['note'] ?? null,
+        );
 
         return redirect()
             ->route('admin.transaction.show', $transaction)

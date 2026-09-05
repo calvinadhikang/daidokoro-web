@@ -21,6 +21,7 @@ Route::prefix('transaction')->group(function () {
     Route::get('/today', [TransactionApiController::class, 'today']);
     Route::get('/next-number', [TransactionApiController::class, 'nextNumber']);
     Route::get('/detail/{transaction}', [TransactionApiController::class, 'detail']);
+    Route::post('/create', [TransactionApiController::class, 'store']);
     Route::post('/mark-paid/{transaction}', [TransactionApiController::class, 'markPaid']);
     Route::post('/delete/{transaction}', [TransactionApiController::class, 'destroy']);
 });
