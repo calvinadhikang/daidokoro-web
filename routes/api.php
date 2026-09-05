@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\CategoryApiController;
 use App\Http\Controllers\Api\MenuApiController;
 use App\Http\Controllers\Api\NotificationApiController;
 use App\Http\Controllers\Api\OperatingHoursApiController;
@@ -10,7 +11,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('menu')->group(function () {
     Route::get('/', [MenuApiController::class, 'index']);
-    Route::get('/categories', [MenuApiController::class, 'categories']);
+    Route::get('/categories', [CategoryApiController::class, 'index']);
+    Route::post('/categories/create', [CategoryApiController::class, 'store']);
+    Route::post('/categories/update/{category}', [CategoryApiController::class, 'update']);
+    Route::post('/categories/delete/{category}', [CategoryApiController::class, 'destroy']);
     Route::get('/detail/{menuModel}', [MenuApiController::class, 'show']);
     Route::post('/create', [MenuApiController::class, 'store']);
     Route::post('/update/{menuModel}', [MenuApiController::class, 'update']);
@@ -54,6 +58,7 @@ Route::prefix('hours')->group(function () {
 
 Route::prefix('report')->group(function () {
     Route::get('/sales', [ReportApiController::class, 'sales']);
+    Route::get('/menus', [ReportApiController::class, 'menus']);
 });
 
 Route::get('/ping', function () {

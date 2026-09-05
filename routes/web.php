@@ -70,6 +70,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/sales', [ReportController::class, 'sales'])->name('reports.sales');
+    Route::get('/reports/menus', [ReportController::class, 'menus'])->name('reports.menus');
 
     Route::get('/transaction', [TransactionController::class, 'index'])->name('transaction.index');
     Route::get('/transaction/history', [TransactionController::class, 'history'])->name('transaction.history');

@@ -9,7 +9,6 @@ use App\Http\Requests\UpdateMenuRequest;
 use App\Models\MenuAddonGroup;
 use App\Models\MenuAddonOption;
 use App\Models\MenuModel;
-use App\Services\MenuCatalogService;
 use App\Services\MenuImageService;
 use App\Support\MenuApiFormatter;
 use Illuminate\Http\JsonResponse;
@@ -21,7 +20,6 @@ class MenuApiController extends Controller
 
     public function __construct(
         private MenuImageService $menuImages,
-        private MenuCatalogService $menuCatalog,
     ) {}
 
     public function index(): JsonResponse
@@ -38,11 +36,6 @@ class MenuApiController extends Controller
                 ->map(fn (MenuModel $menu) => MenuApiFormatter::formatListItem($menu))
                 ->values()
         );
-    }
-
-    public function categories(): JsonResponse
-    {
-        return response()->json($this->menuCatalog->categoriesForFilters());
     }
 
     public function show(MenuModel $menuModel): JsonResponse

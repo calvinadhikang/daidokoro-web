@@ -2,8 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\MenuModel;
 use App\Models\Transaction;
+use App\Models\TransactionItem;
+use App\Services\StoreHoursService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class AdminReportTest extends TestCase
@@ -131,6 +135,52 @@ class AdminReportTest extends TestCase
             ->has('groups.0.transactions', 2)
             ->where('groups.1.date', $dayOne)
             ->has('groups.1.transactions', 1)
+        );
+    }
+
+    public function test_menu_report_defaults_to_current_month(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-09-15 12:00:00', StoreHoursService::TIMEZONE));
+
+        $menu = MenuModel::query()->create([
+            'name' => 'Salmon Roll',
+            'price' => 45000,
+            'is_available' => true,
+        ]);
+
+        $transaction = Transaction::query()->create([
+            'customer_name' => 'This Month',
+            'customer_phone' => '6281111111111',
+            'service_type' => 'dine_in',
+            'status' => 'paid',
+            'total_bill' => 90000,
+            'business_date' => '2026-09-10',
+            'daily_number' => 1,
+        ]);
+        TransactionItem::query()->create([
+            'transaction_id' => $transaction->id,
+            'menu_id' => $menu->id,
+            'menu_name' => $menu->name,
+            'quantity' => 2,
+            'unit_price' => 45000,
+            'line_total' => 90000,
+        ]);
+
+        $response = $this->get(route('admin.reports.menus'));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('admin/reports/menus')
+            ->where('filters.preset', 'month')
+            ->where('filters.from', '2026-09-01')
+            ->where('filters.to', '2026-09-30')
+            ->where('summary.menu_count', 1)
+            ->where('summary.quantity_sold', 2)
+            ->where('summary.revenue', 90000)
+            ->has('items', 1)
+            ->where('items.0.rank', 1)
+            ->where('items.0.menu_name', 'Salmon Roll')
+            ->where('items.0.quantity_sold', 2)
         );
     }
 }

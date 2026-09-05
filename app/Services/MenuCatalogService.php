@@ -66,6 +66,7 @@ class MenuCatalogService
     public function categoriesForFilters(): Collection
     {
         return $this->categoryFilterQuery()
+            ->withCount('menus')
             ->orderBy('name')
             ->get(['id', 'name']);
     }

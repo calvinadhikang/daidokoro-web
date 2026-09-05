@@ -1,6 +1,9 @@
 import { Head, Link } from '@inertiajs/react';
 
-import { sales as salesReport } from '@/actions/App/Http/Controllers/ReportController';
+import {
+    menus as menusReport,
+    sales as salesReport,
+} from '@/actions/App/Http/Controllers/ReportController';
 
 export default function AdminReportsIndex() {
     return (
@@ -15,12 +18,20 @@ export default function AdminReportsIndex() {
                         </p>
                     </header>
 
-                    <Link
-                        href={salesReport.url()}
-                        className="flex w-full items-center justify-center rounded-md border border-[#1b1b18] bg-[#1b1b18] px-4 py-3 text-sm font-medium text-white dark:border-[#EDEDEC] dark:bg-[#EDEDEC] dark:text-[#1b1b18]"
-                    >
-                        Laporan Penjualan
-                    </Link>
+                    <div className="space-y-3">
+                        <Link
+                            href={salesReport.url()}
+                            className="flex w-full items-center justify-center rounded-md border border-[#1b1b18] bg-[#1b1b18] px-4 py-3 text-sm font-medium text-white dark:border-[#EDEDEC] dark:bg-[#EDEDEC] dark:text-[#1b1b18]"
+                        >
+                            Laporan Penjualan
+                        </Link>
+                        <Link
+                            href={menusReport.url()}
+                            className="flex w-full items-center justify-center rounded-md border border-[#e3e3e0] px-4 py-3 text-sm font-medium dark:border-[#3E3E3A]"
+                        >
+                            Laporan Menu
+                        </Link>
+                    </div>
                 </div>
             </div>
         </>

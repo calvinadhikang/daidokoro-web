@@ -3,15 +3,20 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\MenuReportRequest;
 use App\Http\Requests\SalesReportRequest;
 use App\Models\Transaction;
+use App\Services\MenuReportService;
 use App\Services\SalesReportService;
 use App\Support\TransactionApiFormatter;
 use Illuminate\Http\JsonResponse;
 
 class ReportApiController extends Controller
 {
-    public function __construct(private SalesReportService $salesReports) {}
+    public function __construct(
+        private SalesReportService $salesReports,
+        private MenuReportService $menuReports,
+    ) {}
 
     public function sales(SalesReportRequest $request): JsonResponse
     {
@@ -32,5 +37,10 @@ class ReportApiController extends Controller
             ->all();
 
         return response()->json($report);
+    }
+
+    public function menus(MenuReportRequest $request): JsonResponse
+    {
+        return response()->json($this->menuReports->build($request->validated()));
     }
 }
