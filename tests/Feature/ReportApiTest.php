@@ -3,29 +3,20 @@
 namespace Tests\Feature;
 
 use App\Models\Transaction;
+use App\Services\StoreHoursService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class AdminReportTest extends TestCase
+class ReportApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_reports_index_renders(): void
-    {
-        $response = $this->get(route('admin.reports.index'));
-
-        $response->assertOk();
-        $response->assertInertia(fn ($page) => $page
-            ->component('admin/reports/index')
-        );
-    }
-
     public function test_sales_report_defaults_to_today(): void
     {
-        $today = now()->toDateString();
+        $today = app(StoreHoursService::class)->today();
         $yesterday = now()->subDay()->toDateString();
 
-        Transaction::query()->create([
+        $paid = Transaction::query()->create([
             'customer_name' => 'Today Paid',
             'customer_phone' => '6281111111111',
             'service_type' => 'dine_in',
@@ -55,23 +46,30 @@ class AdminReportTest extends TestCase
             'daily_number' => 1,
         ]);
 
-        $response = $this->get(route('admin.reports.sales'));
+        $response = $this->getJson('/api/report/sales');
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page
-            ->component('admin/reports/sales')
-            ->where('filters.preset', 'today')
-            ->where('filters.from', $today)
-            ->where('filters.to', $today)
-            ->where('summary.revenue', 50000)
-            ->where('summary.total_count', 2)
-            ->where('summary.paid_count', 1)
-            ->where('summary.unpaid_count', 1)
-            ->where('summary.unpaid_revenue', 20000)
-            ->has('groups', 1)
-            ->where('groups.0.date', $today)
-            ->has('groups.0.transactions', 2)
-        );
+        $response->assertJsonPath('filters.preset', 'today');
+        $response->assertJsonPath('filters.from', $today);
+        $response->assertJsonPath('filters.to', $today);
+        $response->assertJsonPath('summary.revenue', 50000);
+        $response->assertJsonPath('summary.total_count', 2);
+        $response->assertJsonPath('summary.paid_count', 1);
+        $response->assertJsonPath('summary.unpaid_count', 1);
+        $response->assertJsonPath('summary.unpaid_revenue', 20000);
+        $response->assertJsonCount(1, 'groups');
+        $response->assertJsonPath('groups.0.date', $today);
+        $response->assertJsonCount(2, 'groups.0.transactions');
+        $response->assertJsonFragment([
+            'id' => $paid->id,
+            'transaction_number' => $paid->transaction_number,
+            'name' => 'Today Paid',
+            'status' => 'paid',
+            'total_amount' => '50000',
+            'is_admin_created' => false,
+            'service_type' => 'dine_in',
+        ]);
+        $this->assertArrayHasKey('created_at', $response->json('groups.0.transactions.0'));
     }
 
     public function test_sales_report_filters_by_date_range_and_groups_by_date(): void
@@ -109,28 +107,37 @@ class AdminReportTest extends TestCase
             'daily_number' => 2,
         ]);
 
-        $response = $this->get(route('admin.reports.sales', [
+        $response = $this->getJson('/api/report/sales?'.http_build_query([
             'preset' => 'range',
             'from' => $dayOne,
             'to' => $dayTwo,
         ]));
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page
-            ->component('admin/reports/sales')
-            ->where('filters.preset', 'range')
-            ->where('filters.from', $dayOne)
-            ->where('filters.to', $dayTwo)
-            ->where('summary.revenue', 70000)
-            ->where('summary.total_count', 3)
-            ->where('summary.paid_count', 2)
-            ->where('summary.unpaid_count', 1)
-            ->where('summary.unpaid_revenue', 10000)
-            ->has('groups', 2)
-            ->where('groups.0.date', $dayTwo)
-            ->has('groups.0.transactions', 2)
-            ->where('groups.1.date', $dayOne)
-            ->has('groups.1.transactions', 1)
-        );
+        $response->assertJsonPath('filters.preset', 'range');
+        $response->assertJsonPath('filters.from', $dayOne);
+        $response->assertJsonPath('filters.to', $dayTwo);
+        $response->assertJsonPath('summary.revenue', 70000);
+        $response->assertJsonPath('summary.total_count', 3);
+        $response->assertJsonPath('summary.paid_count', 2);
+        $response->assertJsonPath('summary.unpaid_count', 1);
+        $response->assertJsonPath('summary.unpaid_revenue', 10000);
+        $response->assertJsonCount(2, 'groups');
+        $response->assertJsonPath('groups.0.date', $dayTwo);
+        $response->assertJsonCount(2, 'groups.0.transactions');
+        $response->assertJsonPath('groups.1.date', $dayOne);
+        $response->assertJsonCount(1, 'groups.1.transactions');
+    }
+
+    public function test_sales_report_rejects_range_when_to_is_before_from(): void
+    {
+        $response = $this->getJson('/api/report/sales?'.http_build_query([
+            'preset' => 'range',
+            'from' => '2026-09-05',
+            'to' => '2026-09-01',
+        ]));
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors(['to']);
     }
 }

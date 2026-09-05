@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\MenuApiController;
 use App\Http\Controllers\Api\NotificationApiController;
 use App\Http\Controllers\Api\OperatingHoursApiController;
+use App\Http\Controllers\Api\ReportApiController;
 use App\Http\Controllers\Api\TransactionApiController;
 use App\Http\Controllers\OmakaseController;
 use Illuminate\Support\Facades\Route;
@@ -49,6 +50,10 @@ Route::prefix('hours')->group(function () {
     Route::post('/update', [OperatingHoursApiController::class, 'update']);
     Route::post('/closures/create', [OperatingHoursApiController::class, 'storeClosure']);
     Route::post('/closures/delete/{closure}', [OperatingHoursApiController::class, 'destroyClosure']);
+});
+
+Route::prefix('report')->group(function () {
+    Route::get('/sales', [ReportApiController::class, 'sales']);
 });
 
 Route::get('/ping', function () {

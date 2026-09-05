@@ -30,6 +30,8 @@ type Props = {
         revenue: number;
         total_count: number;
         paid_count: number;
+        unpaid_count: number;
+        unpaid_revenue: number;
     };
     groups: SalesGroup[];
 };
@@ -191,33 +193,50 @@ export default function AdminReportsSales({
                         </form>
                     )}
 
-                    <section className="mb-4 grid grid-cols-3 gap-2">
-                        <div className="rounded-lg border border-[#e3e3e0] bg-white p-3 dark:border-[#3E3E3A] dark:bg-[#161615]">
-                            <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                                Pendapatan
-                            </p>
-                            <p className="mt-1 text-base font-semibold tabular-nums">
-                                {formatPrice(summary.revenue)}
-                            </p>
+                    <section className="mb-4 space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="rounded-lg border border-[#e3e3e0] bg-white p-3 dark:border-[#3E3E3A] dark:bg-[#161615]">
+                                <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">
+                                    Pendapatan
+                                </p>
+                                <p className="mt-1 text-base font-semibold tabular-nums">
+                                    {formatPrice(summary.revenue)}
+                                </p>
+                            </div>
+                            <div className="rounded-lg border border-[#e3e3e0] bg-white p-3 dark:border-[#3E3E3A] dark:bg-[#161615]">
+                                <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">
+                                    Pendapatan belum paid
+                                </p>
+                                <p className="mt-1 text-base font-semibold tabular-nums">
+                                    {formatPrice(summary.unpaid_revenue)}
+                                </p>
+                            </div>
                         </div>
-                        <div className="rounded-lg border border-[#e3e3e0] bg-white p-3 dark:border-[#3E3E3A] dark:bg-[#161615]">
-                            <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                                Transaksi
-                            </p>
-                            <p className="mt-1 text-base font-semibold tabular-nums">
-                                {summary.total_count}
-                            </p>
-                        </div>
-                        <div className="rounded-lg border border-[#e3e3e0] bg-white p-3 dark:border-[#3E3E3A] dark:bg-[#161615]">
-                            <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                                Paid
-                            </p>
-                            <p className="mt-1 text-base font-semibold tabular-nums">
-                                {summary.paid_count}
-                            </p>
-                            <p className="mt-0.5 text-xs tabular-nums text-[#706f6c] dark:text-[#A1A09A]">
-                                {formatPrice(summary.revenue)}
-                            </p>
+                        <div className="grid grid-cols-3 gap-2">
+                            <div className="rounded-lg border border-[#e3e3e0] bg-white p-3 dark:border-[#3E3E3A] dark:bg-[#161615]">
+                                <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">
+                                    Transaksi
+                                </p>
+                                <p className="mt-1 text-base font-semibold tabular-nums">
+                                    {summary.total_count}
+                                </p>
+                            </div>
+                            <div className="rounded-lg border border-[#e3e3e0] bg-white p-3 dark:border-[#3E3E3A] dark:bg-[#161615]">
+                                <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">
+                                    Paid
+                                </p>
+                                <p className="mt-1 text-base font-semibold tabular-nums">
+                                    {summary.paid_count}
+                                </p>
+                            </div>
+                            <div className="rounded-lg border border-[#e3e3e0] bg-white p-3 dark:border-[#3E3E3A] dark:bg-[#161615]">
+                                <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">
+                                    Belum paid
+                                </p>
+                                <p className="mt-1 text-base font-semibold tabular-nums">
+                                    {summary.unpaid_count}
+                                </p>
+                            </div>
                         </div>
                     </section>
                 </div>
