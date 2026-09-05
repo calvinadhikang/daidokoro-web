@@ -38,6 +38,7 @@ class MenuBrowseTest extends TestCase
             ->where('menus.1.name', 'Sold Out Dish')
             ->has('categories', 1)
             ->where('categories.0.name', 'Mains')
+            ->has('storeStatus')
         );
     }
 
