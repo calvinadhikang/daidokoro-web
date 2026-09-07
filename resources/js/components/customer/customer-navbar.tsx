@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 
+import { CustomerNavIcon } from '@/components/customer/customer-nav-icons';
 import { customerNavItems, isCustomerNavActive } from '@/lib/customer-nav';
 import { cn } from '@/lib/utils';
 import type { CustomerNav } from '@/types/customer';
@@ -34,27 +35,23 @@ export function CustomerNavbar() {
                         <Link
                             key={item.href}
                             href={item.href}
+                            aria-current={isActive ? 'page' : undefined}
                             className={cn(
-                                'relative flex flex-1 flex-col items-center gap-1 px-2 py-3 text-xs font-medium',
+                                'relative flex flex-1 flex-col items-center gap-1 px-2 py-2.5 text-[11px] font-medium',
                                 isActive || (isCart && cartCount > 0)
                                     ? 'text-[#1b1b18] dark:text-[#EDEDEC]'
                                     : 'text-[#706f6c] dark:text-[#A1A09A]',
                             )}
                         >
-                            <span
-                                className={cn(
-                                    'h-1 w-8 rounded-full',
-                                    isActive
-                                        ? 'bg-[#1b1b18] dark:bg-[#EDEDEC]'
-                                        : 'bg-transparent',
-                                )}
-                            />
                             <span className="relative">
-                                {item.label}
+                                <CustomerNavIcon
+                                    match={item.match}
+                                    className="size-6"
+                                />
                                 {badge !== null && (
                                     <span
                                         className={cn(
-                                            'absolute -top-2 -right-3 flex min-h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold',
+                                            'absolute -top-1.5 -right-2.5 flex min-h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold',
                                             isCart
                                                 ? 'bg-[#175cd3] text-white dark:bg-[#84caff] dark:text-[#102a56]'
                                                 : 'bg-[#1b1b18] text-white dark:bg-[#EDEDEC] dark:text-[#1b1b18]',
@@ -67,6 +64,7 @@ export function CustomerNavbar() {
                                     </span>
                                 )}
                             </span>
+                            <span>{item.label}</span>
                         </Link>
                     );
                 })}

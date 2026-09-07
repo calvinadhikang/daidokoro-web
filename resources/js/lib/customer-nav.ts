@@ -34,3 +34,9 @@ export function isCustomerAppUrl(url: string): boolean {
 export function isCustomerCartUrl(url: string): boolean {
     return url === '/customer/cart' || url.startsWith('/customer/cart?');
 }
+
+export function isCustomerMenuDetailUrl(url: string): boolean {
+    const path = url.split('?')[0];
+
+    return /^\/customer\/menu\/\d+$/.test(path);
+}

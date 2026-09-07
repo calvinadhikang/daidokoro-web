@@ -1,7 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 
 import { formatPrice } from '@/components/menu/order-item-groups';
-import { isCustomerCartUrl } from '@/lib/customer-nav';
+import { isCustomerCartUrl, isCustomerMenuDetailUrl } from '@/lib/customer-nav';
 import { cn } from '@/lib/utils';
 import type { CustomerNav } from '@/types/customer';
 
@@ -18,14 +18,18 @@ export function CustomerCartBar() {
     const cartCount = customerNav?.cartCount ?? 0;
     const cartTotal = customerNav?.cartTotal ?? 0;
 
-    if (cartCount === 0 || isCustomerCartUrl(url)) {
+    if (
+        cartCount === 0 ||
+        isCustomerCartUrl(url) ||
+        isCustomerMenuDetailUrl(url)
+    ) {
         return null;
     }
 
     const highlighted = Boolean(flash.success);
 
     return (
-        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-40 px-4">
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 px-4">
             <Link
                 href="/customer/cart"
                 className={cn(

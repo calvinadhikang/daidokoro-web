@@ -1,4 +1,4 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 
 import { MenuBrowsePanel } from '@/components/menu/menu-browse-panel';
 import { cn } from '@/lib/utils';
@@ -38,14 +38,15 @@ export default function CustomerMenuIndex({
                 )}
             >
                 <header className="mb-4 shrink-0">
-                    <Link
-                        href="/"
-                        className="text-sm text-[#706f6c] dark:text-[#A1A09A]"
-                    >
-                        ← Home
-                    </Link>
-                    <div className="mt-2 flex items-start justify-between gap-3">
-                        <h1 className="text-2xl font-semibold">Menu</h1>
+                    <div className="flex items-start justify-between gap-3">
+                        <div>
+                            <h1 className="text-2xl font-semibold tracking-tight">
+                                Menu
+                            </h1>
+                            <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                                Choose a dish to add to your cart
+                            </p>
+                        </div>
                         {serviceType !== null && (
                             <span className="shrink-0 rounded-full bg-[#eff8ff] px-2.5 py-1 text-xs font-medium text-[#175cd3] dark:bg-[#102a56] dark:text-[#84caff]">
                                 {serviceTypeLabel(serviceType)}
@@ -58,6 +59,7 @@ export default function CustomerMenuIndex({
                     menus={menus}
                     categories={categories}
                     availability="all"
+                    variant="customer"
                     stickyFilters
                     unavailableLabel="Sold out"
                     menuHref={(menu) =>
