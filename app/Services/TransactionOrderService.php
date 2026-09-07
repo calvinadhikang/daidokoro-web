@@ -52,6 +52,26 @@ class TransactionOrderService
     }
 
     /**
+     * @param  array{
+     *     customer_name: string,
+     *     customer_phone: string,
+     *     service_type?: string|null
+     * }  $data
+     */
+    public function updateHeader(Transaction $transaction, array $data): Transaction
+    {
+        $this->assertEditable($transaction);
+
+        $transaction->update([
+            'customer_name' => $data['customer_name'],
+            'customer_phone' => $data['customer_phone'],
+            'service_type' => $data['service_type'] ?? $transaction->service_type,
+        ]);
+
+        return $transaction->fresh() ?? $transaction;
+    }
+
+    /**
      * @param  array<int, int>  $addonOptionIds
      */
     public function addMenuItem(
@@ -61,6 +81,8 @@ class TransactionOrderService
         array $addonOptionIds,
         ?string $note = null,
     ): TransactionItem {
+        $this->assertEditable($transaction);
+
         $menu = MenuModel::query()
             ->where('is_available', true)
             ->with(['addonGroups.options'])
@@ -79,6 +101,59 @@ class TransactionOrderService
         $lineItem['note'] = self::normalizeNote($note);
 
         return $this->addLineItem($transaction, $lineItem);
+    }
+
+    /**
+     * @param  array<int, int>  $addonOptionIds
+     */
+    public function updateMenuItem(
+        TransactionItem $item,
+        int $quantity,
+        array $addonOptionIds,
+        ?string $note = null,
+    ): TransactionItem {
+        $transaction = $item->transaction;
+        $this->assertEditable($transaction);
+
+        $menu = MenuModel::query()
+            ->with(['addonGroups.options'])
+            ->find($item->menu_id);
+
+        if ($menu === null) {
+            throw ValidationException::withMessages([
+                'menu_id' => 'The ordered menu is no longer available.',
+            ]);
+        }
+
+        $lineItem = $this->lineBuilder->build($menu, $quantity, $addonOptionIds);
+
+        return DB::transaction(function () use ($item, $transaction, $lineItem, $note) {
+            $item->update([
+                'menu_name' => $lineItem['menu_name'],
+                'quantity' => $lineItem['quantity'],
+                'unit_price' => $lineItem['unit_price'],
+                'line_total' => $lineItem['line_total'],
+                'addons' => $lineItem['addons'],
+                'note' => self::normalizeNote($note),
+            ]);
+
+            $transaction->recalculateTotal();
+
+            return $item->fresh() ?? $item;
+        });
+    }
+
+    public function deleteMenuItem(TransactionItem $item): Transaction
+    {
+        $transaction = $item->transaction;
+        $this->assertEditable($transaction);
+
+        return DB::transaction(function () use ($item, $transaction) {
+            $item->delete();
+            $transaction->recalculateTotal();
+
+            return $transaction->fresh() ?? $transaction;
+        });
     }
 
     /**
@@ -122,5 +197,14 @@ class TransactionOrderService
         $trimmed = trim($note);
 
         return $trimmed === '' ? null : $trimmed;
+    }
+
+    private function assertEditable(Transaction $transaction): void
+    {
+        if ($transaction->isPaid()) {
+            throw ValidationException::withMessages([
+                'transaction' => 'Paid transactions cannot be edited.',
+            ]);
+        }
     }
 }

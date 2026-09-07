@@ -35,7 +35,7 @@ export function TransactionOrderForm({ transactionId, menus }: Props) {
 
     return (
         <TransactionMenuPicker
-            menus={menus}
+            menus={menus.filter((menu) => menu.is_available)}
             onAdd={handleAdd}
             submitLabel={form.processing ? 'Adding...' : 'Add to order'}
             disabled={form.processing}

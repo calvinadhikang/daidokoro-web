@@ -25,6 +25,9 @@ type Props = {
     onSubmit: (item: MenuOrderLineItem) => void;
     submitLabel?: string;
     disabled?: boolean;
+    initialQuantity?: number;
+    initialAddonOptionIds?: number[];
+    initialNote?: string | null;
     errors?: {
         quantity?: string;
         addon_option_ids?: string;
@@ -109,11 +112,16 @@ export function MenuOrderForm({
     onSubmit,
     submitLabel = 'Add to order',
     disabled = false,
+    initialQuantity = 1,
+    initialAddonOptionIds = [],
+    initialNote = null,
     errors,
 }: Props) {
-    const [quantity, setQuantity] = useState(1);
-    const [addonOptionIds, setAddonOptionIds] = useState<number[]>([]);
-    const [note, setNote] = useState('');
+    const [quantity, setQuantity] = useState(initialQuantity);
+    const [addonOptionIds, setAddonOptionIds] = useState<number[]>(
+        initialAddonOptionIds,
+    );
+    const [note, setNote] = useState(initialNote ?? '');
     const [error, setError] = useState<string | null>(null);
 
     const estimatedUnitPrice = useMemo(() => {

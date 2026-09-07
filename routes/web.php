@@ -77,7 +77,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/transaction/create', [TransactionController::class, 'create'])->name('transaction.create');
     Route::post('/transaction', [TransactionController::class, 'store'])->name('transaction.store');
     Route::get('/transaction/{transaction}', [TransactionController::class, 'show'])->name('transaction.show');
+    Route::patch('/transaction/{transaction}', [TransactionController::class, 'update'])->name('transaction.update');
     Route::post('/transaction/{transaction}/items', [TransactionController::class, 'storeItem'])->name('transaction.items.store');
+    Route::patch('/transaction/{transaction}/items/{item}', [TransactionController::class, 'updateItem'])->name('transaction.items.update');
+    Route::delete('/transaction/{transaction}/items/{item}', [TransactionController::class, 'destroyItem'])->name('transaction.items.destroy');
     Route::patch('/transaction/{transaction}/status', [TransactionController::class, 'updateStatus'])->name('transaction.status.update');
     Route::delete('/transaction/{transaction}', [TransactionController::class, 'destroy'])->name('transaction.destroy');
 });
