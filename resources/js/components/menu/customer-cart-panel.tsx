@@ -242,6 +242,10 @@ export function CustomerCartPanel({
                 description={CHECKOUT_NOTICE}
                 confirmLabel="Lanjut pesan"
                 cancelLabel="Batal"
+                confirmDelaySeconds={5}
+                titleClassName="text-xl font-bold"
+                descriptionClassName="text-lg font-bold leading-snug text-[#1b1b18] dark:text-[#EDEDEC]"
+                panelClassName="max-w-md p-6"
                 loading={checkingOut}
                 onConfirm={handleCheckout}
                 onCancel={() => setConfirmOpen(false)}

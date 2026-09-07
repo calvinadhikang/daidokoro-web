@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
@@ -10,6 +10,10 @@ type ConfirmDialogProps = {
     cancelLabel?: string;
     variant?: 'default' | 'danger';
     loading?: boolean;
+    confirmDelaySeconds?: number;
+    titleClassName?: string;
+    descriptionClassName?: string;
+    panelClassName?: string;
     onConfirm: () => void;
     onCancel: () => void;
 };
@@ -22,12 +26,39 @@ export function ConfirmDialog({
     cancelLabel = 'Cancel',
     variant = 'default',
     loading = false,
+    confirmDelaySeconds = 0,
+    titleClassName,
+    descriptionClassName,
+    panelClassName,
     onConfirm,
     onCancel,
 }: ConfirmDialogProps) {
     const titleId = useId();
     const descriptionId = useId();
     const cancelRef = useRef<HTMLButtonElement>(null);
+    const [delayForOpen, setDelayForOpen] = useState(open);
+    const [delayRemaining, setDelayRemaining] = useState(
+        open ? confirmDelaySeconds : 0,
+    );
+
+    if (open !== delayForOpen) {
+        setDelayForOpen(open);
+        setDelayRemaining(open ? confirmDelaySeconds : 0);
+    }
+
+    const confirmLocked = delayRemaining > 0;
+
+    useEffect(() => {
+        if (!open || confirmDelaySeconds <= 0) {
+            return;
+        }
+
+        const interval = window.setInterval(() => {
+            setDelayRemaining((remaining) => Math.max(0, remaining - 1));
+        }, 1000);
+
+        return () => window.clearInterval(interval);
+    }, [open, confirmDelaySeconds]);
 
     useEffect(() => {
         if (!open) {
@@ -67,14 +98,23 @@ export function ConfirmDialog({
                 aria-modal="true"
                 aria-labelledby={titleId}
                 aria-describedby={descriptionId}
-                className="relative w-full max-w-sm rounded-lg border border-[#e3e3e0] bg-white p-5 shadow-lg dark:border-[#3E3E3A] dark:bg-[#161615]"
+                className={cn(
+                    'relative w-full max-w-sm rounded-lg border border-[#e3e3e0] bg-white p-5 shadow-lg dark:border-[#3E3E3A] dark:bg-[#161615]',
+                    panelClassName,
+                )}
             >
-                <h2 id={titleId} className="text-base font-semibold">
+                <h2
+                    id={titleId}
+                    className={cn('text-base font-semibold', titleClassName)}
+                >
                     {title}
                 </h2>
                 <p
                     id={descriptionId}
-                    className="mt-2 text-sm text-[#706f6c] dark:text-[#A1A09A]"
+                    className={cn(
+                        'mt-2 text-sm text-[#706f6c] dark:text-[#A1A09A]',
+                        descriptionClassName,
+                    )}
                 >
                     {description}
                 </p>
@@ -92,7 +132,7 @@ export function ConfirmDialog({
                     <button
                         type="button"
                         onClick={onConfirm}
-                        disabled={loading}
+                        disabled={loading || confirmLocked}
                         className={cn(
                             'flex flex-1 items-center justify-center rounded-md px-4 py-2.5 text-sm font-medium disabled:opacity-50',
                             variant === 'danger'
@@ -100,7 +140,11 @@ export function ConfirmDialog({
                                 : 'bg-[#1b1b18] text-white dark:bg-[#EDEDEC] dark:text-[#1b1b18]',
                         )}
                     >
-                        {loading ? 'Please wait...' : confirmLabel}
+                        {loading
+                            ? 'Please wait...'
+                            : confirmLocked
+                              ? `${confirmLabel} (${delayRemaining})`
+                              : confirmLabel}
                     </button>
                 </div>
             </div>
