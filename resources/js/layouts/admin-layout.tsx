@@ -1,5 +1,6 @@
 import { usePage } from '@inertiajs/react';
-import { useState, type ReactNode } from 'react';
+import { useState  } from 'react';
+import type {ReactNode} from 'react';
 
 import {
     AdminMenuButton,
@@ -73,7 +74,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 </div>
             )}
 
-            <main className="pb-20">{children}</main>
+            <main className="pb-24">{children}</main>
 
             <AdminNavbar />
         </div>

@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 
+import { AdminNavIcon } from '@/components/admin/admin-nav-icons';
 import { isNavActive, primaryNavItems } from '@/lib/admin-nav';
 import { cn } from '@/lib/utils';
 
@@ -8,7 +9,7 @@ export function AdminNavbar() {
 
     return (
         <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-[#e3e3e0] bg-[#FDFDFC]/95 backdrop-blur dark:border-[#3E3E3A] dark:bg-[#0a0a0a]/95">
-            <div className="mx-auto flex max-w-lg">
+            <div className="mx-auto flex max-w-lg pb-[env(safe-area-inset-bottom)]">
                 {primaryNavItems.map((item) => {
                     const isActive = isNavActive(url, item);
 
@@ -16,22 +17,19 @@ export function AdminNavbar() {
                         <Link
                             key={item.href}
                             href={item.href}
+                            aria-current={isActive ? 'page' : undefined}
                             className={cn(
-                                'flex flex-1 flex-col items-center gap-1 px-2 py-3 text-xs font-medium',
+                                'flex flex-1 flex-col items-center gap-1 px-2 py-2.5 text-[11px] font-medium',
                                 isActive
                                     ? 'text-[#1b1b18] dark:text-[#EDEDEC]'
                                     : 'text-[#706f6c] dark:text-[#A1A09A]',
                             )}
                         >
-                            <span
-                                className={cn(
-                                    'h-1 w-8 rounded-full',
-                                    isActive
-                                        ? 'bg-[#1b1b18] dark:bg-[#EDEDEC]'
-                                        : 'bg-transparent',
-                                )}
+                            <AdminNavIcon
+                                match={item.match}
+                                className="size-6"
                             />
-                            {item.label}
+                            <span>{item.label}</span>
                         </Link>
                     );
                 })}

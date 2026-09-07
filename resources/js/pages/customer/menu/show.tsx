@@ -1,6 +1,8 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { useCallback, useState } from 'react';
 
 import { MenuImage } from '@/components/admin/menu-image';
+import { MenuImageLightbox } from '@/components/menu/menu-image-lightbox';
 import { MenuOrderForm } from '@/components/menu/menu-order-form';
 import { formatPrice } from '@/components/menu/order-item-groups';
 import type { Menu } from '@/types/menu';
@@ -13,6 +15,8 @@ type Props = {
 };
 
 export default function CustomerMenuShow({ menu, serviceType }: Props) {
+    const [photoOpen, setPhotoOpen] = useState(false);
+    const closePhoto = useCallback(() => setPhotoOpen(false), []);
     const form = useForm({
         quantity: 1,
         addon_option_ids: [] as number[],
@@ -40,18 +44,24 @@ export default function CustomerMenuShow({ menu, serviceType }: Props) {
             <Head title={menu.name} />
 
             <div className="mx-auto max-w-md">
-                <div className="relative h-72 overflow-hidden bg-[#e3e3e0] dark:bg-[#3E3E3A]">
-                    <MenuImage
-                        src={menu.image}
-                        alt={menu.name}
-                        className="h-full w-full"
-                    />
-                    <div className="absolute inset-0 bg-linear-to-t from-black/55 via-black/10 to-black/25" />
+                <div className="relative h-80 overflow-hidden bg-[#e3e3e0] dark:bg-[#3E3E3A]">
+                    <button
+                        type="button"
+                        onClick={() => setPhotoOpen(true)}
+                        className="absolute inset-0 cursor-zoom-in"
+                        aria-label={`View ${menu.name} photo`}
+                    >
+                        <MenuImage
+                            src={menu.image}
+                            alt={menu.name}
+                            className="h-full w-full"
+                        />
+                    </button>
 
                     <Link
                         href="/customer/menu"
                         aria-label="Back to menu"
-                        className="absolute top-4 left-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-[#1b1b18] shadow-sm backdrop-blur dark:bg-[#0a0a0a]/80 dark:text-[#EDEDEC]"
+                        className="absolute top-4 left-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-[#1b1b18] shadow-sm dark:bg-[#0a0a0a]/80 dark:text-[#EDEDEC]"
                     >
                         <svg
                             viewBox="0 0 24 24"
@@ -68,13 +78,13 @@ export default function CustomerMenuShow({ menu, serviceType }: Props) {
                     </Link>
 
                     {serviceType !== null && (
-                        <span className="absolute top-4 right-4 rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-[#1b1b18] shadow-sm backdrop-blur dark:bg-[#0a0a0a]/80 dark:text-[#EDEDEC]">
+                        <span className="absolute top-4 right-4 rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-[#1b1b18] shadow-sm dark:bg-[#0a0a0a]/80 dark:text-[#EDEDEC]">
                             {serviceTypeLabel(serviceType)}
                         </span>
                     )}
                 </div>
 
-                <div className="relative -mt-6 rounded-t-3xl bg-[#FDFDFC] px-4 pt-5 pb-4 dark:bg-[#0a0a0a]">
+                <div className="relative px-4 pt-5 pb-4">
                     {(menu.is_recommended || categories.length > 0) && (
                         <div className="mb-3 flex flex-wrap items-center gap-2">
                             {menu.is_recommended && (
@@ -118,6 +128,13 @@ export default function CustomerMenuShow({ menu, serviceType }: Props) {
                     </div>
                 </div>
             </div>
+
+            <MenuImageLightbox
+                src={menu.image}
+                alt={menu.name}
+                open={photoOpen}
+                onClose={closePhoto}
+            />
         </>
     );
 }
