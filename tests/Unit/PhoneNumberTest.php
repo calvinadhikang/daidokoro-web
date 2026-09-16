@@ -37,4 +37,12 @@ class PhoneNumberTest extends TestCase
             PhoneNumber::formatForDisplay('6281234567890'),
         );
     }
+
+    public function test_matching_values_include_normalized_and_local_forms(): void
+    {
+        $this->assertEqualsCanonicalizing(
+            ['081234567890', '6281234567890', '81234567890'],
+            PhoneNumber::matchingValues('081234567890'),
+        );
+    }
 }

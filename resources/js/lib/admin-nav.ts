@@ -1,6 +1,7 @@
 import { edit as hoursEdit } from '@/routes/admin/hours';
 import { index as menusIndex } from '@/routes/admin/menus';
 import { index as categoriesIndex } from '@/routes/admin/categories';
+import { index as customersIndex } from '@/routes/admin/customers';
 import { index as mejasIndex } from '@/routes/admin/mejas';
 import { index as reportsIndex } from '@/routes/admin/reports';
 import { history as transactionHistory, index as transactionsIndex } from '@/routes/admin/transaction';
@@ -20,6 +21,12 @@ export const primaryNavItems = [
 ] as const;
 
 export const secondaryNavItems = [
+    {
+        label: 'Customers',
+        description: 'Search and edit diner profiles',
+        href: customersIndex.url(),
+        match: 'customers' as const,
+    },
     {
         label: 'Tables',
         description: 'Table codes & ordering QR',
@@ -74,6 +81,10 @@ export function isNavActive(url: string, item: NavItem): boolean {
     }
 
     if (item.match === 'categories') {
+        return url === item.href || url.startsWith(`${item.href}/`);
+    }
+
+    if (item.match === 'customers') {
         return url === item.href || url.startsWith(`${item.href}/`);
     }
 

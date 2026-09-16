@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read string $phone_display
  * @property-read string $phone_local
+ * @property-read int $transactions_count
  */
 #[Fillable(['name', 'phone'])]
 class Customer extends Model

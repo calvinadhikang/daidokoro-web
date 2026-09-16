@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\CategoryApiController;
+use App\Http\Controllers\Api\CustomerApiController;
 use App\Http\Controllers\Api\MenuApiController;
 use App\Http\Controllers\Api\NotificationApiController;
 use App\Http\Controllers\Api\OperatingHoursApiController;
@@ -63,6 +64,12 @@ Route::prefix('hours')->group(function () {
 Route::prefix('report')->group(function () {
     Route::get('/sales', [ReportApiController::class, 'sales']);
     Route::get('/menus', [ReportApiController::class, 'menus']);
+});
+
+Route::prefix('customer')->group(function () {
+    Route::get('/', [CustomerApiController::class, 'index']);
+    Route::get('/detail/{customer}', [CustomerApiController::class, 'show']);
+    Route::post('/update/{customer}', [CustomerApiController::class, 'update']);
 });
 
 Route::get('/ping', function () {

@@ -47,7 +47,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                                       ? 'Laporan'
                                       : url.startsWith('/admin/mejas')
                                         ? 'Tables'
-                                        : 'History'}
+                                        : url.startsWith('/admin/customers')
+                                          ? 'Customers'
+                                          : 'History'}
                             </p>
                         )}
                     </div>

@@ -42,4 +42,27 @@ class PhoneNumber
     {
         return '0'.self::toLocalInput($normalizedPhone);
     }
+
+    /**
+     * Phone spellings that may appear on transactions for the same diner.
+     *
+     * @return list<string>
+     */
+    public static function matchingValues(?string $phone): array
+    {
+        if ($phone === null || trim($phone) === '') {
+            return [];
+        }
+
+        $normalized = self::normalize($phone);
+        $values = [$phone];
+
+        if ($normalized !== null) {
+            $values[] = $normalized;
+            $values[] = self::formatForDisplay($normalized);
+            $values[] = self::toLocalInput($normalized);
+        }
+
+        return array_values(array_unique(array_filter($values)));
+    }
 }

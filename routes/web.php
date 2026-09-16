@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CustomerCartController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerLoginController;
 use App\Http\Controllers\CustomerMenuController;
 use App\Http\Controllers\CustomerMenuOrderController;
@@ -55,6 +56,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/categories/{category}', [CategoryController::class, 'show'])->name('categories.show');
     Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
     Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+
+    Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
+    Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+    Route::put('/customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
 
     Route::get('/mejas', [MejaController::class, 'index'])->name('mejas.index');
     Route::get('/mejas/create', [MejaController::class, 'create'])->name('mejas.create');

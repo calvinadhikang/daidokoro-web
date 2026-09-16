@@ -4,6 +4,12 @@ export type Customer = {
     phone: string;
     phone_display: string;
     phone_local: string;
+    transactions_count?: number;
+};
+
+export type CustomerAdminForm = {
+    name: string;
+    phone: string;
 };
 
 export type CustomerNav = {

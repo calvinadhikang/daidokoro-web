@@ -10,7 +10,10 @@ use Illuminate\Validation\ValidationException;
 
 class TransactionOrderService
 {
-    public function __construct(private MenuOrderLineBuilder $lineBuilder) {}
+    public function __construct(
+        private MenuOrderLineBuilder $lineBuilder,
+        private CustomerDirectoryService $customers,
+    ) {}
 
     /**
      * @param  array{
@@ -47,6 +50,11 @@ class TransactionOrderService
                 );
             }
 
+            $this->customers->upsertFromNamePhone(
+                $data['customer_name'],
+                $data['customer_phone'],
+            );
+
             return $transaction->fresh() ?? $transaction;
         });
     }
@@ -67,6 +75,11 @@ class TransactionOrderService
             'customer_phone' => $data['customer_phone'],
             'service_type' => $data['service_type'] ?? $transaction->service_type,
         ]);
+
+        $this->customers->upsertFromNamePhone(
+            $data['customer_name'],
+            $data['customer_phone'],
+        );
 
         return $transaction->fresh() ?? $transaction;
     }
