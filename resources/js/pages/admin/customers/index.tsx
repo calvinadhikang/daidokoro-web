@@ -3,15 +3,12 @@ import { useMemo, useState } from 'react';
 
 import { show as showCustomer } from '@/actions/App/Http/Controllers/CustomerController';
 import { inputClassName } from '@/components/admin/menu-form';
+import { customerMatchesSearch } from '@/lib/customer-search';
 import type { Customer } from '@/types/customer';
 
 type Props = {
     customers: Customer[];
 };
-
-function digitsOnly(value: string): string {
-    return value.replace(/\D/g, '');
-}
 
 function CustomerListItem({ customer }: { customer: Customer }) {
     const transactionCount = customer.transactions_count ?? 0;
@@ -41,32 +38,9 @@ export default function AdminCustomersIndex({ customers }: Props) {
     const [search, setSearch] = useState('');
 
     const filteredCustomers = useMemo(() => {
-        const query = search.trim().toLowerCase();
-
-        if (query === '') {
-            return customers;
-        }
-
-        const queryDigits = digitsOnly(query);
-
-        return customers.filter((customer) => {
-            if (customer.name.toLowerCase().includes(query)) {
-                return true;
-            }
-
-            if (
-                customer.phone.includes(query) ||
-                customer.phone_display.toLowerCase().includes(query) ||
-                customer.phone_local.includes(query)
-            ) {
-                return true;
-            }
-
-            return (
-                queryDigits !== '' &&
-                digitsOnly(customer.phone).includes(queryDigits)
-            );
-        });
+        return customers.filter((customer) =>
+            customerMatchesSearch(customer, search),
+        );
     }, [customers, search]);
 
     const isSearching = search.trim() !== '';
@@ -89,7 +63,7 @@ export default function AdminCustomersIndex({ customers }: Props) {
                         type="search"
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
-                        placeholder="Search by name or phone..."
+                        placeholder="Cari nama / no. HP"
                         className={`${inputClassName} mb-4`}
                     />
                 </div>
