@@ -69,6 +69,7 @@ Route::prefix('report')->group(function () {
 Route::prefix('customer')->group(function () {
     Route::get('/', [CustomerApiController::class, 'index']);
     Route::get('/detail/{customer}', [CustomerApiController::class, 'show']);
+    Route::post('/create', [CustomerApiController::class, 'store']);
     Route::post('/update/{customer}', [CustomerApiController::class, 'update']);
 });
 

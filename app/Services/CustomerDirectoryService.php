@@ -48,6 +48,14 @@ class CustomerDirectoryService
             ->get();
     }
 
+    public function create(string $name, string $phone): Customer
+    {
+        return Customer::query()->create([
+            'name' => $name,
+            'phone' => $phone,
+        ]);
+    }
+
     public function update(Customer $customer, string $name, string $phone): Customer
     {
         $oldPhones = PhoneNumber::matchingValues($customer->phone);

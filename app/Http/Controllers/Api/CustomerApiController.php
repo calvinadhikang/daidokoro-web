@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreCustomerRequest;
 use App\Http\Requests\UpdateCustomerRequest;
 use App\Models\Customer;
 use App\Services\CustomerDirectoryService;
@@ -22,6 +23,22 @@ class CustomerApiController extends Controller
                 ->map(fn (Customer $customer) => CustomerFormatter::format($customer))
                 ->values()
         );
+    }
+
+    public function store(StoreCustomerRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $customer = $this->customers->create(
+            $validated['name'],
+            $validated['phone'],
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Customer created successfully.',
+            'customer' => CustomerFormatter::format($customer),
+        ], 201);
     }
 
     public function show(Customer $customer): JsonResponse

@@ -83,6 +83,43 @@ class CustomerApiTest extends TestCase
         ]);
     }
 
+    public function test_create_stores_customer(): void
+    {
+        $response = $this->postJson('/api/customer/create', [
+            'name' => 'Alex Tan',
+            'phone' => '081234567890',
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonFragment([
+            'success' => true,
+            'name' => 'Alex Tan',
+            'phone' => '6281234567890',
+            'phone_display' => '081234567890',
+            'phone_country' => 'ID',
+        ]);
+        $this->assertDatabaseHas('customers', [
+            'name' => 'Alex Tan',
+            'phone' => '6281234567890',
+        ]);
+    }
+
+    public function test_create_rejects_duplicate_phone(): void
+    {
+        Customer::query()->create([
+            'name' => 'Alex Tan',
+            'phone' => '6281234567890',
+        ]);
+
+        $response = $this->postJson('/api/customer/create', [
+            'name' => 'Maria Santos',
+            'phone' => '081234567890',
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors(['phone']);
+    }
+
     public function test_update_changes_name_and_phone(): void
     {
         $customer = Customer::query()->create([
