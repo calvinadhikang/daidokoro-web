@@ -6,6 +6,8 @@ import {
     store,
 } from '@/actions/App/Http/Controllers/TransactionController';
 import { ConfirmDialog } from '@/components/admin/confirm-dialog';
+import { PhoneInput } from '@/components/phone-input';
+import { DEFAULT_PHONE_REGION } from '@/lib/phone-countries';
 import {
     inputClassName,
     labelClassName,
@@ -73,6 +75,7 @@ export default function AdminTransactionCreate({ menus }: Props) {
     const form = useForm<CreateTransactionForm>({
         customer_name: '',
         customer_phone: '',
+        customer_phone_country: DEFAULT_PHONE_REGION,
         service_type: 'dine_in',
         items: [],
     });
@@ -101,6 +104,7 @@ export default function AdminTransactionCreate({ menus }: Props) {
         form.transform((data) => ({
             customer_name: data.customer_name,
             customer_phone: data.customer_phone,
+            customer_phone_country: data.customer_phone_country,
             service_type: data.service_type,
             items: cart.map((item) => ({
                 menu_id: item.menu_id,
@@ -189,18 +193,19 @@ export default function AdminTransactionCreate({ menus }: Props) {
                                 >
                                     Phone
                                 </label>
-                                <input
+                                <PhoneInput
                                     id="customer_phone"
-                                    type="tel"
-                                    value={form.data.customer_phone}
-                                    onChange={(event) =>
+                                    country={form.data.customer_phone_country}
+                                    nationalNumber={form.data.customer_phone}
+                                    onCountryChange={(region) =>
                                         form.setData(
-                                            'customer_phone',
-                                            event.target.value,
+                                            'customer_phone_country',
+                                            region,
                                         )
                                     }
-                                    className={inputClassName}
-                                    placeholder="Phone number"
+                                    onNationalNumberChange={(value) =>
+                                        form.setData('customer_phone', value)
+                                    }
                                 />
                                 <FieldError message={form.errors.customer_phone} />
                             </div>

@@ -21,7 +21,7 @@ class CustomerTransactionService
     public function findActiveByPhone(string $phone): ?Transaction
     {
         return Transaction::query()
-            ->where('customer_phone', $phone)
+            ->forPhone($phone)
             ->where('status', 'in_progress')
             ->whereDate('business_date', $this->storeHours->today())
             ->latest()
@@ -34,7 +34,7 @@ class CustomerTransactionService
     public function listTodayByPhone(string $phone): Collection
     {
         return Transaction::query()
-            ->where('customer_phone', $phone)
+            ->forPhone($phone)
             ->whereDate('business_date', $this->storeHours->today())
             ->with('items')
             ->orderByDesc('created_at')
@@ -45,7 +45,7 @@ class CustomerTransactionService
     public function hasTodayOrdersByPhone(string $phone): bool
     {
         return Transaction::query()
-            ->where('customer_phone', $phone)
+            ->forPhone($phone)
             ->whereDate('business_date', $this->storeHours->today())
             ->whereHas('items')
             ->exists();

@@ -20,6 +20,8 @@ import {
     type MenuOrderLineItem,
 } from '@/components/menu/menu-order-form';
 import { ConfirmDialog } from '@/components/admin/confirm-dialog';
+import { PhoneInput } from '@/components/phone-input';
+import { DEFAULT_PHONE_REGION } from '@/lib/phone-countries';
 import {
     inputClassName,
     labelClassName,
@@ -104,7 +106,10 @@ export default function AdminTransactionShow({
 
     const headerForm = useForm({
         customer_name: transaction.customer_name,
-        customer_phone: transaction.customer_phone,
+        customer_phone:
+            transaction.customer_phone_local ?? transaction.customer_phone,
+        customer_phone_country:
+            transaction.customer_phone_country ?? DEFAULT_PHONE_REGION,
         service_type: transaction.service_type,
     });
 
@@ -298,7 +303,10 @@ export default function AdminTransactionShow({
                             <p className="mt-2 text-sm text-[#706f6c] dark:text-[#A1A09A]">
                                 Phone
                             </p>
-                            <p>{transaction.customer_phone}</p>
+                            <p>
+                                {transaction.customer_phone_display ??
+                                    transaction.customer_phone}
+                            </p>
                             <p className="mt-2 text-sm text-[#706f6c] dark:text-[#A1A09A]">
                                 Order type
                             </p>
@@ -349,17 +357,26 @@ export default function AdminTransactionShow({
                                 >
                                     Phone
                                 </label>
-                                <input
+                                <PhoneInput
                                     id="customer_phone"
-                                    type="tel"
-                                    value={headerForm.data.customer_phone}
-                                    onChange={(event) =>
+                                    country={
+                                        headerForm.data.customer_phone_country
+                                    }
+                                    nationalNumber={
+                                        headerForm.data.customer_phone
+                                    }
+                                    onCountryChange={(region) =>
                                         headerForm.setData(
-                                            'customer_phone',
-                                            event.target.value,
+                                            'customer_phone_country',
+                                            region,
                                         )
                                     }
-                                    className={inputClassName}
+                                    onNationalNumberChange={(value) =>
+                                        headerForm.setData(
+                                            'customer_phone',
+                                            value,
+                                        )
+                                    }
                                 />
                                 <FieldError
                                     message={headerForm.errors.customer_phone}

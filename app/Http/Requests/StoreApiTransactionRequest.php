@@ -2,12 +2,14 @@
 
 namespace App\Http\Requests;
 
-use App\Support\PhoneNumber;
+use App\Http\Requests\Concerns\NormalizesPhoneInput;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreApiTransactionRequest extends FormRequest
 {
+    use NormalizesPhoneInput;
+
     public function authorize(): bool
     {
         return true;
@@ -15,9 +17,7 @@ class StoreApiTransactionRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge([
-            'customer_phone' => PhoneNumber::normalize($this->input('customer_phone')),
-        ]);
+        $this->preparePhoneInput('customer_phone', 'customer_phone_country');
     }
 
     /**
@@ -27,7 +27,7 @@ class StoreApiTransactionRequest extends FormRequest
     {
         return [
             'customer_name' => ['required', 'string', 'max:255'],
-            'customer_phone' => ['required', 'string', 'regex:/^628\d{8,12}$/'],
+            ...$this->phoneValidationRules('customer_phone', 'customer_phone_country'),
             'service_type' => ['nullable', 'in:dine_in,takeaway'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.menu_id' => ['required', 'integer', 'exists:menus,id'],
@@ -44,7 +44,6 @@ class StoreApiTransactionRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'customer_phone.regex' => 'Enter a valid Indonesian mobile number.',
             'items.min' => 'Select at least one menu item before creating the transaction.',
         ];
     }

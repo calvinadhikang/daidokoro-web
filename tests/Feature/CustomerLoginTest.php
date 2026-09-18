@@ -47,6 +47,22 @@ class CustomerLoginTest extends TestCase
         $this->assertSame('takeaway', session('service_type'));
     }
 
+    public function test_customer_login_accepts_singapore_phone(): void
+    {
+        $response = $this->post(route('customer.login.store'), [
+            'name' => 'Wei',
+            'phone' => '81234567',
+            'phone_country' => 'SG',
+            'service_type' => 'takeaway',
+        ]);
+
+        $response->assertRedirect(route('customer.menu.index'));
+        $this->assertDatabaseHas('customers', [
+            'name' => 'Wei',
+            'phone' => '6581234567',
+        ]);
+    }
+
     public function test_existing_customer_is_updated_by_phone(): void
     {
         Customer::query()->create([

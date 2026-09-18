@@ -2,12 +2,14 @@
 
 namespace App\Http\Requests;
 
-use App\Support\PhoneNumber;
+use App\Http\Requests\Concerns\NormalizesPhoneInput;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateTransactionRequest extends FormRequest
 {
+    use NormalizesPhoneInput;
+
     public function authorize(): bool
     {
         return true;
@@ -15,10 +17,7 @@ class UpdateTransactionRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge([
-            'customer_phone' => PhoneNumber::normalize($this->input('customer_phone'))
-                ?? $this->input('customer_phone'),
-        ]);
+        $this->preparePhoneInput('customer_phone', 'customer_phone_country');
     }
 
     /**
@@ -28,7 +27,7 @@ class UpdateTransactionRequest extends FormRequest
     {
         return [
             'customer_name' => ['required', 'string', 'max:255'],
-            'customer_phone' => ['required', 'string', 'max:50'],
+            ...$this->phoneValidationRules('customer_phone', 'customer_phone_country'),
             'service_type' => ['nullable', 'in:dine_in,takeaway'],
         ];
     }

@@ -41,14 +41,8 @@ class CustomerDirectoryService
      */
     public function transactionsFor(Customer $customer): Collection
     {
-        $phones = PhoneNumber::matchingValues($customer->phone);
-
-        if ($phones === []) {
-            return new Collection;
-        }
-
         return Transaction::query()
-            ->whereIn('customer_phone', $phones)
+            ->forPhone($customer->phone)
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->get();
@@ -127,5 +121,63 @@ class CustomerDirectoryService
 
             $existing[$normalized] = true;
         }
+    }
+
+    public function normalizeAndMergeStoredPhones(): void
+    {
+        DB::transaction(function (): void {
+            $groups = [];
+
+            foreach (Customer::query()->orderBy('id')->get() as $customer) {
+                $normalized = PhoneNumber::normalize($customer->phone);
+
+                if ($normalized === null) {
+                    continue;
+                }
+
+                $groups[$normalized][] = $customer;
+            }
+
+            foreach ($groups as $normalized => $group) {
+                $keeper = $group[0];
+
+                foreach (array_slice($group, 1) as $duplicate) {
+                    if ($this->isPlaceholderName($keeper->name) && ! $this->isPlaceholderName($duplicate->name)) {
+                        $keeper->name = $duplicate->name;
+                    }
+
+                    $duplicate->delete();
+                }
+
+                $keeper->fill([
+                    'name' => $keeper->name,
+                    'phone' => $normalized,
+                ])->save();
+            }
+
+            Transaction::query()
+                ->select(['id', 'customer_phone'])
+                ->orderBy('id')
+                ->chunkById(100, function (Collection $transactions): void {
+                    foreach ($transactions as $transaction) {
+                        $normalized = PhoneNumber::normalize($transaction->customer_phone);
+
+                        if ($normalized === null || $transaction->customer_phone === $normalized) {
+                            continue;
+                        }
+
+                        DB::table('transactions')
+                            ->where('id', $transaction->id)
+                            ->update(['customer_phone' => $normalized]);
+                    }
+                });
+        });
+    }
+
+    private function isPlaceholderName(string $name): bool
+    {
+        $trimmed = trim($name);
+
+        return $trimmed === '' || strcasecmp($trimmed, 'Pelanggan') === 0;
     }
 }

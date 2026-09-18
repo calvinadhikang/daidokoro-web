@@ -42,6 +42,10 @@ export default function AdminTransactionIndex({ transactions }: Props) {
             (transaction) =>
                 transaction.customer_name.toLowerCase().includes(query) ||
                 transaction.customer_phone.includes(query) ||
+                (transaction.customer_phone_display ?? '')
+                    .toLowerCase()
+                    .includes(query) ||
+                (transaction.customer_phone_local ?? '').includes(query) ||
                 transaction.transaction_number.includes(query) ||
                 `#${transaction.transaction_number}`.includes(query) ||
                 (transaction.table_code ?? '')
@@ -112,7 +116,8 @@ export default function AdminTransactionIndex({ transactions }: Props) {
                                                     {transaction.customer_name}
                                                 </p>
                                                 <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                                    {transaction.customer_phone}
+                                                    {transaction.customer_phone_display ??
+                                                        transaction.customer_phone}
                                                     {' · '}
                                                     {serviceTypeLabel(
                                                         transaction.service_type,

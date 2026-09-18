@@ -4,12 +4,15 @@ export type Customer = {
     phone: string;
     phone_display: string;
     phone_local: string;
+    phone_country?: string;
+    phone_calling_code?: string;
     transactions_count?: number;
 };
 
 export type CustomerAdminForm = {
     name: string;
     phone: string;
+    phone_country: string;
 };
 
 export type CustomerNav = {
@@ -21,6 +24,7 @@ export type CustomerNav = {
 export type CustomerLoginForm = {
     name: string;
     phone: string;
+    phone_country: string;
     service_type: 'dine_in' | 'takeaway' | '';
 };
 

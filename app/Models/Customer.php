@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\PhoneNumber;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -20,6 +21,16 @@ use Illuminate\Support\Carbon;
 #[Fillable(['name', 'phone'])]
 class Customer extends Model
 {
+    /**
+     * @return Attribute<string, string|null>
+     */
+    protected function phone(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value): ?string => PhoneNumber::normalize($value) ?? $value,
+        );
+    }
+
     public function getPhoneDisplayAttribute(): string
     {
         return PhoneNumber::formatForDisplay($this->phone);

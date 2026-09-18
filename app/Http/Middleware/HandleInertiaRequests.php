@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\Customer;
 use App\Services\CustomerCartService;
 use App\Services\CustomerTransactionService;
+use App\Support\CustomerFormatter;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Middleware;
@@ -70,13 +71,7 @@ class HandleInertiaRequests extends Middleware
             return null;
         }
 
-        return [
-            'id' => $customer->id,
-            'name' => $customer->name,
-            'phone' => $customer->phone,
-            'phone_display' => $customer->phone_display,
-            'phone_local' => $customer->phone_local,
-        ];
+        return CustomerFormatter::format($customer);
     }
 
     /**

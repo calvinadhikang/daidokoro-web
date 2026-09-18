@@ -140,7 +140,7 @@ class TransactionApiTest extends TestCase
         $response->assertJsonFragment([
             'id' => $transaction->id,
             'name' => 'Alex Tan',
-            'customer_phone' => '081234567890',
+            'customer_phone' => '6281234567890',
             'service_type' => 'dine_in',
             'table_code' => 'B2',
             'status' => 'in_progress',
@@ -423,6 +423,39 @@ class TransactionApiTest extends TestCase
         $this->assertDatabaseHas('transactions', [
             'customer_name' => 'Sari',
             'customer_phone' => '6281234567890',
+        ]);
+    }
+
+    public function test_create_normalizes_singapore_phone(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Edamame',
+            'price' => 18000,
+            'is_available' => true,
+        ]);
+
+        $response = $this->postJson('/api/transaction/create', [
+            'customer_name' => 'Wei',
+            'customer_phone' => '81234567',
+            'customer_phone_country' => 'SG',
+            'items' => [
+                [
+                    'menu_id' => $menu->id,
+                    'quantity' => 1,
+                ],
+            ],
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('transaction.customer_phone', '6581234567');
+        $response->assertJsonPath('transaction.customer_phone_country', 'SG');
+        $this->assertDatabaseHas('transactions', [
+            'customer_name' => 'Wei',
+            'customer_phone' => '6581234567',
+        ]);
+        $this->assertDatabaseHas('customers', [
+            'name' => 'Wei',
+            'phone' => '6581234567',
         ]);
     }
 

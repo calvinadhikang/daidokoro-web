@@ -26,6 +26,7 @@ class CustomerApiTest extends TestCase
             'name' => 'Alex Tan',
             'phone' => '6281234567890',
             'phone_display' => '081234567890',
+            'phone_country' => 'ID',
             'transactions_count' => 0,
         ]);
     }
@@ -118,6 +119,45 @@ class CustomerApiTest extends TestCase
             'id' => $transaction->id,
             'customer_name' => 'Alex Tan',
             'customer_phone' => '6281298765432',
+        ]);
+    }
+
+    public function test_update_normalizes_singapore_phone(): void
+    {
+        $customer = Customer::query()->create([
+            'name' => 'Old Name',
+            'phone' => '6281234567890',
+        ]);
+
+        $transaction = Transaction::query()->create([
+            'customer_name' => 'Old Name',
+            'customer_phone' => '6281234567890',
+            'status' => 'in_progress',
+            'total_bill' => 12000,
+        ]);
+
+        $response = $this->postJson("/api/customer/update/{$customer->id}", [
+            'name' => 'Wei',
+            'phone' => '81234567',
+            'phone_country' => 'SG',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonFragment([
+            'success' => true,
+            'name' => 'Wei',
+            'phone' => '6581234567',
+            'phone_country' => 'SG',
+        ]);
+
+        $this->assertDatabaseHas('customers', [
+            'id' => $customer->id,
+            'phone' => '6581234567',
+        ]);
+        $this->assertDatabaseHas('transactions', [
+            'id' => $transaction->id,
+            'customer_name' => 'Wei',
+            'customer_phone' => '6581234567',
         ]);
     }
 

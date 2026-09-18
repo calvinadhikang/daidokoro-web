@@ -5,18 +5,8 @@ type CustomerSearchFields = {
     phone_local?: string | null;
 };
 
-export function localPhoneDigits(value: string): string {
-    let digits = value.replace(/\D/g, '');
-
-    if (digits.startsWith('0')) {
-        digits = digits.slice(1);
-    }
-
-    if (digits.startsWith('62') && digits.length > 2) {
-        digits = digits.slice(2);
-    }
-
-    return digits;
+function digitsOnly(value: string): string {
+    return value.replace(/\D/g, '');
 }
 
 export function customerMatchesSearch(
@@ -32,12 +22,28 @@ export function customerMatchesSearch(
         return true;
     }
 
-    const queryDigits = localPhoneDigits(query);
+    const queryDigits = digitsOnly(query);
     if (queryDigits === '') {
         return false;
     }
 
-    return [customer.phone, customer.phone_display, customer.phone_local]
+    const candidates = [
+        customer.phone,
+        customer.phone_display,
+        customer.phone_local,
+    ]
         .filter((value): value is string => Boolean(value))
-        .some((phone) => localPhoneDigits(phone).includes(queryDigits));
+        .map(digitsOnly);
+
+    if (candidates.some((phone) => phone.includes(queryDigits))) {
+        return true;
+    }
+
+    if (queryDigits.startsWith('0') && queryDigits.length > 1) {
+        const withoutTrunk = queryDigits.slice(1);
+
+        return candidates.some((phone) => phone.includes(withoutTrunk));
+    }
+
+    return false;
 }

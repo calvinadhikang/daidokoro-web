@@ -1,5 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 
+import { PhoneInput } from '@/components/phone-input';
+import { DEFAULT_PHONE_REGION } from '@/lib/phone-countries';
 import {
     inputClassName,
     labelClassName,
@@ -30,7 +32,8 @@ export default function CustomerLogin({
 }: Props) {
     const form = useForm<CustomerLoginForm>({
         name: customer?.name ?? '',
-        phone: customer?.phone_display ?? '',
+        phone: customer?.phone_local ?? customer?.phone_display ?? '',
+        phone_country: customer?.phone_country ?? DEFAULT_PHONE_REGION,
         service_type: serviceType ?? '',
     });
 
@@ -102,22 +105,16 @@ export default function CustomerLogin({
                             <label htmlFor="phone" className={labelClassName}>
                                 Phone number
                             </label>
-                            <input
+                            <PhoneInput
                                 id="phone"
-                                type="tel"
-                                inputMode="numeric"
-                                pattern="[0-9]*"
-                                value={form.data.phone}
-                                onChange={(event) =>
-                                    form.setData(
-                                        'phone',
-                                        event.target.value.replace(/\D/g, ''),
-                                    )
+                                country={form.data.phone_country}
+                                nationalNumber={form.data.phone}
+                                onCountryChange={(region) =>
+                                    form.setData('phone_country', region)
                                 }
-                                className={inputClassName}
-                                placeholder="081234567890"
-                                autoComplete="tel"
-                                required
+                                onNationalNumberChange={(value) =>
+                                    form.setData('phone', value)
+                                }
                             />
                             <FieldError message={form.errors.phone} />
                         </div>

@@ -2,29 +2,32 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\NormalizesPhoneInput;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreTransactionRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
+    use NormalizesPhoneInput;
+
     public function authorize(): bool
     {
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->preparePhoneInput('customer_phone', 'customer_phone_country');
+    }
+
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
             'customer_name' => ['required', 'string', 'max:255'],
-            'customer_phone' => ['required', 'string', 'max:50'],
+            ...$this->phoneValidationRules('customer_phone', 'customer_phone_country'),
             'service_type' => ['nullable', 'in:dine_in,takeaway'],
             'items' => ['nullable', 'array'],
             'items.*.menu_id' => ['required', 'integer', 'exists:menus,id'],

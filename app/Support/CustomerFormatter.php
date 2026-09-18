@@ -11,6 +11,8 @@ class CustomerFormatter
      *     id: int,
      *     name: string,
      *     phone: string,
+     *     phone_country: string,
+     *     phone_calling_code: string,
      *     phone_display: string,
      *     phone_local: string,
      *     transactions_count: int
@@ -22,8 +24,7 @@ class CustomerFormatter
             'id' => $customer->id,
             'name' => $customer->name,
             'phone' => $customer->phone,
-            'phone_display' => $customer->phone_display,
-            'phone_local' => $customer->phone_local,
+            ...PhoneNumber::metadata($customer->phone),
             'transactions_count' => (int) ($customer->transactions_count ?? 0),
         ];
     }

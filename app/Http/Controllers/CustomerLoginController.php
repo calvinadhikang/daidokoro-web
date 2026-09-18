@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreCustomerLoginRequest;
 use App\Models\Customer;
 use App\Services\CustomerTransactionService;
+use App\Support\CustomerFormatter;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -35,13 +36,7 @@ class CustomerLoginController extends Controller
         return Inertia::render('customer/login', [
             'serviceType' => request()->query('service_type') ?? session('service_type'),
             'tableCode' => session('table_code'),
-            'customer' => $customer === null ? null : [
-                'id' => $customer->id,
-                'name' => $customer->name,
-                'phone' => $customer->phone,
-                'phone_display' => $customer->phone_display,
-                'phone_local' => $customer->phone_local,
-            ],
+            'customer' => $customer === null ? null : CustomerFormatter::format($customer),
             'hasActiveOrder' => $activeTransaction !== null,
         ]);
     }

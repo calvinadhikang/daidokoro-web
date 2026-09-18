@@ -38,6 +38,9 @@ export type Transaction = {
     transaction_number: string;
     customer_name: string;
     customer_phone: string;
+    customer_phone_display?: string;
+    customer_phone_country?: string;
+    customer_phone_local?: string;
     service_type: TransactionServiceType;
     table_code: string | null;
     status: TransactionStatus;
@@ -58,6 +61,7 @@ export type TransactionOrderForm = {
 export type CreateTransactionForm = {
     customer_name: string;
     customer_phone: string;
+    customer_phone_country: string;
     service_type: TransactionServiceType;
     items: Array<{
         menu_id: number;

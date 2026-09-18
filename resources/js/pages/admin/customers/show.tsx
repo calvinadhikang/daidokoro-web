@@ -5,6 +5,8 @@ import {
     update,
 } from '@/actions/App/Http/Controllers/CustomerController';
 import { AdminTransactionListCard } from '@/components/admin/transaction-list-card';
+import { PhoneInput } from '@/components/phone-input';
+import { DEFAULT_PHONE_REGION } from '@/lib/phone-countries';
 import {
     inputClassName,
     labelClassName,
@@ -31,7 +33,8 @@ export default function AdminCustomersShow({
 }: Props) {
     const form = useForm<CustomerAdminForm>({
         name: customer.name,
-        phone: customer.phone_display,
+        phone: customer.phone_local,
+        phone_country: customer.phone_country ?? DEFAULT_PHONE_REGION,
     });
 
     function handleSubmit(event: React.FormEvent) {
@@ -84,20 +87,19 @@ export default function AdminCustomersShow({
                     >
                         Phone
                     </label>
-                    <input
+                    <PhoneInput
                         id="customer-phone"
-                        type="tel"
-                        value={form.data.phone}
-                        onChange={(event) =>
-                            form.setData('phone', event.target.value)
+                        country={form.data.phone_country}
+                        nationalNumber={form.data.phone}
+                        onCountryChange={(region) =>
+                            form.setData('phone_country', region)
                         }
-                        className={inputClassName}
-                        autoComplete="tel"
-                        placeholder="0812..."
+                        onNationalNumberChange={(value) =>
+                            form.setData('phone', value)
+                        }
                     />
                     <p className="mt-1.5 text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                        Indonesian mobile number. Changing this also updates
-                        matching past orders.
+                        Changing this also updates matching past orders.
                     </p>
                     <FieldError message={form.errors.phone} />
                 </section>

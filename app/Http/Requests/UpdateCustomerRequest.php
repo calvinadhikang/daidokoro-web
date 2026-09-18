@@ -2,13 +2,15 @@
 
 namespace App\Http\Requests;
 
-use App\Support\PhoneNumber;
+use App\Http\Requests\Concerns\NormalizesPhoneInput;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateCustomerRequest extends FormRequest
 {
+    use NormalizesPhoneInput;
+
     public function authorize(): bool
     {
         return true;
@@ -16,9 +18,7 @@ class UpdateCustomerRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge([
-            'phone' => PhoneNumber::normalize($this->input('phone')),
-        ]);
+        $this->preparePhoneInput('phone', 'phone_country');
     }
 
     /**
@@ -26,24 +26,15 @@ class UpdateCustomerRequest extends FormRequest
      */
     public function rules(): array
     {
+        $phoneRules = $this->phoneValidationRules('phone', 'phone_country');
+
         return [
             'name' => ['required', 'string', 'max:255'],
+            'phone_country' => $phoneRules['phone_country'],
             'phone' => [
-                'required',
-                'string',
-                'regex:/^628\d{8,12}$/',
+                ...$phoneRules['phone'],
                 Rule::unique('customers', 'phone')->ignore($this->route('customer')),
             ],
-        ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'phone.regex' => 'Enter a valid Indonesian mobile number.',
         ];
     }
 }
