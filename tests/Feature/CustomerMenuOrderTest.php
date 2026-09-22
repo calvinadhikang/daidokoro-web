@@ -715,4 +715,57 @@ class CustomerMenuOrderTest extends TestCase
             ->has('transactions.1.item_groups', 1)
         );
     }
+
+    public function test_weight_based_menu_stores_grams_in_cart(): void
+    {
+        $customer = Customer::query()->create([
+            'name' => 'Alex Tan',
+            'phone' => '6281234567890',
+        ]);
+
+        $menu = MenuModel::query()->create([
+            'name' => 'Salmon Sashimi',
+            'price' => 15000,
+            'pricing_type' => MenuModel::PRICING_WEIGHT_BASED,
+            'is_available' => true,
+        ]);
+
+        $response = $this
+            ->withSession(['customer_id' => $customer->id, 'service_type' => 'takeaway'])
+            ->post(route('customer.menu.store', $menu), [
+                'weight_grams' => 250,
+            ]);
+
+        $response->assertRedirect(route('customer.menu.index'));
+        $response->assertSessionHas(
+            'success',
+            'Added 250g Salmon Sashimi to your cart.',
+        );
+
+        $cart = session('customer_cart');
+        $this->assertIsArray($cart);
+        $this->assertSame(250, $cart[0]['weight_grams']);
+        $this->assertSame(1, $cart[0]['quantity']);
+        $this->assertSame(37500, $cart[0]['line_total']);
+    }
+
+    public function test_customer_menu_is_blocked_during_event_closure(): void
+    {
+        $customer = Customer::query()->create([
+            'name' => 'Alex Tan',
+            'phone' => '6281234567890',
+        ]);
+
+        $this->postJson('/api/channels/events/create', [
+            'name' => 'Bazaar Senayan',
+            'starts_at' => now()->toDateString(),
+            'ends_at' => now()->toDateString(),
+        ])->assertCreated();
+
+        $response = $this
+            ->withSession(['customer_id' => $customer->id, 'service_type' => 'takeaway'])
+            ->get(route('customer.menu.index'));
+
+        $response->assertRedirect(route('home'));
+    }
 }

@@ -19,17 +19,20 @@ export default function CustomerMenuShow({ menu, serviceType }: Props) {
     const closePhoto = useCallback(() => setPhotoOpen(false), []);
     const form = useForm({
         quantity: 1,
+        weight_grams: 100 as number | null,
         addon_option_ids: [] as number[],
         note: '' as string | null,
     });
 
     function handleSubmit(item: {
         quantity: number;
+        weight_grams?: number | null;
         addon_option_ids: number[];
         note: string | null;
     }) {
         form.transform(() => ({
             quantity: item.quantity,
+            weight_grams: item.weight_grams,
             addon_option_ids: item.addon_option_ids,
             note: item.note,
         }));
@@ -108,6 +111,7 @@ export default function CustomerMenuShow({ menu, serviceType }: Props) {
                     </h1>
                     <p className="mt-1.5 text-xl font-semibold tabular-nums">
                         {formatPrice(menu.price)}
+                        {menu.pricing_type === 'weight_based' ? ' / 100g' : ''}
                     </p>
 
                     <div className="mt-5">

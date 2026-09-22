@@ -19,6 +19,8 @@ export type TransactionItem = {
     menu_id: number;
     menu_name: string;
     quantity: number;
+    weight_grams?: number | null;
+    pricing_type?: 'standard' | 'weight_based';
     unit_price: number;
     line_total: number;
     addons: TransactionAddon[] | null;
@@ -49,6 +51,12 @@ export type Transaction = {
     created_at: string;
     updated_at: string;
     items?: TransactionItem[];
+    sales_channel?: {
+        id: number;
+        name: string;
+        type: 'store' | 'event';
+    } | null;
+    sales_channel_id?: number;
 };
 
 export type TransactionOrderForm = {

@@ -8,6 +8,7 @@ import type {
     MenuAddonOptionForm,
     MenuForm,
 } from '@/types/menu';
+import type { SalesChannelOption } from '@/types/sales-channel';
 
 type InertiaMenuForm = ReturnType<typeof useForm<MenuForm>>;
 
@@ -63,6 +64,7 @@ type MenuFormProps = {
     backHref: string;
     submitLabel: string;
     imageSrc?: string | null;
+    channels?: SalesChannelOption[];
     onSubmit: (event: React.FormEvent) => void;
 };
 
@@ -73,6 +75,7 @@ export function MenuFormFields({
     backHref,
     submitLabel,
     imageSrc = null,
+    channels = [],
     onSubmit,
 }: MenuFormProps) {
     const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
@@ -238,7 +241,9 @@ export function MenuFormFields({
 
                         <div>
                             <label htmlFor="price" className={labelClassName}>
-                                Price
+                                {form.data.pricing_type === 'weight_based'
+                                    ? 'Price / 100g'
+                                    : 'Price'}
                             </label>
                             <input
                                 id="price"
@@ -256,6 +261,23 @@ export function MenuFormFields({
                             />
                             <FieldError message={form.errors.price} />
                         </div>
+
+                        <label className="flex items-center gap-3">
+                            <input
+                                type="checkbox"
+                                checked={form.data.pricing_type === 'weight_based'}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'pricing_type',
+                                        event.target.checked
+                                            ? 'weight_based'
+                                            : 'standard',
+                                    )
+                                }
+                                className="size-4 rounded border-[#e3e3e0] dark:border-[#3E3E3A]"
+                            />
+                            <span className="text-sm">Harga per 100 gram</span>
+                        </label>
 
                         <label className="flex items-center gap-3">
                             <input
@@ -286,6 +308,60 @@ export function MenuFormFields({
                             />
                             <span className="text-sm">Recommended</span>
                         </label>
+
+                        {channels.length > 0 && (
+                            <div>
+                                <p className={labelClassName}>Sales channels</p>
+                                <div className="space-y-2">
+                                    {channels.map((channel) => {
+                                        const checked =
+                                            form.data.sales_channel_ids.includes(
+                                                channel.id,
+                                            );
+
+                                        return (
+                                            <label
+                                                key={channel.id}
+                                                className="flex items-center gap-3"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={checked}
+                                                    onChange={(event) => {
+                                                        const next = event.target
+                                                            .checked
+                                                            ? [
+                                                                  ...form.data
+                                                                      .sales_channel_ids,
+                                                                  channel.id,
+                                                              ]
+                                                            : form.data.sales_channel_ids.filter(
+                                                                  (id) =>
+                                                                      id !==
+                                                                      channel.id,
+                                                              );
+                                                        form.setData(
+                                                            'sales_channel_ids',
+                                                            next,
+                                                        );
+                                                    }}
+                                                    className="h-4 w-4 rounded border-[#e3e3e0] dark:border-[#3E3E3A]"
+                                                />
+                                                <span className="text-sm">
+                                                    {channel.name}
+                                                    {channel.type === 'store'
+                                                        ? ' (Toko)'
+                                                        : ''}
+                                                </span>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                                <FieldError
+                                    message={form.errors.sales_channel_ids}
+                                />
+                            </div>
+                        )}
                     </div>
                 </section>
 
@@ -597,6 +673,7 @@ export function MenuFormFields({
 export function menuToForm(menu: {
     name: string;
     price: number;
+    pricing_type?: 'standard' | 'weight_based';
     is_available: boolean;
     is_recommended: boolean;
     addon_groups: Array<{
@@ -609,12 +686,15 @@ export function menuToForm(menu: {
             is_available: boolean;
         }>;
     }>;
+    sales_channel_ids?: number[];
 }): MenuForm {
     return {
         name: menu.name,
         price: String(menu.price),
+        pricing_type: menu.pricing_type === 'weight_based' ? 'weight_based' : 'standard',
         is_available: menu.is_available,
         is_recommended: menu.is_recommended,
+        sales_channel_ids: menu.sales_channel_ids ?? [],
         addon_groups: menu.addon_groups.map((group) => ({
             name: group.name,
             selection_type: group.selection_type,

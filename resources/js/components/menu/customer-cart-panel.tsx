@@ -54,7 +54,9 @@ function CartItemRow({
                 <div className="min-w-0">
                     <p className="text-sm font-medium">{item.menu_name}</p>
                     <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                        {formatPrice(item.unit_price)} each
+                        {item.pricing_type === 'weight_based'
+                            ? `${formatPrice(item.unit_price)} / 100g`
+                            : `${formatPrice(item.unit_price)} each`}
                     </p>
                     {item.addons.length > 0 && (
                         <ul className="mt-2 space-y-1 text-xs text-[#706f6c] dark:text-[#A1A09A]">
@@ -83,26 +85,32 @@ function CartItemRow({
             </div>
 
             <div className="mt-3 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                    <QuantityButton
-                        label="Decrease quantity"
-                        disabled={busy || item.quantity <= 1}
-                        onClick={() => onDecrease(index)}
-                    />
-                    <span
-                        className={cn(
-                            'min-w-6 text-center text-sm font-medium tabular-nums',
-                            busy && 'opacity-50',
-                        )}
-                    >
-                        {item.quantity}
-                    </span>
-                    <QuantityButton
-                        label="Increase quantity"
-                        disabled={busy || item.quantity >= MAX_QUANTITY}
-                        onClick={() => onIncrease(index)}
-                    />
-                </div>
+                {item.pricing_type === 'weight_based' ? (
+                    <p className="text-sm font-medium tabular-nums">
+                        {item.weight_grams ?? 0} g
+                    </p>
+                ) : (
+                    <div className="flex items-center gap-2">
+                        <QuantityButton
+                            label="Decrease quantity"
+                            disabled={busy || item.quantity <= 1}
+                            onClick={() => onDecrease(index)}
+                        />
+                        <span
+                            className={cn(
+                                'min-w-6 text-center text-sm font-medium tabular-nums',
+                                busy && 'opacity-50',
+                            )}
+                        >
+                            {item.quantity}
+                        </span>
+                        <QuantityButton
+                            label="Increase quantity"
+                            disabled={busy || item.quantity >= MAX_QUANTITY}
+                            onClick={() => onIncrease(index)}
+                        />
+                    </div>
+                )}
                 <button
                     type="button"
                     onClick={() => onRemove(index)}

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\MenuApiController;
 use App\Http\Controllers\Api\NotificationApiController;
 use App\Http\Controllers\Api\OperatingHoursApiController;
 use App\Http\Controllers\Api\ReportApiController;
+use App\Http\Controllers\Api\SalesChannelApiController;
 use App\Http\Controllers\Api\TransactionApiController;
 use App\Http\Controllers\OmakaseController;
 use Illuminate\Support\Facades\Route;
@@ -71,6 +72,18 @@ Route::prefix('customer')->group(function () {
     Route::get('/detail/{customer}', [CustomerApiController::class, 'show']);
     Route::post('/create', [CustomerApiController::class, 'store']);
     Route::post('/update/{customer}', [CustomerApiController::class, 'update']);
+});
+
+Route::prefix('channels')->group(function () {
+    Route::get('/', [SalesChannelApiController::class, 'index']);
+    Route::get('/current', [SalesChannelApiController::class, 'current']);
+    Route::post('/events/create', [SalesChannelApiController::class, 'storeEvent']);
+    Route::post('/events/update/{salesChannel}', [SalesChannelApiController::class, 'updateEvent']);
+    Route::post('/events/archive/{salesChannel}', [SalesChannelApiController::class, 'archiveEvent']);
+    Route::get('/{salesChannel}/menus', [SalesChannelApiController::class, 'menus']);
+    Route::post('/{salesChannel}/menus/assign', [SalesChannelApiController::class, 'assignMenus']);
+    Route::post('/{salesChannel}/menus/update/{menuModel}', [SalesChannelApiController::class, 'updateMenu']);
+    Route::post('/{salesChannel}/menus/unassign/{menuModel}', [SalesChannelApiController::class, 'unassignMenu']);
 });
 
 Route::get('/ping', function () {

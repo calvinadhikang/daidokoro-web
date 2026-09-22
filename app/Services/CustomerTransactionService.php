@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Customer;
 use App\Models\MenuModel;
+use App\Models\SalesChannel;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use Illuminate\Database\Eloquent\Collection;
@@ -22,6 +23,7 @@ class CustomerTransactionService
     {
         return Transaction::query()
             ->forPhone($phone)
+            ->where('sales_channel_id', SalesChannel::store()->id)
             ->where('status', 'in_progress')
             ->whereDate('business_date', $this->storeHours->today())
             ->latest()
@@ -35,6 +37,7 @@ class CustomerTransactionService
     {
         return Transaction::query()
             ->forPhone($phone)
+            ->where('sales_channel_id', SalesChannel::store()->id)
             ->whereDate('business_date', $this->storeHours->today())
             ->with('items')
             ->orderByDesc('created_at')
@@ -46,6 +49,7 @@ class CustomerTransactionService
     {
         return Transaction::query()
             ->forPhone($phone)
+            ->where('sales_channel_id', SalesChannel::store()->id)
             ->whereDate('business_date', $this->storeHours->today())
             ->whereHas('items')
             ->exists();
@@ -97,6 +101,7 @@ class CustomerTransactionService
                     $lineItem['quantity'],
                     $lineItem['addon_option_ids'] ?? [],
                     $lineItem['note'] ?? null,
+                    isset($lineItem['weight_grams']) ? (int) $lineItem['weight_grams'] : null,
                 );
             }
 
@@ -137,6 +142,8 @@ class CustomerTransactionService
                     $menu,
                     $lineItem['quantity'],
                     $lineItem['addon_option_ids'] ?? [],
+                    SalesChannel::store(),
+                    isset($lineItem['weight_grams']) ? (int) $lineItem['weight_grams'] : null,
                 );
             } catch (ValidationException) {
                 $unavailable[] = $lineItem['menu_name'];

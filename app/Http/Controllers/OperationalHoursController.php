@@ -41,6 +41,7 @@ class OperationalHoursController extends Controller
                 'starts_at' => $closure->starts_at->toDateString(),
                 'ends_at' => $closure->ends_at->toDateString(),
                 'label' => $closure->label,
+                'sales_channel_id' => $closure->sales_channel_id,
             ]);
 
         return Inertia::render('admin/hours/index', [
@@ -92,6 +93,12 @@ class OperationalHoursController extends Controller
 
     public function destroyClosure(OperatingClosure $closure): RedirectResponse
     {
+        if ($closure->sales_channel_id !== null) {
+            return redirect()
+                ->route('admin.hours.edit')
+                ->with('error', 'This closed period belongs to an event. Edit or archive the event instead.');
+        }
+
         $closure->delete();
 
         return redirect()

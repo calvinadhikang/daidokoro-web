@@ -44,10 +44,18 @@ export function AdminTransactionListCard({
                             transaction.customer_phone}
                         {' · '}
                         {serviceTypeLabel(transaction.service_type)}
+                        {transaction.sales_channel?.type === 'event'
+                            ? ` · ${transaction.sales_channel.name}`
+                            : ''}
                     </p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1.5">
                     <TableCodeBadge code={transaction.table_code} />
+                    {transaction.sales_channel?.type === 'event' && (
+                        <span className="shrink-0 rounded-full bg-[#fff7ed] px-2.5 py-1 text-xs font-medium text-[#c2410c] dark:bg-[#431407] dark:text-[#fdba74]">
+                            {transaction.sales_channel.name}
+                        </span>
+                    )}
                     {transaction.is_admin_created && (
                         <span className={adminPillClassName}>Admin</span>
                     )}

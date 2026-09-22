@@ -6,17 +6,27 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreApiCategoryRequest;
 use App\Models\Category;
 use App\Services\MenuCatalogService;
+use App\Services\SalesChannelService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 class CategoryApiController extends Controller
 {
-    public function __construct(private MenuCatalogService $menuCatalog) {}
+    public function __construct(
+        private MenuCatalogService $menuCatalog,
+        private SalesChannelService $salesChannels,
+    ) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        $channelId = $request->integer('sales_channel_id') ?: null;
+        $categories = $channelId === null
+            ? $this->menuCatalog->categoriesForFilters()
+            : $this->menuCatalog->categoriesForBrowse($this->salesChannels->resolve($channelId));
+
         return response()->json(
-            $this->menuCatalog->categoriesForFilters()
+            $categories
                 ->map(fn (Category $category) => $this->format($category))
                 ->values()
         );

@@ -233,13 +233,14 @@ class MenuApiTest extends TestCase
                 'is_available' => false,
             ],
         ]);
-        $this->assertFalse($menu->fresh()->is_available);
+        $this->assertTrue($menu->fresh()->is_available);
+        $this->assertFalse((bool) $menu->salesChannels()->first()?->pivot?->is_available);
 
         $response = $this->postJson("/api/menu/toggle-availability/{$menu->id}");
 
         $response->assertOk();
         $response->assertJsonPath('menu.is_available', true);
-        $this->assertTrue($menu->fresh()->is_available);
+        $this->assertTrue((bool) $menu->salesChannels()->first()?->pivot?->is_available);
     }
 
     public function test_create_category(): void

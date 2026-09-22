@@ -21,6 +21,7 @@ class SalesReportRequest extends FormRequest
             'preset' => ['nullable', 'in:today,range'],
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date', 'after_or_equal:from'],
+            'sales_channel_id' => ['nullable'],
         ];
     }
 }

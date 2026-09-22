@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\MenuModel;
+use App\Models\SalesChannel;
 
 class CustomerCartService
 {
@@ -159,36 +160,27 @@ class CustomerCartService
     private function repriceItem(MenuModel $menu, array $item): array
     {
         $addonOptionIds = array_values(array_unique($item['addon_option_ids'] ?? []));
-        $addons = [];
-        $addonTotal = 0;
-
-        foreach ($menu->addonGroups as $group) {
-            foreach ($group->options as $option) {
-                if (! in_array($option->id, $addonOptionIds, true)) {
-                    continue;
-                }
-
-                $addons[] = [
-                    'menu_addon_option_id' => $option->id,
-                    'group_name' => $group->name,
-                    'name' => $option->name,
-                    'price' => $option->price,
-                ];
-                $addonTotal += $option->price;
-            }
-        }
-
         $quantity = (int) $item['quantity'];
-        $unitPrice = $menu->price + $addonTotal;
+        $weightGrams = isset($item['weight_grams']) ? (int) $item['weight_grams'] : null;
+        $channel = SalesChannel::store();
+        $line = app(MenuOrderLineBuilder::class)->build(
+            $menu,
+            $quantity,
+            $addonOptionIds,
+            $channel,
+            $weightGrams,
+        );
 
         return [
-            'menu_id' => $menu->id,
-            'menu_name' => $menu->name,
-            'quantity' => $quantity,
-            'unit_price' => $unitPrice,
-            'line_total' => $unitPrice * $quantity,
+            'menu_id' => $line['menu_id'],
+            'menu_name' => $line['menu_name'],
+            'quantity' => $line['quantity'],
+            'weight_grams' => $line['weight_grams'],
+            'pricing_type' => $line['pricing_type'],
+            'unit_price' => $line['unit_price'],
+            'line_total' => $line['line_total'],
             'addon_option_ids' => $addonOptionIds,
-            'addons' => $addons,
+            'addons' => $line['addons'],
             'note' => TransactionOrderService::normalizeNote(
                 isset($item['note']) && is_string($item['note']) ? $item['note'] : null,
             ),

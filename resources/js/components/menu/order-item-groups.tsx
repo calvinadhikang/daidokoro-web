@@ -53,7 +53,9 @@ export function OrderItemRow({
                     {item.menu_name}
                 </p>
                 <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                    Qty {item.quantity} · {formatPrice(item.unit_price)} each
+                    {item.weight_grams
+                        ? `${item.weight_grams} g · ${formatPrice(item.unit_price)} / 100g`
+                        : `Qty ${item.quantity} · ${formatPrice(item.unit_price)} each`}
                 </p>
                 <ItemAddons item={item} />
                 {item.note ? (

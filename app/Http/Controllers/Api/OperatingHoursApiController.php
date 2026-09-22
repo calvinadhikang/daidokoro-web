@@ -9,6 +9,7 @@ use App\Models\OperatingClosure;
 use App\Models\OperatingHour;
 use App\Services\StoreHoursService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\ValidationException;
 
 class OperatingHoursApiController extends Controller
 {
@@ -64,6 +65,12 @@ class OperatingHoursApiController extends Controller
 
     public function destroyClosure(OperatingClosure $closure): JsonResponse
     {
+        if ($closure->sales_channel_id !== null) {
+            throw ValidationException::withMessages([
+                'closure' => 'This closed period belongs to an event. Edit or archive the event instead.',
+            ]);
+        }
+
         $closure->delete();
 
         return response()->json([
@@ -109,6 +116,7 @@ class OperatingHoursApiController extends Controller
                 'starts_at' => $closure->starts_at->toDateString(),
                 'ends_at' => $closure->ends_at->toDateString(),
                 'label' => $closure->label,
+                'sales_channel_id' => $closure->sales_channel_id,
             ])
             ->values()
             ->all();

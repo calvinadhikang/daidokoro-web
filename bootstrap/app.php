@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureCustomerSession;
+use App\Http\Middleware\EnsureStoreIsOpen;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -18,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'customer' => EnsureCustomerSession::class,
+            'store.open' => EnsureStoreIsOpen::class,
         ]);
 
         $middleware->web(append: [

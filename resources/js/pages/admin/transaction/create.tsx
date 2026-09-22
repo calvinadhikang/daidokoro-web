@@ -109,6 +109,7 @@ export default function AdminTransactionCreate({ menus }: Props) {
             items: cart.map((item) => ({
                 menu_id: item.menu_id,
                 quantity: item.quantity,
+                weight_grams: item.weight_grams,
                 addon_option_ids: item.addon_option_ids,
                 note: item.note,
             })),

@@ -171,6 +171,7 @@ export default function AdminTransactionShow({
 
         itemForm.transform(() => ({
             quantity: item.quantity,
+            weight_grams: item.weight_grams,
             addon_option_ids: item.addon_option_ids,
             note: item.note,
         }));
@@ -265,6 +266,9 @@ export default function AdminTransactionShow({
                         {transaction.customer_name}
                         {transaction.table_code
                             ? ` · Meja ${transaction.table_code}`
+                            : ''}
+                        {transaction.sales_channel?.type === 'event'
+                            ? ` · ${transaction.sales_channel.name}`
                             : ''}
                     </h1>
                 </div>
@@ -501,6 +505,9 @@ export default function AdminTransactionShow({
                                         }
                                         disabled={itemForm.processing}
                                         initialQuantity={editingItem.quantity}
+                                        initialWeightGrams={
+                                            editingItem.weight_grams ?? 100
+                                        }
                                         initialAddonOptionIds={addonOptionIdsFor(
                                             editingItem,
                                         )}

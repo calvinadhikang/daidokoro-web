@@ -152,4 +152,22 @@ class OperatingHoursApiTest extends TestCase
         $response->assertJsonPath('success', true);
         $this->assertDatabaseMissing('operating_closures', ['id' => $closure->id]);
     }
+
+    public function test_event_linked_closure_cannot_be_deleted(): void
+    {
+        $event = $this->postJson('/api/channels/events/create', [
+            'name' => 'Bazaar Senayan',
+            'starts_at' => app(StoreHoursService::class)->today(),
+            'ends_at' => app(StoreHoursService::class)->today(),
+        ])->assertCreated()->json('channel');
+
+        $closure = OperatingClosure::query()
+            ->where('sales_channel_id', $event['id'])
+            ->firstOrFail();
+
+        $this->postJson("/api/hours/closures/delete/{$closure->id}")
+            ->assertUnprocessable();
+
+        $this->assertDatabaseHas('operating_closures', ['id' => $closure->id]);
+    }
 }

@@ -27,6 +27,7 @@ export type OperatingClosure = {
     starts_at: string;
     ends_at: string;
     label: string | null;
+    sales_channel_id?: number | null;
 };
 
 export type OperatingClosureForm = {

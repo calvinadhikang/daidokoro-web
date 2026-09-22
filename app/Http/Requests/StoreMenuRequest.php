@@ -25,6 +25,10 @@ class StoreMenuRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'price' => ['required', 'integer', 'min:0'],
+            'pricing_type' => ['nullable', 'in:standard,weight_based'],
+            'sales_channel_id' => ['nullable', 'integer', 'exists:sales_channels,id'],
+            'sales_channel_ids' => ['nullable', 'array'],
+            'sales_channel_ids.*' => ['integer', 'exists:sales_channels,id'],
             'is_available' => ['boolean'],
             'is_recommended' => ['boolean'],
             'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.config('media.menu_image_max_kb', 5120)],

@@ -23,6 +23,7 @@ class TransactionController extends Controller
     public function index(): Response
     {
         $transactions = Transaction::query()
+            ->with('salesChannel')
             ->orderByDesc('created_at')
             ->get();
 
@@ -42,6 +43,7 @@ class TransactionController extends Controller
         $to = $validated['to'] ?? now()->toDateString();
 
         $transactions = Transaction::query()
+            ->with('salesChannel')
             ->whereDate('created_at', '>=', $from)
             ->whereDate('created_at', '<=', $to)
             ->orderByDesc('created_at')
@@ -93,7 +95,7 @@ class TransactionController extends Controller
 
     public function show(Transaction $transaction): Response
     {
-        $transaction->load('items');
+        $transaction->load(['items', 'salesChannel']);
 
         $itemMenuIds = $transaction->items->pluck('menu_id');
 
@@ -123,9 +125,10 @@ class TransactionController extends Controller
         $this->orderService->addMenuItem(
             $transaction,
             $validated['menu_id'],
-            $validated['quantity'],
+            (int) ($validated['quantity'] ?? 1),
             $validated['addon_option_ids'] ?? [],
             $validated['note'] ?? null,
+            isset($validated['weight_grams']) ? (int) $validated['weight_grams'] : null,
         );
 
         return redirect()
@@ -155,9 +158,10 @@ class TransactionController extends Controller
 
         $this->orderService->updateMenuItem(
             $item,
-            $validated['quantity'],
+            (int) ($validated['quantity'] ?? $item->quantity ?? 1),
             $validated['addon_option_ids'] ?? [],
             $validated['note'] ?? null,
+            isset($validated['weight_grams']) ? (int) $validated['weight_grams'] : $item->weight_grams,
         );
 
         return redirect()

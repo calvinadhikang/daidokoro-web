@@ -32,6 +32,8 @@ export type CartItem = {
     menu_id: number;
     menu_name: string;
     quantity: number;
+    weight_grams?: number | null;
+    pricing_type?: 'standard' | 'weight_based';
     unit_price: number;
     line_total: number;
     addon_option_ids: number[];

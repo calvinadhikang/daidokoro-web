@@ -10,12 +10,14 @@ import {
     labelClassName,
 } from '@/components/admin/menu-form';
 import { cn } from '@/lib/utils';
+import type { SalesChannel } from '@/types/sales-channel';
 
 type MenuReportItem = {
     rank: number;
     menu_id: number;
     menu_name: string;
     quantity_sold: number;
+    unit?: 'portion' | 'gram';
     revenue: number;
 };
 
@@ -24,6 +26,7 @@ type Props = {
         preset: 'month' | 'range';
         from: string;
         to: string;
+        sales_channel_id: number | string;
     };
     summary: {
         menu_count: number;
@@ -31,6 +34,7 @@ type Props = {
         revenue: number;
     };
     items: MenuReportItem[];
+    channels: SalesChannel[];
 };
 
 function formatPrice(price: number): string {
@@ -41,15 +45,17 @@ export default function AdminReportsMenus({
     filters,
     summary,
     items,
+    channels,
 }: Props) {
     const [preset, setPreset] = useState<'month' | 'range'>(filters.preset);
     const [from, setFrom] = useState(filters.from);
     const [to, setTo] = useState(filters.to);
+    const [channelId, setChannelId] = useState(String(filters.sales_channel_id));
 
     function applyMonth() {
         setPreset('month');
         router.get(
-            menusReport.url({ query: { preset: 'month' } }),
+            menusReport.url({ query: { preset: 'month', sales_channel_id: channelId } }),
             {},
             { preserveState: true, preserveScroll: true },
         );
@@ -60,7 +66,7 @@ export default function AdminReportsMenus({
         setPreset('range');
         router.get(
             menusReport.url({
-                query: { preset: 'range', from, to },
+                query: { preset: 'range', from, to, sales_channel_id: channelId },
             }),
             {},
             { preserveState: true, preserveScroll: true },
@@ -86,6 +92,40 @@ export default function AdminReportsMenus({
                             Menu dengan penjualan terbanyak.
                         </p>
                     </header>
+
+                    <div className="mb-4">
+                        <label htmlFor="menu-channel" className={labelClassName}>
+                            Saluran
+                        </label>
+                        <select
+                            id="menu-channel"
+                            value={channelId}
+                            onChange={(event) => {
+                                const next = event.target.value;
+                                setChannelId(next);
+                                router.get(
+                                    menusReport.url({
+                                        query: {
+                                            preset,
+                                            from,
+                                            to,
+                                            sales_channel_id: next,
+                                        },
+                                    }),
+                                    {},
+                                    { preserveState: true, preserveScroll: true },
+                                );
+                            }}
+                            className={inputClassName}
+                        >
+                            {channels.map((channel) => (
+                                <option key={channel.id} value={channel.id}>
+                                    {channel.name}
+                                </option>
+                            ))}
+                            <option value="all">Semua</option>
+                        </select>
+                    </div>
 
                     <div className="mb-4 grid grid-cols-2 gap-2">
                         <button
@@ -212,7 +252,9 @@ export default function AdminReportsMenus({
                                                 {item.menu_name}
                                             </p>
                                             <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                                {item.quantity_sold} terjual
+                                                {item.unit === 'gram'
+                                                    ? `${item.quantity_sold} g`
+                                                    : `${item.quantity_sold} porsi`}
                                             </p>
                                         </div>
                                         <p className="shrink-0 text-sm font-medium tabular-nums">

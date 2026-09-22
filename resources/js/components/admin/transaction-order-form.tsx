@@ -24,6 +24,7 @@ export function TransactionOrderForm({ transactionId, menus }: Props) {
         form.transform(() => ({
             menu_id: item.menu_id,
             quantity: item.quantity,
+            weight_grams: item.weight_grams,
             addon_option_ids: item.addon_option_ids,
             note: item.note,
         }));
