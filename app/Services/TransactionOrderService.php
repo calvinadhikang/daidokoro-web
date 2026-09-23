@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\MenuModel;
+use App\Models\SalesChannel;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,7 @@ class TransactionOrderService
     public function __construct(
         private MenuOrderLineBuilder $lineBuilder,
         private CustomerDirectoryService $customers,
+        private SalesChannelService $salesChannels,
     ) {}
 
     /**
@@ -20,9 +22,11 @@ class TransactionOrderService
      *     customer_name: string,
      *     customer_phone: string,
      *     service_type?: string|null,
+     *     sales_channel_id?: int|null,
      *     items?: list<array{
      *         menu_id: int,
-     *         quantity: int,
+     *         quantity?: int|null,
+     *         weight_grams?: int|null,
      *         addon_option_ids?: array<int, int>,
      *         note?: string|null
      *     }>
@@ -31,10 +35,14 @@ class TransactionOrderService
     public function createAdminTransaction(array $data): Transaction
     {
         return DB::transaction(function () use ($data) {
+            $channel = $this->salesChannels->resolve($data['sales_channel_id'] ?? null);
+            $serviceType = $data['service_type'] ?? ($channel->isEvent() ? 'takeaway' : 'dine_in');
+
             $transaction = Transaction::query()->create([
+                'sales_channel_id' => $channel->id,
                 'customer_name' => $data['customer_name'],
                 'customer_phone' => $data['customer_phone'],
-                'service_type' => $data['service_type'] ?? 'dine_in',
+                'service_type' => $serviceType,
                 'status' => 'in_progress',
                 'total_bill' => 0,
                 'is_admin_created' => true,
@@ -44,9 +52,10 @@ class TransactionOrderService
                 $this->addMenuItem(
                     $transaction,
                     $itemData['menu_id'],
-                    $itemData['quantity'],
+                    (int) ($itemData['quantity'] ?? 1),
                     $itemData['addon_option_ids'] ?? [],
                     $itemData['note'] ?? null,
+                    isset($itemData['weight_grams']) ? (int) $itemData['weight_grams'] : null,
                 );
             }
 
@@ -93,24 +102,30 @@ class TransactionOrderService
         int $quantity,
         array $addonOptionIds,
         ?string $note = null,
+        ?int $weightGrams = null,
     ): TransactionItem {
         $this->assertEditable($transaction);
 
+        $channel = $transaction->salesChannel ?? $this->salesChannels->store();
         $menu = MenuModel::query()
-            ->where('is_available', true)
             ->with(['addonGroups.options'])
             ->find($menuId);
 
         if ($menu === null) {
-            $named = MenuModel::query()->find($menuId);
-            $label = $named?->name ?? "Menu #{$menuId}";
-
             throw ValidationException::withMessages([
-                'items' => "{$label} is no longer available.",
+                'items' => "Menu #{$menuId} is no longer available.",
             ]);
         }
 
-        $lineItem = $this->lineBuilder->build($menu, $quantity, $addonOptionIds);
+        $this->salesChannels->assertAssigned($menu, $channel, requireAvailable: true);
+
+        $lineItem = $this->lineBuilder->build(
+            $menu,
+            $quantity,
+            $addonOptionIds,
+            $channel,
+            $weightGrams,
+        );
         $lineItem['note'] = self::normalizeNote($note);
 
         return $this->addLineItem($transaction, $lineItem);
@@ -124,6 +139,7 @@ class TransactionOrderService
         int $quantity,
         array $addonOptionIds,
         ?string $note = null,
+        ?int $weightGrams = null,
     ): TransactionItem {
         $transaction = $item->transaction;
         $this->assertEditable($transaction);
@@ -138,12 +154,23 @@ class TransactionOrderService
             ]);
         }
 
-        $lineItem = $this->lineBuilder->build($menu, $quantity, $addonOptionIds);
+        $channel = $transaction->salesChannel ?? $this->salesChannels->store();
+        $this->salesChannels->assertAssigned($menu, $channel, requireAvailable: false);
+
+        $lineItem = $this->lineBuilder->build(
+            $menu,
+            $quantity,
+            $addonOptionIds,
+            $channel,
+            $weightGrams ?? $item->weight_grams,
+        );
 
         return DB::transaction(function () use ($item, $transaction, $lineItem, $note) {
             $item->update([
                 'menu_name' => $lineItem['menu_name'],
                 'quantity' => $lineItem['quantity'],
+                'weight_grams' => $lineItem['weight_grams'],
+                'pricing_type' => $lineItem['pricing_type'],
                 'unit_price' => $lineItem['unit_price'],
                 'line_total' => $lineItem['line_total'],
                 'addons' => $lineItem['addons'],
@@ -174,6 +201,8 @@ class TransactionOrderService
      *     menu_id: int,
      *     menu_name: string,
      *     quantity: int,
+     *     weight_grams?: int|null,
+     *     pricing_type?: string,
      *     unit_price: int,
      *     line_total: int,
      *     addon_option_ids?: array<int, int>,
@@ -189,6 +218,8 @@ class TransactionOrderService
                 'menu_id' => $lineItem['menu_id'],
                 'menu_name' => $lineItem['menu_name'],
                 'quantity' => $lineItem['quantity'],
+                'weight_grams' => $lineItem['weight_grams'] ?? null,
+                'pricing_type' => $lineItem['pricing_type'] ?? MenuModel::PRICING_STANDARD,
                 'unit_price' => $lineItem['unit_price'],
                 'line_total' => $lineItem['line_total'],
                 'addons' => $lineItem['addons'],

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 
+import { WeightGramsField, weightLineTotal } from '@/components/menu/weight-grams-field';
 import {
     inputClassName,
     labelClassName,
@@ -13,6 +14,7 @@ export type TransactionMenuPickerItem = {
     menu_id: number;
     menu_name: string;
     quantity: number;
+    weight_grams?: number | null;
     unit_price: number;
     line_total: number;
     addon_option_ids: number[];
@@ -107,6 +109,7 @@ export function TransactionMenuPicker({
 }: Props) {
     const [selectedMenuId, setSelectedMenuId] = useState('');
     const [quantity, setQuantity] = useState(1);
+    const [weightGrams, setWeightGrams] = useState(100);
     const [addonOptionIds, setAddonOptionIds] = useState<number[]>([]);
     const [note, setNote] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -178,14 +181,19 @@ export function TransactionMenuPicker({
         }
 
         const addons = buildAddonSnapshots(selectedMenu, addonOptionIds);
-        const unitPrice = estimatedUnitPrice;
+        const addonTotal = addons.reduce((sum, addon) => sum + addon.price, 0);
+        const isWeightBased = selectedMenu.pricing_type === 'weight_based';
+        const lineTotal = isWeightBased
+            ? weightLineTotal(selectedMenu.price, weightGrams, addonTotal)
+            : estimatedUnitPrice * quantity;
 
         onAdd({
             menu_id: selectedMenu.id,
             menu_name: selectedMenu.name,
-            quantity,
-            unit_price: unitPrice,
-            line_total: unitPrice * quantity,
+            quantity: isWeightBased ? 1 : quantity,
+            weight_grams: isWeightBased ? weightGrams : null,
+            unit_price: selectedMenu.price,
+            line_total: lineTotal,
             addon_option_ids: [...addonOptionIds],
             addons,
             note: note.trim() === '' ? null : note.trim(),
@@ -193,6 +201,7 @@ export function TransactionMenuPicker({
 
         setSelectedMenuId('');
         setQuantity(1);
+        setWeightGrams(100);
         setAddonOptionIds([]);
         setNote('');
         setError(null);
@@ -357,6 +366,16 @@ export function TransactionMenuPicker({
 
             {selectedMenu !== null && (
                 <>
+                    {selectedMenu.pricing_type === 'weight_based' ? (
+                        <div>
+                            <label className={labelClassName}>Weight (grams)</label>
+                            <WeightGramsField
+                                value={weightGrams}
+                                onChange={setWeightGrams}
+                                disabled={disabled}
+                            />
+                        </div>
+                    ) : (
                     <div>
                         <label htmlFor="picker-quantity" className={labelClassName}>
                             Quantity
@@ -404,6 +423,7 @@ export function TransactionMenuPicker({
                             </button>
                         </div>
                     </div>
+                    )}
 
                     <div>
                         <label htmlFor="picker-note" className={labelClassName}>
@@ -424,7 +444,15 @@ export function TransactionMenuPicker({
                     <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
                         Line total:{' '}
                         <span className="font-medium tabular-nums text-[#1b1b18] dark:text-[#EDEDEC]">
-                            {formatPrice(estimatedUnitPrice * quantity)}
+                            {formatPrice(
+                                selectedMenu.pricing_type === 'weight_based'
+                                    ? weightLineTotal(
+                                          selectedMenu.price,
+                                          weightGrams,
+                                          estimatedUnitPrice - selectedMenu.price,
+                                      )
+                                    : estimatedUnitPrice * quantity,
+                            )}
                         </span>
                     </p>
                 </>

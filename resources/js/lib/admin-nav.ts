@@ -40,6 +40,12 @@ export const secondaryNavItems = [
         match: 'hours' as const,
     },
     {
+        label: 'Events',
+        description: 'Bazaar dates & event menus',
+        href: '/admin/events',
+        match: 'events' as const,
+    },
+    {
         label: 'History',
         description: 'Past transactions',
         href: transactionHistory.url(),
@@ -70,6 +76,10 @@ export function isNavActive(url: string, item: NavItem): boolean {
 
     if (item.match === 'hours') {
         return url === item.href || url.startsWith(`${item.href}?`);
+    }
+
+    if (item.match === 'events') {
+        return url === item.href || url.startsWith(`${item.href}/`);
     }
 
     if (item.match === 'reports') {

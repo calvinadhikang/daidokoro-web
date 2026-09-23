@@ -8,8 +8,10 @@ use App\Http\Requests\UpdateMenuRequest;
 use App\Models\MenuAddonGroup;
 use App\Models\MenuAddonOption;
 use App\Models\MenuModel;
+use App\Models\SalesChannel;
 use App\Services\MenuCatalogService;
 use App\Services\MenuImageService;
+use App\Services\SalesChannelService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -22,6 +24,7 @@ class MenuController extends Controller
     public function __construct(
         private MenuImageService $menuImages,
         private MenuCatalogService $menuCatalog,
+        private SalesChannelService $salesChannels,
     ) {}
 
     public function index(): Response
@@ -40,7 +43,10 @@ class MenuController extends Controller
 
     public function create(): Response
     {
-        return Inertia::render('admin/menus/create');
+        return Inertia::render('admin/menus/create', [
+            'channels' => $this->channelOptions(),
+            'defaultChannelIds' => [SalesChannel::store()->id],
+        ]);
     }
 
     public function store(StoreMenuRequest $request): RedirectResponse
@@ -52,11 +58,16 @@ class MenuController extends Controller
                 'name' => $validated['name'],
                 'image' => $this->resolveMenuImageUrl($request, $this->menuImages),
                 'price' => $validated['price'],
+                'pricing_type' => $validated['pricing_type'] ?? MenuModel::PRICING_STANDARD,
                 'is_available' => $validated['is_available'] ?? true,
                 'is_recommended' => $validated['is_recommended'] ?? false,
             ]);
 
             $this->syncAddonGroups($menu, $validated['addon_groups'] ?? []);
+            $this->salesChannels->syncMenuChannels(
+                $menu,
+                $validated['sales_channel_ids'] ?? [SalesChannel::store()->id],
+            );
         });
 
         return redirect()
@@ -66,10 +77,12 @@ class MenuController extends Controller
 
     public function show(MenuModel $menuModel): Response
     {
-        $menuModel->load(['addonGroups.options']);
+        $menuModel->load(['addonGroups.options', 'salesChannels']);
 
         return Inertia::render('admin/menus/show', [
             'menu' => $menuModel,
+            'channels' => $this->channelOptions(),
+            'assignedChannelIds' => $menuModel->salesChannels->pluck('id')->all(),
         ]);
     }
 
@@ -82,17 +95,40 @@ class MenuController extends Controller
                 'name' => $validated['name'],
                 'image' => $this->resolveMenuImageUrl($request, $this->menuImages, $menuModel->image),
                 'price' => $validated['price'],
+                'pricing_type' => $validated['pricing_type'] ?? $menuModel->pricing_type,
                 'is_available' => $validated['is_available'] ?? true,
                 'is_recommended' => $validated['is_recommended'] ?? false,
             ]);
 
             $menuModel->addonGroups()->delete();
             $this->syncAddonGroups($menuModel, $validated['addon_groups'] ?? []);
+
+            if (array_key_exists('sales_channel_ids', $validated)) {
+                $this->salesChannels->syncMenuChannels(
+                    $menuModel,
+                    $validated['sales_channel_ids'] ?? [SalesChannel::store()->id],
+                );
+            }
         });
 
         return redirect()
             ->route('admin.menus.show', $menuModel)
             ->with('success', 'Menu updated successfully.');
+    }
+
+    /**
+     * @return list<array{id: int, name: string, type: string}>
+     */
+    private function channelOptions(): array
+    {
+        return array_map(
+            fn (SalesChannel $channel) => [
+                'id' => $channel->id,
+                'name' => $channel->name,
+                'type' => $channel->type,
+            ],
+            $this->salesChannels->listForIndex(),
+        );
     }
 
     /**

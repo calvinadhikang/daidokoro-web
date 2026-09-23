@@ -14,6 +14,7 @@ import { TableCodeBadge } from '@/components/admin/table-code-badge';
 import { cn } from '@/lib/utils';
 import type { Transaction } from '@/types/transaction';
 import { serviceTypeLabel } from '@/types/transaction';
+import type { SalesChannel } from '@/types/sales-channel';
 
 type SalesGroup = {
     date: string;
@@ -25,6 +26,7 @@ type Props = {
         preset: 'today' | 'range';
         from: string;
         to: string;
+        sales_channel_id: number | string;
     };
     summary: {
         revenue: number;
@@ -34,6 +36,7 @@ type Props = {
         unpaid_revenue: number;
     };
     groups: SalesGroup[];
+    channels: SalesChannel[];
 };
 
 function formatPrice(price: number): string {
@@ -73,15 +76,17 @@ export default function AdminReportsSales({
     filters,
     summary,
     groups,
+    channels,
 }: Props) {
     const [preset, setPreset] = useState<'today' | 'range'>(filters.preset);
     const [from, setFrom] = useState(filters.from);
     const [to, setTo] = useState(filters.to);
+    const [channelId, setChannelId] = useState(String(filters.sales_channel_id));
 
     function applyToday() {
         setPreset('today');
         router.get(
-            salesReport.url({ query: { preset: 'today' } }),
+            salesReport.url({ query: { preset: 'today', sales_channel_id: channelId } }),
             {},
             { preserveState: true, preserveScroll: true },
         );
@@ -92,7 +97,7 @@ export default function AdminReportsSales({
         setPreset('range');
         router.get(
             salesReport.url({
-                query: { preset: 'range', from, to },
+                query: { preset: 'range', from, to, sales_channel_id: channelId },
             }),
             {},
             { preserveState: true, preserveScroll: true },
@@ -118,6 +123,40 @@ export default function AdminReportsSales({
                             Ringkasan pendapatan dan transaksi.
                         </p>
                     </header>
+
+                    <div className="mb-4">
+                        <label htmlFor="sales-channel" className={labelClassName}>
+                            Saluran
+                        </label>
+                        <select
+                            id="sales-channel"
+                            value={channelId}
+                            onChange={(event) => {
+                                const next = event.target.value;
+                                setChannelId(next);
+                                router.get(
+                                    salesReport.url({
+                                        query: {
+                                            preset,
+                                            from,
+                                            to,
+                                            sales_channel_id: next,
+                                        },
+                                    }),
+                                    {},
+                                    { preserveState: true, preserveScroll: true },
+                                );
+                            }}
+                            className={inputClassName}
+                        >
+                            {channels.map((channel) => (
+                                <option key={channel.id} value={channel.id}>
+                                    {channel.name}
+                                </option>
+                            ))}
+                            <option value="all">Semua</option>
+                        </select>
+                    </div>
 
                     <div className="mb-4 grid grid-cols-2 gap-2">
                         <button
@@ -298,6 +337,11 @@ export default function AdminReportsSales({
                                                                         transaction.table_code
                                                                     }
                                                                 />
+                                                                {transaction.sales_channel?.type === 'event' && (
+                                                                    <span className="shrink-0 rounded-full bg-[#fff7ed] px-2.5 py-1 text-xs font-medium text-[#c2410c] dark:bg-[#431407] dark:text-[#fdba74]">
+                                                                        {transaction.sales_channel.name}
+                                                                    </span>
+                                                                )}
                                                                 {transaction.is_admin_created && (
                                                                     <span
                                                                         className={

@@ -63,6 +63,9 @@ function MenuListItem({ menu }: { menu: Menu }) {
                             </div>
                             <p className="mt-1 tabular-nums text-sm text-[#706f6c] dark:text-[#A1A09A]">
                                 {formatPrice(menu.price)}
+                                {menu.pricing_type === 'weight_based'
+                                    ? ' / 100g'
+                                    : ''}
                             </p>
                         </div>
                         <span

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 
+import { WeightGramsField, weightLineTotal } from '@/components/menu/weight-grams-field';
 import { inputClassName, labelClassName } from '@/components/admin/menu-form';
 import { MenuImage } from '@/components/admin/menu-image';
 import { cn } from '@/lib/utils';
@@ -10,6 +11,7 @@ export type MenuOrderLineItem = {
     menu_id: number;
     menu_name: string;
     quantity: number;
+    weight_grams?: number | null;
     unit_price: number;
     line_total: number;
     addon_option_ids: number[];
@@ -24,6 +26,7 @@ type Props = {
     disabled?: boolean;
     variant?: 'default' | 'customer';
     initialQuantity?: number;
+    initialWeightGrams?: number;
     initialAddonOptionIds?: number[];
     initialNote?: string | null;
     errors?: {
@@ -109,12 +112,15 @@ export function MenuOrderForm({
     disabled = false,
     variant = 'default',
     initialQuantity = 1,
+    initialWeightGrams = 100,
     initialAddonOptionIds = [],
     initialNote = null,
     errors,
 }: Props) {
     const isCustomer = variant === 'customer';
+    const isWeightBased = menu.pricing_type === 'weight_based';
     const [quantity, setQuantity] = useState(initialQuantity);
+    const [weightGrams, setWeightGrams] = useState(initialWeightGrams);
     const [addonOptionIds, setAddonOptionIds] = useState<number[]>(
         initialAddonOptionIds,
     );
@@ -174,21 +180,29 @@ export function MenuOrderForm({
         }
 
         const addons = buildAddonSnapshots(menu, addonOptionIds);
-        const unitPrice = estimatedUnitPrice;
+        const addonTotal = addons.reduce((sum, addon) => sum + addon.price, 0);
+        const unitPrice = menu.price + addonTotal;
+        const lineTotal = isWeightBased
+            ? weightLineTotal(menu.price, weightGrams, addonTotal)
+            : unitPrice * quantity;
 
         onSubmit({
             menu_id: menu.id,
             menu_name: menu.name,
-            quantity,
-            unit_price: unitPrice,
-            line_total: unitPrice * quantity,
+            quantity: isWeightBased ? 1 : quantity,
+            weight_grams: isWeightBased ? weightGrams : null,
+            unit_price: menu.price,
+            line_total: lineTotal,
             addon_option_ids: [...addonOptionIds],
             addons,
             note: note.trim() === '' ? null : note.trim(),
         });
     }
 
-    const lineTotal = estimatedUnitPrice * quantity;
+    const addonTotal = estimatedUnitPrice - menu.price;
+    const lineTotal = isWeightBased
+        ? weightLineTotal(menu.price, weightGrams, addonTotal)
+        : estimatedUnitPrice * quantity;
 
     return (
         <form
@@ -206,6 +220,7 @@ export function MenuOrderForm({
                         <h2 className="font-medium">{menu.name}</h2>
                         <p className="mt-1 text-sm text-[#706f6c] tabular-nums dark:text-[#A1A09A]">
                             Base price {formatPrice(menu.price)}
+                            {isWeightBased ? ' / 100g' : ''}
                         </p>
                     </div>
                 </div>
@@ -351,7 +366,17 @@ export function MenuOrderForm({
                 </div>
             )}
 
-            {!isCustomer && (
+            {isWeightBased ? (
+                <div>
+                    <label className={labelClassName}>Weight (grams)</label>
+                    <WeightGramsField
+                        value={weightGrams}
+                        onChange={setWeightGrams}
+                        disabled={disabled}
+                    />
+                    <FieldError message={errors?.quantity} />
+                </div>
+            ) : !isCustomer ? (
                 <div>
                     <label htmlFor="order-quantity" className={labelClassName}>
                         Quantity
@@ -398,7 +423,7 @@ export function MenuOrderForm({
                     </div>
                     <FieldError message={errors?.quantity} />
                 </div>
-            )}
+            ) : null}
 
             <div>
                 <label htmlFor="order-note" className={labelClassName}>

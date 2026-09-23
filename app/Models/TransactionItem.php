@@ -13,6 +13,8 @@ use Illuminate\Support\Carbon;
  * @property int $menu_id
  * @property string $menu_name
  * @property int $quantity
+ * @property int|null $weight_grams
+ * @property string $pricing_type
  * @property int $unit_price
  * @property int $line_total
  * @property array<int, array<string, mixed>>|null $addons
@@ -27,6 +29,8 @@ use Illuminate\Support\Carbon;
     'menu_id',
     'menu_name',
     'quantity',
+    'weight_grams',
+    'pricing_type',
     'unit_price',
     'line_total',
     'addons',
@@ -57,6 +61,7 @@ class TransactionItem extends Model
     {
         return [
             'quantity' => 'integer',
+            'weight_grams' => 'integer',
             'unit_price' => 'integer',
             'line_total' => 'integer',
             'addons' => 'array',

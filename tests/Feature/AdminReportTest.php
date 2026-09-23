@@ -183,4 +183,54 @@ class AdminReportTest extends TestCase
             ->where('items.0.quantity_sold', 2)
         );
     }
+
+    public function test_sales_report_defaults_to_store_channel(): void
+    {
+        $store = \App\Models\SalesChannel::store();
+        $event = \App\Models\SalesChannel::query()->create([
+            'type' => \App\Models\SalesChannel::TYPE_EVENT,
+            'name' => 'Bazaar',
+            'starts_at' => now()->toDateString(),
+            'ends_at' => now()->toDateString(),
+            'closes_store' => true,
+        ]);
+
+        $today = now()->toDateString();
+
+        Transaction::query()->create([
+            'customer_name' => 'Store Sale',
+            'customer_phone' => '6281111111111',
+            'service_type' => 'takeaway',
+            'status' => 'paid',
+            'total_bill' => 50000,
+            'business_date' => $today,
+            'daily_number' => 1,
+            'sales_channel_id' => $store->id,
+        ]);
+
+        Transaction::query()->create([
+            'customer_name' => 'Event Sale',
+            'customer_phone' => '6282222222222',
+            'service_type' => 'takeaway',
+            'status' => 'paid',
+            'total_bill' => 80000,
+            'business_date' => $today,
+            'daily_number' => 1,
+            'sales_channel_id' => $event->id,
+        ]);
+
+        $this->get(route('admin.reports.sales'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('summary.revenue', 50000)
+                ->where('summary.total_count', 1)
+            );
+
+        $this->get(route('admin.reports.sales', ['sales_channel_id' => 'all']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('summary.revenue', 130000)
+                ->where('summary.total_count', 2)
+            );
+    }
 }

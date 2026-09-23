@@ -7,6 +7,7 @@ use App\Http\Controllers\CustomerLoginController;
 use App\Http\Controllers\CustomerMenuController;
 use App\Http\Controllers\CustomerMenuOrderController;
 use App\Http\Controllers\CustomerOrderController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MejaController;
 use App\Http\Controllers\MenuBrowseController;
@@ -31,14 +32,17 @@ Route::prefix('customer')->name('customer.')->group(function () {
 
     Route::middleware('customer')->group(function () {
         Route::post('/logout', [CustomerLoginController::class, 'destroy'])->name('logout');
-        Route::get('/menu', [CustomerMenuController::class, 'index'])->name('menu.index');
-        Route::get('/menu/{menuModel}', [CustomerMenuOrderController::class, 'show'])->name('menu.show');
-        Route::post('/menu/{menuModel}', [CustomerMenuOrderController::class, 'store'])->name('menu.store');
-        Route::get('/cart', [CustomerCartController::class, 'index'])->name('cart.index');
-        Route::patch('/cart/items/{index}', [CustomerCartController::class, 'update'])->name('cart.items.update');
-        Route::delete('/cart/items/{index}', [CustomerCartController::class, 'destroy'])->name('cart.items.destroy');
-        Route::post('/cart/checkout', [CustomerCartController::class, 'checkout'])->name('cart.checkout');
         Route::get('/order', [CustomerOrderController::class, 'index'])->name('order.index');
+
+        Route::middleware('store.open')->group(function () {
+            Route::get('/menu', [CustomerMenuController::class, 'index'])->name('menu.index');
+            Route::get('/menu/{menuModel}', [CustomerMenuOrderController::class, 'show'])->name('menu.show');
+            Route::post('/menu/{menuModel}', [CustomerMenuOrderController::class, 'store'])->name('menu.store');
+            Route::get('/cart', [CustomerCartController::class, 'index'])->name('cart.index');
+            Route::patch('/cart/items/{index}', [CustomerCartController::class, 'update'])->name('cart.items.update');
+            Route::delete('/cart/items/{index}', [CustomerCartController::class, 'destroy'])->name('cart.items.destroy');
+            Route::post('/cart/checkout', [CustomerCartController::class, 'checkout'])->name('cart.checkout');
+        });
     });
 });
 
@@ -67,6 +71,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/mejas/{meja}', [MejaController::class, 'show'])->name('mejas.show');
     Route::put('/mejas/{meja}', [MejaController::class, 'update'])->name('mejas.update');
     Route::delete('/mejas/{meja}', [MejaController::class, 'destroy'])->name('mejas.destroy');
+
+    Route::get('/events', [EventController::class, 'index'])->name('events.index');
+    Route::get('/events/create', [EventController::class, 'create'])->name('events.create');
+    Route::post('/events', [EventController::class, 'store'])->name('events.store');
+    Route::get('/events/{salesChannel}', [EventController::class, 'show'])->name('events.show');
+    Route::put('/events/{salesChannel}', [EventController::class, 'update'])->name('events.update');
+    Route::post('/events/{salesChannel}/archive', [EventController::class, 'archive'])->name('events.archive');
+    Route::post('/events/{salesChannel}/menus/assign', [EventController::class, 'assignMenus'])->name('events.menus.assign');
+    Route::post('/events/{salesChannel}/menus/{menuModel}', [EventController::class, 'updateMenu'])->name('events.menus.update');
+    Route::delete('/events/{salesChannel}/menus/{menuModel}', [EventController::class, 'unassignMenu'])->name('events.menus.unassign');
 
     Route::get('/hours', [OperationalHoursController::class, 'edit'])->name('hours.edit');
     Route::put('/hours', [OperationalHoursController::class, 'update'])->name('hours.update');

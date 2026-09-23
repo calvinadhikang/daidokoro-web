@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Category;
 use App\Models\MenuModel;
+use App\Models\SalesChannel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -12,9 +13,11 @@ class MenuCatalogService
     /**
      * @return Collection<int, MenuModel>
      */
-    public function allForBrowse(): Collection
+    public function allForBrowse(?SalesChannel $channel = null): Collection
     {
-        return MenuModel::query()
+        $channel ??= SalesChannel::store();
+
+        return $this->channelQuery($channel)
             ->with(['addonGroups.options', 'categories:id,name'])
             ->orderByDesc('is_available')
             ->orderByDesc('is_recommended')
@@ -25,11 +28,13 @@ class MenuCatalogService
     /**
      * @return Collection<int, MenuModel>
      */
-    public function availableForOrdering(): Collection
+    public function availableForOrdering(?SalesChannel $channel = null): Collection
     {
-        return MenuModel::query()
+        $channel ??= SalesChannel::store();
+
+        return $this->channelQuery($channel, availableOnly: true)
             ->with(['addonGroups.options', 'categories:id,name'])
-            ->where('is_available', true)
+            ->where('menus.is_available', true)
             ->orderByDesc('is_recommended')
             ->orderBy('name')
             ->get();
@@ -38,10 +43,16 @@ class MenuCatalogService
     /**
      * @return Collection<int, Category>
      */
-    public function categoriesForOrdering(): Collection
+    public function categoriesForOrdering(?SalesChannel $channel = null): Collection
     {
+        $channel ??= SalesChannel::store();
+
         return $this->categoryFilterQuery()
-            ->whereHas('menus', fn ($query) => $query->where('is_available', true))
+            ->whereHas(
+                'menus',
+                fn ($query) => $this->constrainMenusToChannel($query, $channel, availableOnly: true)
+                    ->where('menus.is_available', true),
+            )
             ->orderBy('name')
             ->get(['id', 'name']);
     }
@@ -49,10 +60,15 @@ class MenuCatalogService
     /**
      * @return Collection<int, Category>
      */
-    public function categoriesForBrowse(): Collection
+    public function categoriesForBrowse(?SalesChannel $channel = null): Collection
     {
+        $channel ??= SalesChannel::store();
+
         return $this->categoryFilterQuery()
-            ->whereHas('menus')
+            ->whereHas(
+                'menus',
+                fn ($query) => $this->constrainMenusToChannel($query, $channel),
+            )
             ->orderBy('name')
             ->get(['id', 'name']);
     }
@@ -69,6 +85,35 @@ class MenuCatalogService
             ->withCount('menus')
             ->orderBy('name')
             ->get(['id', 'name']);
+    }
+
+    /**
+     * @return Builder<MenuModel>
+     */
+    public function channelQuery(SalesChannel $channel, bool $availableOnly = false): Builder
+    {
+        return $this->constrainMenusToChannel(MenuModel::query(), $channel, $availableOnly)
+            ->with([
+                'salesChannels' => fn ($query) => $query->where('sales_channels.id', $channel->id),
+            ]);
+    }
+
+    /**
+     * @param  Builder<MenuModel>  $query
+     * @return Builder<MenuModel>
+     */
+    private function constrainMenusToChannel(
+        Builder $query,
+        SalesChannel $channel,
+        bool $availableOnly = false,
+    ): Builder {
+        return $query->whereHas('salesChannels', function ($channelQuery) use ($channel, $availableOnly) {
+            $channelQuery->where('sales_channels.id', $channel->id);
+
+            if ($availableOnly) {
+                $channelQuery->where('channel_menu.is_available', true);
+            }
+        });
     }
 
     /**

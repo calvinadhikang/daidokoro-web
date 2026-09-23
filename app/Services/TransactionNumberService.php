@@ -11,15 +11,17 @@ class TransactionNumberService
     /**
      * @return array{business_date: string, daily_number: int}
      */
-    public function allocateNext(?Carbon $at = null): array
+    public function allocateNext(?Carbon $at = null, ?int $salesChannelId = null): array
     {
         $date = ($at ?? Carbon::now(StoreHoursService::TIMEZONE))
             ->timezone(StoreHoursService::TIMEZONE)
             ->toDateString();
+        $channelId = $salesChannelId ?? app(SalesChannelService::class)->store()->id;
 
-        $allocate = function () use ($date): array {
+        $allocate = function () use ($date, $channelId): array {
             $max = Transaction::query()
                 ->whereDate('business_date', $date)
+                ->where('sales_channel_id', $channelId)
                 ->lockForUpdate()
                 ->max('daily_number');
 
@@ -36,14 +38,16 @@ class TransactionNumberService
         return DB::transaction($allocate);
     }
 
-    public function peekNextFormatted(?Carbon $at = null): string
+    public function peekNextFormatted(?Carbon $at = null, ?int $salesChannelId = null): string
     {
         $date = ($at ?? Carbon::now(StoreHoursService::TIMEZONE))
             ->timezone(StoreHoursService::TIMEZONE)
             ->toDateString();
+        $channelId = $salesChannelId ?? app(SalesChannelService::class)->store()->id;
 
         $max = Transaction::query()
             ->whereDate('business_date', $date)
+            ->where('sales_channel_id', $channelId)
             ->max('daily_number');
 
         return self::format(((int) $max) + 1);

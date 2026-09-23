@@ -27,6 +27,7 @@ export type Menu = {
     name: string;
     image: string | null;
     price: number;
+    pricing_type?: 'standard' | 'weight_based';
     is_available: boolean;
     is_recommended: boolean;
     addon_groups: MenuAddonGroup[];
@@ -49,8 +50,10 @@ export type MenuAddonGroupForm = {
 export type MenuForm = {
     name: string;
     price: string;
+    pricing_type: 'standard' | 'weight_based';
     is_available: boolean;
     is_recommended: boolean;
+    sales_channel_ids: number[];
     addon_groups: MenuAddonGroupForm[];
     image: File | null;
     remove_image: boolean;

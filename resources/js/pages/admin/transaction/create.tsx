@@ -109,6 +109,7 @@ export default function AdminTransactionCreate({ menus }: Props) {
             items: cart.map((item) => ({
                 menu_id: item.menu_id,
                 quantity: item.quantity,
+                weight_grams: item.weight_grams,
                 addon_option_ids: item.addon_option_ids,
                 note: item.note,
             })),
@@ -266,9 +267,9 @@ export default function AdminTransactionCreate({ menus }: Props) {
                                                     {item.menu_name}
                                                 </p>
                                                 <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                                    Qty {item.quantity} ·{' '}
-                                                    {formatPrice(item.unit_price)}{' '}
-                                                    each
+                                                    {item.weight_grams
+                                                        ? `${item.weight_grams} g · ${formatPrice(item.unit_price)} / 100g`
+                                                        : `Qty ${item.quantity} · ${formatPrice(item.unit_price)} each`}
                                                 </p>
                                                 <ItemAddons addons={item.addons} />
                                                 {item.note ? (

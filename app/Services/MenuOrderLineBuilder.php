@@ -4,16 +4,21 @@ namespace App\Services;
 
 use App\Models\MenuAddonOption;
 use App\Models\MenuModel;
+use App\Models\SalesChannel;
 use Illuminate\Validation\ValidationException;
 
 class MenuOrderLineBuilder
 {
+    public const MAX_WEIGHT_GRAMS = 50000;
+
     /**
      * @param  array<int, int>  $addonOptionIds
      * @return array{
      *     menu_id: int,
      *     menu_name: string,
      *     quantity: int,
+     *     weight_grams: int|null,
+     *     pricing_type: string,
      *     unit_price: int,
      *     line_total: int,
      *     addon_option_ids: array<int, int>,
@@ -24,18 +29,39 @@ class MenuOrderLineBuilder
         MenuModel $menu,
         int $quantity,
         array $addonOptionIds,
+        ?SalesChannel $channel = null,
+        ?int $weightGrams = null,
     ): array {
         $menu->loadMissing(['addonGroups.options']);
 
+        $channel ??= SalesChannel::store();
         $addonSnapshots = $this->resolveAddonSelections($menu, $addonOptionIds);
-        $addonTotal = array_sum(array_column($addonSnapshots, 'price'));
-        $unitPrice = $menu->price + $addonTotal;
-        $lineTotal = $unitPrice * $quantity;
+        $addonTotal = (int) array_sum(array_column($addonSnapshots, 'price'));
+        $effectivePrice = $menu->effectivePrice($channel);
+
+        if ($menu->isWeightBased()) {
+            if ($weightGrams === null || $weightGrams < 1 || $weightGrams > self::MAX_WEIGHT_GRAMS) {
+                throw ValidationException::withMessages([
+                    'weight_grams' => 'Enter a weight between 1g and 50,000g.',
+                ]);
+            }
+
+            $unitPrice = $effectivePrice;
+            $lineTotal = (int) round($effectivePrice * $weightGrams / 100) + $addonTotal;
+            $quantity = 1;
+        } else {
+            $quantity = max(1, $quantity);
+            $unitPrice = $effectivePrice + $addonTotal;
+            $lineTotal = $unitPrice * $quantity;
+            $weightGrams = null;
+        }
 
         return [
             'menu_id' => $menu->id,
             'menu_name' => $menu->name,
             'quantity' => $quantity,
+            'weight_grams' => $weightGrams,
+            'pricing_type' => $menu->pricing_type ?? MenuModel::PRICING_STANDARD,
             'unit_price' => $unitPrice,
             'line_total' => $lineTotal,
             'addon_option_ids' => array_values(array_unique($addonOptionIds)),

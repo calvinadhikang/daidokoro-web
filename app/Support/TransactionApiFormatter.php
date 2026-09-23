@@ -12,6 +12,8 @@ class TransactionApiFormatter
      */
     public static function formatListItem(Transaction $transaction): array
     {
+        $transaction->loadMissing('salesChannel');
+
         return [
             'id' => $transaction->id,
             'transaction_number' => self::formatTransactionNumber($transaction),
@@ -22,6 +24,9 @@ class TransactionApiFormatter
             'deleted_at' => null,
             'service_type' => $transaction->service_type,
             'table_code' => $transaction->table_code,
+            'sales_channel_id' => $transaction->sales_channel_id,
+            'sales_channel_name' => $transaction->salesChannel?->name,
+            'sales_channel_type' => $transaction->salesChannel?->type,
         ];
     }
 
@@ -30,7 +35,7 @@ class TransactionApiFormatter
      */
     public static function formatDetail(Transaction $transaction): array
     {
-        $transaction->load(['items.menu']);
+        $transaction->load(['items.menu', 'salesChannel']);
 
         $itemGroups = TransactionItemGrouper::groupByOrderedAt($transaction->items);
 
@@ -47,6 +52,9 @@ class TransactionApiFormatter
             'status' => $transaction->status,
             'total_amount' => (string) $transaction->total_bill,
             'is_admin_created' => (bool) $transaction->is_admin_created,
+            'sales_channel_id' => $transaction->sales_channel_id,
+            'sales_channel_name' => $transaction->salesChannel?->name,
+            'sales_channel_type' => $transaction->salesChannel?->type,
             'created_at' => $transaction->created_at?->toIso8601String(),
             'deleted_at' => null,
             'order_items' => $transaction->items
@@ -70,6 +78,8 @@ class TransactionApiFormatter
      */
     private static function formatItem(TransactionItem $item): array
     {
+        $pricingType = $item->pricing_type
+            ?: ($item->menu?->pricing_type ?? 'standard');
         $menuPrice = $item->menu?->price ?? $item->unit_price;
 
         return [
@@ -78,12 +88,12 @@ class TransactionApiFormatter
             'menu' => [
                 'id' => $item->menu_id,
                 'name' => $item->menu_name,
-                'type' => 'standard',
+                'type' => $pricingType,
                 'price' => (string) $menuPrice,
-                'price_label' => 'Rp '.number_format($menuPrice, 0, ',', '.'),
+                'price_label' => PriceLabel::format((int) $menuPrice, $pricingType),
             ],
             'quantity' => $item->quantity,
-            'weight_grams' => null,
+            'weight_grams' => $item->weight_grams,
             'unit_price' => (string) $item->unit_price,
             'line_total' => (string) $item->line_total,
             'note' => $item->note,

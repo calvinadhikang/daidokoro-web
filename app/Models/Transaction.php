@@ -9,12 +9,14 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
- * @property string $business_date
+ * @property int $sales_channel_id
+ * @property Carbon $business_date
  * @property int $daily_number
  * @property string $customer_name
  * @property string $customer_phone
@@ -27,8 +29,10 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read string $transaction_number
  * @property-read Collection<int, TransactionItem> $items
+ * @property-read SalesChannel $salesChannel
  */
 #[Fillable([
+    'sales_channel_id',
     'business_date',
     'daily_number',
     'customer_name',
@@ -54,15 +58,29 @@ class Transaction extends Model
     protected static function booted(): void
     {
         static::creating(function (Transaction $transaction): void {
+            if ($transaction->sales_channel_id === null) {
+                $transaction->sales_channel_id = SalesChannel::store()->id;
+            }
+
             if ($transaction->business_date !== null && $transaction->daily_number !== null) {
                 return;
             }
 
-            $allocation = app(TransactionNumberService::class)->allocateNext();
+            $allocation = app(TransactionNumberService::class)->allocateNext(
+                salesChannelId: (int) $transaction->sales_channel_id,
+            );
 
             $transaction->business_date = $allocation['business_date'];
             $transaction->daily_number = $allocation['daily_number'];
         });
+    }
+
+    /**
+     * @return BelongsTo<SalesChannel, $this>
+     */
+    public function salesChannel(): BelongsTo
+    {
+        return $this->belongsTo(SalesChannel::class);
     }
 
     /**

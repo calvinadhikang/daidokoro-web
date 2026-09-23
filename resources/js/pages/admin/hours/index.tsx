@@ -130,6 +130,12 @@ export default function AdminHoursIndex({
                                         endsAt={closure.ends_at}
                                         label={closure.label}
                                         removing={removeLoading}
+                                        readOnly={Boolean(closure.sales_channel_id)}
+                                        badge={
+                                            closure.sales_channel_id
+                                                ? 'Linked to event'
+                                                : null
+                                        }
                                         onRemove={() =>
                                             setClosureToRemove(closure)
                                         }
