@@ -276,7 +276,10 @@ export function MenuFormFields({
                                 }
                                 className="size-4 rounded border-[#e3e3e0] dark:border-[#3E3E3A]"
                             />
-                            <span className="text-sm">Harga per 100 gram</span>
+                            <span className="text-sm">
+                                Harga per 100 gram. Saat order, berat boleh
+                                bebas (misalnya 67 gram).
+                            </span>
                         </label>
 
                         <label className="flex items-center gap-3">

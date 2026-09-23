@@ -265,6 +265,32 @@ class SalesChannelApiTest extends TestCase
         $response->assertJsonPath('transaction.total_amount', '39500');
     }
 
+    public function test_weight_based_price_scales_to_actual_grams(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Tuna Sashimi',
+            'price' => 20000,
+            'pricing_type' => 'weight_based',
+            'is_available' => true,
+        ]);
+
+        $response = $this->postJson('/api/transaction/create', [
+            'customer_name' => 'Alex',
+            'customer_phone' => '081234567890',
+            'customer_phone_country' => 'ID',
+            'items' => [[
+                'menu_id' => $menu->id,
+                'weight_grams' => 67,
+            ]],
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('transaction.order_items.0.weight_grams', 67);
+        $response->assertJsonPath('transaction.order_items.0.quantity', 1);
+        $response->assertJsonPath('transaction.order_items.0.line_total', '13400');
+        $response->assertJsonPath('transaction.total_amount', '13400');
+    }
+
     public function test_cannot_order_store_only_menu_on_event_channel(): void
     {
         $menu = MenuModel::query()->create([
@@ -300,5 +326,33 @@ class SalesChannelApiTest extends TestCase
 
         $this->postJson("/api/hours/closures/delete/{$closure->id}")
             ->assertUnprocessable();
+    }
+
+    public function test_show_event_includes_archived_events(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-09-18 10:00:00', StoreHoursService::TIMEZONE));
+
+        $eventId = $this->postJson('/api/channels/events/create', [
+            'name' => 'Old Bazaar',
+            'starts_at' => '2026-09-20',
+            'ends_at' => '2026-09-22',
+        ])->json('channel.id');
+
+        Carbon::setTestNow(Carbon::parse('2026-10-01 10:00:00', StoreHoursService::TIMEZONE));
+        $this->postJson("/api/channels/events/archive/{$eventId}")->assertOk();
+
+        $this->getJson("/api/channels/events/{$eventId}")
+            ->assertOk()
+            ->assertJsonPath('channel.id', $eventId)
+            ->assertJsonPath('channel.is_archived', true);
+
+        $this->postJson("/api/channels/events/unarchive/{$eventId}")
+            ->assertOk()
+            ->assertJsonPath('channel.is_archived', false);
+
+        $this->assertDatabaseHas('sales_channels', [
+            'id' => $eventId,
+            'archived_at' => null,
+        ]);
     }
 }

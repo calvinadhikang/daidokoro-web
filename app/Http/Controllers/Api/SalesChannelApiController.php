@@ -31,6 +31,27 @@ class SalesChannelApiController extends Controller
         ]);
     }
 
+    public function eventsForReport(): JsonResponse
+    {
+        return response()->json([
+            'events' => array_map(
+                fn (SalesChannel $channel) => $this->salesChannels->format($channel),
+                $this->salesChannels->listAllEventsForReport(),
+            ),
+        ]);
+    }
+
+    public function showEvent(SalesChannel $salesChannel): JsonResponse
+    {
+        if (! $salesChannel->isEvent()) {
+            abort(404);
+        }
+
+        return response()->json([
+            'channel' => $this->salesChannels->format($salesChannel),
+        ]);
+    }
+
     public function current(): JsonResponse
     {
         return response()->json($this->salesChannels->currentPayload());
@@ -67,6 +88,17 @@ class SalesChannelApiController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Event archived successfully.',
+        ]);
+    }
+
+    public function unarchiveEvent(SalesChannel $salesChannel): JsonResponse
+    {
+        $channel = $this->salesChannels->unarchiveEvent($salesChannel);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Event restored successfully.',
+            'channel' => $this->salesChannels->format($channel),
         ]);
     }
 

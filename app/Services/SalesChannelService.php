@@ -34,6 +34,32 @@ class SalesChannelService
         return $channel;
     }
 
+    public function resolveEvent(int $id): SalesChannel
+    {
+        $channel = SalesChannel::query()->events()->find($id);
+
+        if ($channel === null) {
+            throw ValidationException::withMessages([
+                'event_id' => 'The selected event is invalid.',
+            ]);
+        }
+
+        return $channel;
+    }
+
+    /**
+     * @return list<SalesChannel>
+     */
+    public function listAllEventsForReport(): array
+    {
+        return SalesChannel::query()
+            ->events()
+            ->orderByDesc('starts_at')
+            ->orderByDesc('id')
+            ->get()
+            ->all();
+    }
+
     public function eventCovering(?string $date = null): ?SalesChannel
     {
         $date ??= $this->storeHours->today();
@@ -150,6 +176,22 @@ class SalesChannelService
         if ($channel->ends_at === null || $channel->ends_at->toDateString() >= $today) {
             $channel->closure()->delete();
         }
+    }
+
+    public function unarchiveEvent(SalesChannel $channel): SalesChannel
+    {
+        $this->assertEvent($channel);
+
+        if (! $channel->isArchived()) {
+            return $channel;
+        }
+
+        $channel->update(['archived_at' => null]);
+
+        $channel = $channel->fresh(['closure']) ?? $channel;
+        $this->syncLinkedClosure($channel);
+
+        return $channel->fresh(['closure']) ?? $channel;
     }
 
     /**
@@ -339,6 +381,7 @@ class SalesChannelService
             'closes_store' => $channel->closes_store,
             'status' => $status,
             'is_store' => $channel->isStore(),
+            'is_archived' => $channel->isArchived(),
         ];
     }
 

@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 import { cn } from '@/lib/utils';
 
 export const WEIGHT_PRESETS = [100, 150, 200, 250, 300, 500];
@@ -30,15 +32,30 @@ type Props = {
 };
 
 export function WeightGramsField({ value, onChange, disabled = false }: Props) {
+    const [draft, setDraft] = useState(String(value));
+    const [focused, setFocused] = useState(false);
+
+    useEffect(() => {
+        if (!focused) {
+            setDraft(String(value));
+        }
+    }, [focused, value]);
+
+    function commit(next: number) {
+        const grams = clampWeightGrams(next);
+        onChange(grams);
+        setDraft(String(grams));
+    }
+
     return (
         <div>
             <div className="flex items-center gap-2">
-                {[-50, -10, 10, 50].map((delta) => (
+                {[-10, -1, 1, 10].map((delta) => (
                     <button
                         key={delta}
                         type="button"
                         disabled={disabled}
-                        onClick={() => onChange(clampWeightGrams(value + delta))}
+                        onClick={() => commit(value + delta)}
                         className="flex h-10 min-w-12 items-center justify-center rounded-md border border-[#e3e3e0] px-2 text-sm dark:border-[#3E3E3A]"
                     >
                         {delta > 0 ? `+${delta}` : delta}
@@ -46,20 +63,36 @@ export function WeightGramsField({ value, onChange, disabled = false }: Props) {
                 ))}
             </div>
             <input
-                type="number"
-                min={MIN_WEIGHT_GRAMS}
-                max={MAX_WEIGHT_GRAMS}
-                value={value}
+                type="text"
+                inputMode="numeric"
+                value={draft}
                 disabled={disabled}
-                onChange={(event) =>
-                    onChange(
-                        clampWeightGrams(parseInt(event.target.value, 10) || 1),
-                    )
-                }
+                placeholder="67"
+                onFocus={() => setFocused(true)}
+                onBlur={() => {
+                    setFocused(false);
+                    const parsed = parseInt(draft, 10);
+                    commit(Number.isFinite(parsed) ? parsed : value);
+                }}
+                onChange={(event) => {
+                    const digits = event.target.value.replace(/\D/g, '');
+                    setDraft(digits);
+
+                    const parsed = parseInt(digits, 10);
+
+                    if (
+                        digits !== '' &&
+                        parsed >= MIN_WEIGHT_GRAMS &&
+                        parsed <= MAX_WEIGHT_GRAMS
+                    ) {
+                        onChange(parsed);
+                    }
+                }}
                 className="mt-3 w-full rounded-md border border-[#e3e3e0] bg-white px-3 py-2.5 text-center text-sm outline-none focus:border-[#1b1b18] dark:border-[#3E3E3A] dark:bg-[#0a0a0a] dark:focus:border-[#EDEDEC]"
             />
             <p className="mt-1 text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                gram
+                gram. Boleh selain kelipatan 100, misalnya 67 gram. Harga =
+                harga per 100g × berat ÷ 100.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
                 {WEIGHT_PRESETS.map((preset) => (
@@ -67,7 +100,7 @@ export function WeightGramsField({ value, onChange, disabled = false }: Props) {
                         key={preset}
                         type="button"
                         disabled={disabled}
-                        onClick={() => onChange(preset)}
+                        onClick={() => commit(preset)}
                         className={cn(
                             'rounded-full border px-2.5 py-1 text-xs font-medium',
                             value === preset

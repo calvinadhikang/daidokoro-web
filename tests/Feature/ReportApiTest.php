@@ -313,4 +313,49 @@ class ReportApiTest extends TestCase
         $response->assertUnprocessable();
         $response->assertJsonValidationErrors(['to']);
     }
+
+    public function test_event_sales_report_includes_archived_events_and_transactions(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-09-18 12:00:00', StoreHoursService::TIMEZONE));
+
+        $eventId = $this->postJson('/api/channels/events/create', [
+            'name' => 'Past Bazaar',
+            'starts_at' => '2026-09-20',
+            'ends_at' => '2026-09-22',
+        ])->json('channel.id');
+
+        Transaction::query()->create([
+            'customer_name' => 'Bazaar Guest',
+            'customer_phone' => '6281111111111',
+            'service_type' => 'takeaway',
+            'status' => 'paid',
+            'total_bill' => 75000,
+            'business_date' => '2026-09-21',
+            'daily_number' => 1,
+            'sales_channel_id' => $eventId,
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-10-01 12:00:00', StoreHoursService::TIMEZONE));
+
+        $this->postJson("/api/channels/events/archive/{$eventId}")->assertOk();
+
+        $list = $this->getJson('/api/channels/events/report-list');
+        $list->assertOk();
+        $list->assertJsonPath('events.0.id', $eventId);
+        $list->assertJsonPath('events.0.is_archived', true);
+
+        $response = $this->getJson('/api/report/event-sales?'.http_build_query([
+            'event_id' => $eventId,
+            'preset' => 'event',
+        ]));
+
+        $response->assertOk();
+        $response->assertJsonPath('filters.event_id', $eventId);
+        $response->assertJsonPath('filters.preset', 'event');
+        $response->assertJsonPath('filters.from', '2026-09-20');
+        $response->assertJsonPath('filters.to', '2026-09-22');
+        $response->assertJsonPath('summary.revenue', 75000);
+        $response->assertJsonPath('summary.total_count', 1);
+        $response->assertJsonCount(1, 'events');
+    }
 }
