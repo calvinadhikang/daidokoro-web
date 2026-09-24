@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Customer;
 use App\Models\Transaction;
 use App\Support\PhoneNumber;
+use App\Support\WalkInCustomer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -82,6 +83,10 @@ class CustomerDirectoryService
 
     public function upsertFromNamePhone(string $name, string $phone): ?Customer
     {
+        if (WalkInCustomer::isWalkInStored($phone)) {
+            return null;
+        }
+
         $normalized = PhoneNumber::normalize($phone);
 
         if ($normalized === null) {

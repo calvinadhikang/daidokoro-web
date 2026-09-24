@@ -27,7 +27,7 @@ class UpdateApiTransactionRequest extends FormRequest
     {
         return [
             'customer_name' => ['required', 'string', 'max:255'],
-            ...$this->phoneValidationRules('customer_phone', 'customer_phone_country'),
+            ...$this->cashierPhoneValidationRules('customer_phone', 'customer_phone_country'),
             'service_type' => ['nullable', 'in:dine_in,takeaway'],
         ];
     }

@@ -27,7 +27,7 @@ class StoreApiTransactionRequest extends FormRequest
     {
         return [
             'customer_name' => ['required', 'string', 'max:255'],
-            ...$this->phoneValidationRules('customer_phone', 'customer_phone_country'),
+            ...$this->cashierPhoneValidationRules('customer_phone', 'customer_phone_country'),
             'service_type' => ['nullable', 'in:dine_in,takeaway'],
             'sales_channel_id' => ['nullable', 'integer', 'exists:sales_channels,id'],
             'items' => ['required', 'array', 'min:1'],

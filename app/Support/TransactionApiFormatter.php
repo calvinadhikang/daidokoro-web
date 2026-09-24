@@ -44,9 +44,16 @@ class TransactionApiFormatter
             'transaction_number' => self::formatTransactionNumber($transaction),
             'name' => $transaction->customer_name,
             'customer_phone' => $transaction->customer_phone,
-            'customer_phone_display' => PhoneNumber::formatForDisplay($transaction->customer_phone),
-            'customer_phone_local' => PhoneNumber::toLocalInput($transaction->customer_phone),
-            'customer_phone_country' => PhoneNumber::region($transaction->customer_phone),
+            'customer_phone_display' => WalkInCustomer::isWalkInStored($transaction->customer_phone)
+                ? null
+                : PhoneNumber::formatForDisplay($transaction->customer_phone),
+            'customer_phone_local' => WalkInCustomer::isWalkInStored($transaction->customer_phone)
+                ? ''
+                : PhoneNumber::toLocalInput($transaction->customer_phone),
+            'customer_phone_country' => WalkInCustomer::isWalkInStored($transaction->customer_phone)
+                ? PhoneNumber::DEFAULT_REGION
+                : PhoneNumber::region($transaction->customer_phone),
+            'is_walk_in' => WalkInCustomer::isWalkInStored($transaction->customer_phone),
             'service_type' => $transaction->service_type,
             'table_code' => $transaction->table_code,
             'status' => $transaction->status,

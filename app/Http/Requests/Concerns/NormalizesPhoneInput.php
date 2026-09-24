@@ -3,12 +3,24 @@
 namespace App\Http\Requests\Concerns;
 
 use App\Support\PhoneNumber;
+use App\Support\WalkInCustomer;
 use Closure;
 
 trait NormalizesPhoneInput
 {
     protected function preparePhoneInput(string $phoneField, string $countryField): void
     {
+        $rawPhone = is_string($this->input($phoneField)) ? trim($this->input($phoneField)) : '';
+
+        if ($rawPhone !== '' && WalkInCustomer::isWalkInStored($rawPhone)) {
+            $this->merge([
+                $countryField => PhoneNumber::DEFAULT_REGION,
+                $phoneField => $rawPhone,
+            ]);
+
+            return;
+        }
+
         $country = PhoneNumber::normalizeRegion(
             is_string($this->input($countryField)) ? $this->input($countryField) : null,
         );
@@ -40,6 +52,19 @@ trait NormalizesPhoneInput
                     }
                 },
             ],
+        ];
+    }
+
+    /**
+     * Cashier API (Expo): require a phone value but allow queue labels and walk-in placeholders.
+     *
+     * @return array<string, mixed>
+     */
+    protected function cashierPhoneValidationRules(string $phoneField, string $countryField): array
+    {
+        return [
+            $countryField => ['nullable', 'string', 'size:2'],
+            $phoneField => ['required', 'string', 'max:64'],
         ];
     }
 }

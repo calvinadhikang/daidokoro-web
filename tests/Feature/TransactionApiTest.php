@@ -426,6 +426,58 @@ class TransactionApiTest extends TestCase
         ]);
     }
 
+    public function test_create_accepts_cashier_queue_label_without_valid_mobile(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Edamame',
+            'price' => 18000,
+            'is_available' => true,
+        ]);
+
+        $response = $this->postJson('/api/transaction/create', [
+            'customer_name' => '42',
+            'customer_phone' => '42',
+            'items' => [
+                [
+                    'menu_id' => $menu->id,
+                    'quantity' => 1,
+                ],
+            ],
+        ]);
+
+        $response->assertCreated();
+        $this->assertDatabaseHas('transactions', [
+            'customer_name' => '42',
+            'customer_phone' => '42',
+        ]);
+        $this->assertDatabaseCount('customers', 0);
+    }
+
+    public function test_create_walk_in_phone_does_not_upsert_customer(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Edamame',
+            'price' => 18000,
+            'is_available' => true,
+        ]);
+
+        $response = $this->postJson('/api/transaction/create', [
+            'customer_name' => '042',
+            'customer_phone' => 'walkin:042',
+            'items' => [
+                [
+                    'menu_id' => $menu->id,
+                    'quantity' => 1,
+                ],
+            ],
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('transaction.customer_phone', 'walkin:042');
+        $response->assertJsonPath('transaction.is_walk_in', true);
+        $this->assertDatabaseCount('customers', 0);
+    }
+
     public function test_create_normalizes_singapore_phone(): void
     {
         $menu = MenuModel::query()->create([
