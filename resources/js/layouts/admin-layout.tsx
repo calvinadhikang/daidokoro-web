@@ -6,6 +6,7 @@ import {
     AdminMenuButton,
     AdminMenuDrawer,
 } from '@/components/admin/admin-menu-drawer';
+import { BrandLogo } from '@/components/brand-logo';
 import { AdminNavbar } from '@/components/admin/admin-navbar';
 import { isSecondaryNavActive } from '@/lib/admin-nav';
 import { cn } from '@/lib/utils';
@@ -35,6 +36,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                         onClick={() => setMenuOpen((current) => !current)}
                         active={secondaryActive || menuOpen}
                     />
+                    <BrandLogo className="h-9 w-9 shrink-0" />
                     <div className="min-w-0 flex-1">
                         <p className="text-xs font-medium tracking-wide text-[#706f6c] uppercase dark:text-[#A1A09A]">
                             Admin

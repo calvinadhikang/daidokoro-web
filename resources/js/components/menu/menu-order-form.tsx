@@ -295,7 +295,9 @@ export function MenuOrderForm({
                                                         ? 'cursor-not-allowed border-[#e3e3e0] bg-[#FDFDFC]/60 opacity-60 dark:border-[#3E3E3A] dark:bg-[#0a0a0a]/40'
                                                         : 'cursor-pointer',
                                                     !isUnavailable && isSelected
-                                                        ? 'border-[#1b1b18] bg-[#FDFDFC] dark:border-[#EDEDEC] dark:bg-[#0a0a0a]'
+                                                        ? isCustomer
+                                                            ? 'border-[#E24E1B] bg-[#FFF1E8] dark:border-[#FF8A4C] dark:bg-[#3A1A0E]'
+                                                            : 'border-[#1b1b18] bg-[#FDFDFC] dark:border-[#EDEDEC] dark:bg-[#0a0a0a]'
                                                         : !isUnavailable &&
                                                               'border-[#e3e3e0] dark:border-[#3E3E3A]',
                                                 )}
@@ -495,7 +497,7 @@ export function MenuOrderForm({
                             <button
                                 type="submit"
                                 disabled={disabled}
-                                className="flex min-w-0 flex-1 items-center justify-center rounded-xl border border-[#1b1b18] bg-[#1b1b18] px-4 py-3 text-sm font-medium text-white disabled:opacity-50 dark:border-[#EDEDEC] dark:bg-[#EDEDEC] dark:text-[#1b1b18]"
+                                className="flex min-w-0 flex-1 items-center justify-center rounded-xl bg-[#E24E1B] px-4 py-3 text-sm font-medium text-white disabled:opacity-50"
                             >
                                 <span className="truncate">{submitLabel}</span>
                                 <span className="ml-2 shrink-0 tabular-nums">

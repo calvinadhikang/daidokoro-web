@@ -1,5 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 
+import { BrandLogo } from '@/components/brand-logo';
 import { PhoneInput } from '@/components/phone-input';
 import { DEFAULT_PHONE_REGION } from '@/lib/phone-countries';
 import {
@@ -49,9 +50,10 @@ export default function CustomerLogin({
         <>
             <Head title="Your details" />
 
-            <div className="flex min-h-screen flex-col bg-[#FDFDFC] text-[#1b1b18] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]">
+            <div className="flex min-h-screen flex-col bg-[#FFF7F2] text-[#1b1b18] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]">
                 <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 py-8">
                     <header className="mb-8">
+                        <BrandLogo className="mb-4 h-20 w-20" />
                         <Link
                             href="/"
                             className="text-sm text-[#706f6c] dark:text-[#A1A09A]"
@@ -122,7 +124,7 @@ export default function CustomerLogin({
                         <button
                             type="submit"
                             disabled={form.processing}
-                            className="w-full rounded-md border border-[#1b1b18] bg-[#1b1b18] px-4 py-3 text-sm font-medium text-white disabled:opacity-50 dark:border-[#EDEDEC] dark:bg-[#EDEDEC] dark:text-[#1b1b18]"
+                            className="w-full rounded-md bg-[#E24E1B] px-4 py-3 text-sm font-medium text-white disabled:opacity-50"
                         >
                             {form.processing ? 'Saving...' : 'Continue'}
                         </button>

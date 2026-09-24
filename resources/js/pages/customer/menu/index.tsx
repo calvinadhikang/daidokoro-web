@@ -48,7 +48,7 @@ export default function CustomerMenuIndex({
                             </p>
                         </div>
                         {serviceType !== null && (
-                            <span className="shrink-0 rounded-full bg-[#eff8ff] px-2.5 py-1 text-xs font-medium text-[#175cd3] dark:bg-[#102a56] dark:text-[#84caff]">
+                            <span className="shrink-0 rounded-full bg-[#FFF1E8] px-2.5 py-1 text-xs font-medium text-[#C2410C] dark:bg-[#4A1D0C] dark:text-[#FDBA8C]">
                                 {serviceTypeLabel(serviceType)}
                             </span>
                         )}
