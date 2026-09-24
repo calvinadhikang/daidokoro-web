@@ -65,6 +65,7 @@ type MenuFormProps = {
     submitLabel: string;
     imageSrc?: string | null;
     channels?: SalesChannelOption[];
+    description?: string;
     onSubmit: (event: React.FormEvent) => void;
 };
 
@@ -76,6 +77,7 @@ export function MenuFormFields({
     submitLabel,
     imageSrc = null,
     channels = [],
+    description,
     onSubmit,
 }: MenuFormProps) {
     const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
@@ -161,7 +163,14 @@ export function MenuFormFields({
                     >
                         Back
                     </Link>
-                    <h1 className="text-lg font-semibold">{title}</h1>
+                    <div className="min-w-0">
+                        <h1 className="truncate text-lg font-semibold">{title}</h1>
+                        {description && (
+                            <p className="truncate text-xs text-[#706f6c] dark:text-[#A1A09A]">
+                                {description}
+                            </p>
+                        )}
+                    </div>
                 </div>
             </header>
 

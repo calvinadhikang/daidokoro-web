@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import type { Menu, MenuCategory } from '@/types/menu';
 
 function formatPrice(price: number): string {
-    return price.toLocaleString();
+    return `Rp ${price.toLocaleString('id-ID')}`;
 }
 
 function MenuCard({
@@ -54,7 +54,7 @@ function MenuCard({
 
     const content = isCustomer ? (
         <div className="flex items-stretch gap-3.5">
-            <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-[#e3e3e0] dark:bg-[#3E3E3A]">
+            <div className="relative h-[5.5rem] w-[5.5rem] shrink-0 overflow-hidden rounded-2xl bg-[#eceae6] shadow-inner dark:bg-[#3E3E3A]">
                 <MenuImage
                     src={menu.image}
                     alt={menu.name}
@@ -63,23 +63,38 @@ function MenuCard({
                         !menu.is_available && 'grayscale',
                     )}
                 />
+                {menu.is_recommended && menu.is_available && (
+                    <span className="absolute top-1.5 left-1.5 rounded-full bg-[#FFF1E8] px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-[#C2410C] uppercase">
+                        Rec
+                    </span>
+                )}
                 {!menu.is_available && (
-                    <span className="absolute inset-x-0 bottom-0 bg-black/55 px-1.5 py-1 text-center text-[10px] font-medium text-white">
+                    <span className="absolute inset-x-0 bottom-0 bg-black/60 px-1.5 py-1 text-center text-[10px] font-medium text-white">
                         {unavailableLabel}
                     </span>
                 )}
             </div>
-            <div className="flex min-w-0 flex-1 flex-col">
-                <h2 className="line-clamp-2 text-base font-semibold tracking-tight">
+            <div className="flex min-w-0 flex-1 flex-col py-0.5">
+                <h2 className="line-clamp-2 text-[15px] leading-snug font-semibold tracking-tight">
                     {menu.name}
                 </h2>
+                {addonSummary !== null && (
+                    <p className="mt-1 line-clamp-1 text-xs text-[#706f6c] dark:text-[#A1A09A]">
+                        {addonSummary}
+                    </p>
+                )}
                 <div className="mt-auto flex items-end justify-between gap-3 pt-2">
-                    <p className="text-sm font-semibold tabular-nums">
+                    <p className="text-sm font-semibold text-[#E24E1B] tabular-nums">
                         {formatPrice(menu.price)}
+                        {menu.pricing_type === 'weight_based' && (
+                            <span className="ml-1 text-xs font-medium text-[#706f6c] dark:text-[#A1A09A]">
+                                / 100g
+                            </span>
+                        )}
                     </p>
                     {href ? (
                         <span
-                            className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1b1b18] text-white dark:bg-[#EDEDEC] dark:text-[#1b1b18]"
+                            className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E24E1B] text-white shadow-sm"
                             aria-hidden="true"
                         >
                             <svg
@@ -144,7 +159,7 @@ function MenuCard({
     const className = cn(
         'block border bg-white dark:border-[#3E3E3A] dark:bg-[#161615]',
         isCustomer
-            ? 'rounded-2xl border-[#eee] p-3 dark:border-[#3E3E3A]'
+            ? 'rounded-2xl border-[#eee] p-2.5 shadow-[0_1px_2px_rgba(27,27,24,0.04)] dark:border-[#3E3E3A] dark:shadow-none'
             : 'rounded-lg border-[#e3e3e0] p-4',
         !menu.is_available && !isCustomer && 'opacity-70',
         href && 'active:bg-[#FDFDFC] dark:active:bg-[#0a0a0a]',
@@ -245,7 +260,9 @@ export function MenuBrowsePanel({
         [groupedMenus],
     );
 
-    const isFiltering = search.trim() !== '' || browseFilter !== 'all';
+    const isSearching = search.trim() !== '';
+    const categorySelected = browseFilter !== 'all';
+    const isFiltering = isSearching || categorySelected;
     const availableCount = menus.filter((menu) => menu.is_available).length;
     const defaultSummary =
         availability === 'available'
@@ -273,7 +290,7 @@ export function MenuBrowsePanel({
 
     const filters = (
         <>
-            {(!isCustomer || isFiltering) && (
+            {(!isCustomer || (isSearching && !categorySelected)) && (
                 <p
                     className={cn(
                         'text-sm text-[#706f6c] dark:text-[#A1A09A]',
@@ -323,6 +340,7 @@ export function MenuBrowsePanel({
                 categories={categories}
                 value={browseFilter}
                 onChange={setBrowseFilter}
+                tone={isCustomer ? 'brand' : 'ink'}
                 className="mb-4"
             />
         </>
@@ -365,10 +383,16 @@ export function MenuBrowsePanel({
                                 className={cn(
                                     'mb-3 font-semibold',
                                     isCustomer
-                                        ? 'text-base tracking-tight'
+                                        ? 'flex items-center gap-2 text-[13px] tracking-wide text-[#706f6c] uppercase dark:text-[#A1A09A]'
                                         : 'text-sm text-[#706f6c] dark:text-[#A1A09A]',
                                 )}
                             >
+                                {isCustomer && (
+                                    <span
+                                        className="h-px w-4 bg-[#e3e3e0] dark:bg-[#3E3E3A]"
+                                        aria-hidden="true"
+                                    />
+                                )}
                                 {group.heading}
                             </h2>
                         )}

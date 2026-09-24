@@ -13,12 +13,12 @@
 @keyframes cart-bar-highlight {
     0%,
     100% {
-        box-shadow: 0 10px 15px -3px rgb(23 92 211 / 0.25);
+        box-shadow: 0 10px 15px -3px rgb(226 78 27 / 0.28);
     }
     50% {
         box-shadow:
-            0 10px 15px -3px rgb(23 92 211 / 0.25),
-            0 0 0 8px rgb(23 92 211 / 0.18);
+            0 10px 15px -3px rgb(226 78 27 / 0.28),
+            0 0 0 8px rgb(226 78 27 / 0.18);
     }
 }
 

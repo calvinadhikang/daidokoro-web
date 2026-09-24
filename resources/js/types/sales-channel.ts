@@ -11,6 +11,7 @@ export type SalesChannel = {
     closes_store: boolean;
     status: SalesChannelStatus;
     is_store: boolean;
+    is_archived: boolean;
 };
 
 export type ChannelMenu = {

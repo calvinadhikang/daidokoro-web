@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 
+import { BrandLogo } from '@/components/brand-logo';
 import { CustomerCartBar } from '@/components/customer/customer-cart-bar';
 import { CustomerNavbar } from '@/components/customer/customer-navbar';
 import { isCustomerCartUrl, isCustomerMenuDetailUrl } from '@/lib/customer-nav';
@@ -29,7 +30,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
         !isMenuDetail;
 
     return (
-        <div className="min-h-screen bg-[#FDFDFC] text-[#1b1b18] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]">
+        <div className="min-h-screen bg-[#FFF7F2] text-[#1b1b18] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]">
             {flash.success && (
                 <div className="px-4 pt-4">
                     <div className="mx-auto max-w-md rounded-lg border border-[#abefc6] bg-[#ecfdf3] px-4 py-3 text-sm text-[#027a48] dark:border-[#053321] dark:bg-[#053321] dark:text-[#75e0a7]">
@@ -38,19 +39,29 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
                 </div>
             )}
 
-            {customer !== null && !isMenuDetail && (
+            {!isMenuDetail && (
                 <div className="mx-auto flex max-w-md items-center justify-between gap-3 px-4 pt-4">
-                    <p className="truncate text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                        Hi, {customer.name}
-                    </p>
                     <Link
-                        href="/customer/logout"
-                        method="post"
-                        as="button"
-                        className="shrink-0 text-sm font-medium text-[#706f6c] underline-offset-2 hover:underline dark:text-[#A1A09A]"
+                        href="/customer/menu"
+                        className="flex min-w-0 items-center gap-2"
                     >
-                        Logout
+                        <BrandLogo className="h-10 w-10 shrink-0" />
+                        {customer !== null && (
+                            <p className="truncate text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                                Hi, {customer.name}
+                            </p>
+                        )}
                     </Link>
+                    {customer !== null && (
+                        <Link
+                            href="/customer/logout"
+                            method="post"
+                            as="button"
+                            className="shrink-0 text-sm font-medium text-[#706f6c] underline-offset-2 hover:underline dark:text-[#A1A09A]"
+                        >
+                            Logout
+                        </Link>
+                    )}
                 </div>
             )}
 

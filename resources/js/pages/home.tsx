@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 
+import { BrandLogo } from '@/components/brand-logo';
 import { cn } from '@/lib/utils';
 import type { NextSession, StoreStatus } from '@/types/operating-hours';
 
@@ -37,7 +38,7 @@ function OrderButton({
             href={href}
             className={cn(
                 'flex flex-1 items-center justify-center rounded-md px-4 py-3 text-sm font-medium transition-colors',
-                'border border-[#1b1b18] bg-[#1b1b18] text-white active:bg-[#333] dark:border-[#EDEDEC] dark:bg-[#EDEDEC] dark:text-[#1b1b18] dark:active:bg-[#d4d4d2]',
+                'bg-[#E24E1B] text-white active:bg-[#C2410C]',
             )}
         >
             {label}
@@ -61,12 +62,13 @@ export default function Home({ storeStatus, nextSession }: Props) {
         <>
             <Head title="Order" />
 
-            <div className="flex min-h-screen flex-col bg-[#FDFDFC] text-[#1b1b18] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]">
+            <div className="flex min-h-screen flex-col bg-[#FFF7F2] text-[#1b1b18] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]">
                 <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 py-8">
                     <header className="mb-8">
-                        <h1 className="text-2xl font-semibold">Daidokoro</h1>
+                        <BrandLogo className="h-28 w-28" />
+                        <h1 className="mt-3 text-2xl font-semibold">Daidokoro</h1>
                         <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                            Order takeaway or dine in
+                            Japanese cuisine · order takeaway or dine in
                         </p>
                     </header>
 

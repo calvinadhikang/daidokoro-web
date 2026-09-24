@@ -33,7 +33,7 @@ export function CustomerCartBar() {
             <Link
                 href="/customer/cart"
                 className={cn(
-                    'pointer-events-auto mx-auto flex max-w-md items-center justify-between gap-3 rounded-full border border-[#1b1b18] bg-[#1b1b18] px-5 py-3 text-white shadow-lg dark:border-[#EDEDEC] dark:bg-[#EDEDEC] dark:text-[#1b1b18]',
+                    'pointer-events-auto mx-auto flex max-w-md items-center justify-between gap-3 rounded-full bg-[#E24E1B] px-5 py-3 text-white shadow-lg shadow-[#E24E1B]/25',
                     highlighted && 'cart-bar-highlight',
                 )}
             >
@@ -41,7 +41,7 @@ export function CustomerCartBar() {
                     <span className="block text-sm font-semibold">
                         View cart
                     </span>
-                    <span className="block text-xs text-white/70 dark:text-[#1b1b18]/70">
+                    <span className="block text-xs text-white/80">
                         {cartCount} {cartCount === 1 ? 'item' : 'items'}
                     </span>
                 </span>

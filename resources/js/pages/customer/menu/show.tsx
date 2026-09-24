@@ -47,7 +47,7 @@ export default function CustomerMenuShow({ menu, serviceType }: Props) {
             <Head title={menu.name} />
 
             <div className="mx-auto max-w-md">
-                <div className="relative h-80 overflow-hidden bg-[#e3e3e0] dark:bg-[#3E3E3A]">
+                <div className="relative h-72 overflow-hidden bg-[#eceae6] sm:h-80 dark:bg-[#3E3E3A]">
                     <button
                         type="button"
                         onClick={() => setPhotoOpen(true)}
@@ -87,11 +87,11 @@ export default function CustomerMenuShow({ menu, serviceType }: Props) {
                     )}
                 </div>
 
-                <div className="relative px-4 pt-5 pb-4">
+                <div className="relative -mt-6 rounded-t-3xl bg-[#FFF7F2] px-4 pt-6 pb-4 dark:bg-[#0a0a0a]">
                     {(menu.is_recommended || categories.length > 0) && (
                         <div className="mb-3 flex flex-wrap items-center gap-2">
                             {menu.is_recommended && (
-                                <span className="rounded-full bg-[#eff8ff] px-2.5 py-1 text-[11px] font-medium text-[#175cd3] dark:bg-[#102a56] dark:text-[#84caff]">
+                                <span className="rounded-full bg-[#FFF1E8] px-2.5 py-1 text-[11px] font-medium text-[#C2410C] dark:bg-[#4A1D0C] dark:text-[#FDBA8C]">
                                     Recommended
                                 </span>
                             )}
@@ -106,13 +106,19 @@ export default function CustomerMenuShow({ menu, serviceType }: Props) {
                         </div>
                     )}
 
-                    <h1 className="text-2xl font-semibold tracking-tight">
-                        {menu.name}
-                    </h1>
-                    <p className="mt-1.5 text-xl font-semibold tabular-nums">
-                        {formatPrice(menu.price)}
-                        {menu.pricing_type === 'weight_based' ? ' / 100g' : ''}
-                    </p>
+                    <div className="flex items-start justify-between gap-4">
+                        <h1 className="text-2xl font-semibold tracking-tight">
+                            {menu.name}
+                        </h1>
+                        <p className="shrink-0 text-right text-lg font-semibold text-[#E24E1B] tabular-nums">
+                            Rp {formatPrice(menu.price)}
+                            {menu.pricing_type === 'weight_based' && (
+                                <span className="mt-0.5 block text-xs font-medium text-[#706f6c] dark:text-[#A1A09A]">
+                                    per 100g
+                                </span>
+                            )}
+                        </p>
+                    </div>
 
                     <div className="mt-5">
                         <MenuOrderForm
