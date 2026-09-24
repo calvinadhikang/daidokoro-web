@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call(MenuSeeder::class);
-        $this->call(TransactionSeeder::class);
+        $this->call(MenuAddonSeeder::class);
+        $this->call(OmakaseSeeder::class);
     }
 }

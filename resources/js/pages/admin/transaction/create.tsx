@@ -6,6 +6,8 @@ import {
     store,
 } from '@/actions/App/Http/Controllers/TransactionController';
 import { ConfirmDialog } from '@/components/admin/confirm-dialog';
+import { PhoneInput } from '@/components/phone-input';
+import { DEFAULT_PHONE_REGION } from '@/lib/phone-countries';
 import {
     inputClassName,
     labelClassName,
@@ -73,6 +75,7 @@ export default function AdminTransactionCreate({ menus }: Props) {
     const form = useForm<CreateTransactionForm>({
         customer_name: '',
         customer_phone: '',
+        customer_phone_country: DEFAULT_PHONE_REGION,
         service_type: 'dine_in',
         items: [],
     });
@@ -101,11 +104,14 @@ export default function AdminTransactionCreate({ menus }: Props) {
         form.transform((data) => ({
             customer_name: data.customer_name,
             customer_phone: data.customer_phone,
+            customer_phone_country: data.customer_phone_country,
             service_type: data.service_type,
             items: cart.map((item) => ({
                 menu_id: item.menu_id,
                 quantity: item.quantity,
+                weight_grams: item.weight_grams,
                 addon_option_ids: item.addon_option_ids,
+                note: item.note,
             })),
         }));
 
@@ -188,18 +194,19 @@ export default function AdminTransactionCreate({ menus }: Props) {
                                 >
                                     Phone
                                 </label>
-                                <input
+                                <PhoneInput
                                     id="customer_phone"
-                                    type="tel"
-                                    value={form.data.customer_phone}
-                                    onChange={(event) =>
+                                    country={form.data.customer_phone_country}
+                                    nationalNumber={form.data.customer_phone}
+                                    onCountryChange={(region) =>
                                         form.setData(
-                                            'customer_phone',
-                                            event.target.value,
+                                            'customer_phone_country',
+                                            region,
                                         )
                                     }
-                                    className={inputClassName}
-                                    placeholder="Phone number"
+                                    onNationalNumberChange={(value) =>
+                                        form.setData('customer_phone', value)
+                                    }
                                 />
                                 <FieldError message={form.errors.customer_phone} />
                             </div>
@@ -260,11 +267,16 @@ export default function AdminTransactionCreate({ menus }: Props) {
                                                     {item.menu_name}
                                                 </p>
                                                 <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                                    Qty {item.quantity} ·{' '}
-                                                    {formatPrice(item.unit_price)}{' '}
-                                                    each
+                                                    {item.weight_grams
+                                                        ? `${item.weight_grams} g · ${formatPrice(item.unit_price)} / 100g`
+                                                        : `Qty ${item.quantity} · ${formatPrice(item.unit_price)} each`}
                                                 </p>
                                                 <ItemAddons addons={item.addons} />
+                                                {item.note ? (
+                                                    <p className="mt-2 text-xs italic text-[#706f6c] dark:text-[#A1A09A]">
+                                                        Note: {item.note}
+                                                    </p>
+                                                ) : null}
                                             </div>
                                             <div className="flex shrink-0 flex-col items-end gap-2">
                                                 <p className="font-medium tabular-nums">

@@ -5,40 +5,53 @@ namespace App\Support;
 use App\Models\MenuAddonGroup;
 use App\Models\MenuAddonOption;
 use App\Models\MenuModel;
+use App\Models\SalesChannel;
 
 class MenuApiFormatter
 {
     /**
      * @return array<string, mixed>
      */
-    public static function formatListItem(MenuModel $menu): array
+    public static function formatListItem(MenuModel $menu, ?SalesChannel $channel = null): array
     {
+        $price = $menu->effectivePrice($channel);
+        $pricingType = $menu->pricing_type ?: MenuModel::PRICING_STANDARD;
+        $isAvailable = $channel === null
+            ? $menu->is_available
+            : $menu->effectiveIsAvailable($channel);
+
         return [
             'id' => $menu->id,
             'name' => $menu->name,
-            'price' => $menu->price,
-            'price_label' => 'Rp '.number_format($menu->price, 0, ',', '.'),
-            'type' => 'standard',
-            'is_available' => $menu->is_available,
+            'price' => $price,
+            'price_label' => PriceLabel::format($price, $pricingType),
+            'type' => $pricingType,
+            'pricing_type' => $pricingType,
+            'is_available' => $isAvailable,
             'is_recommended' => $menu->is_recommended,
             'image' => $menu->image,
-            'categories' => $menu->categories
-                ->map(fn ($category) => [
-                    'id' => $category->id,
-                    'name' => $category->name,
-                ])
-                ->values()
-                ->all(),
+            'price_override' => $menu->channelPivot($channel)?->price_override,
+            'categories' => $menu->relationLoaded('categories')
+                ? $menu->categories
+                    ->map(fn ($category) => [
+                        'id' => $category->id,
+                        'name' => $category->name,
+                    ])
+                    ->values()
+                    ->all()
+                : [],
         ];
     }
 
     /**
      * @return array<string, mixed>
      */
-    public static function formatDetail(MenuModel $menu): array
+    public static function formatDetail(MenuModel $menu, ?SalesChannel $channel = null): array
     {
+        $menu->loadMissing(['addonGroups.options', 'categories:id,name']);
+
         return [
-            ...self::formatListItem($menu),
+            ...self::formatListItem($menu, $channel),
             'addon_groups' => $menu->addonGroups
                 ->map(fn (MenuAddonGroup $group) => [
                     'id' => $group->id,
@@ -51,7 +64,7 @@ class MenuApiFormatter
                             'id' => $option->id,
                             'name' => $option->name,
                             'price' => $option->price,
-                            'price_label' => 'Rp '.number_format($option->price, 0, ',', '.'),
+                            'price_label' => PriceLabel::format((int) $option->price),
                             'is_available' => $option->is_available,
                             'sort_order' => $option->sort_order,
                         ])

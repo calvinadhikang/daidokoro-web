@@ -19,9 +19,12 @@ export type TransactionItem = {
     menu_id: number;
     menu_name: string;
     quantity: number;
+    weight_grams?: number | null;
+    pricing_type?: 'standard' | 'weight_based';
     unit_price: number;
     line_total: number;
     addons: TransactionAddon[] | null;
+    note?: string | null;
     created_at: string;
 };
 
@@ -32,29 +35,46 @@ export type TransactionItemGroup = {
 
 export type Transaction = {
     id: number;
+    business_date?: string;
+    daily_number?: number;
+    transaction_number: string;
     customer_name: string;
     customer_phone: string;
+    customer_phone_display?: string;
+    customer_phone_country?: string;
+    customer_phone_local?: string;
     service_type: TransactionServiceType;
+    table_code: string | null;
     status: TransactionStatus;
     total_bill: number;
+    is_admin_created: boolean;
     created_at: string;
     updated_at: string;
     items?: TransactionItem[];
+    sales_channel?: {
+        id: number;
+        name: string;
+        type: 'store' | 'event';
+    } | null;
+    sales_channel_id?: number;
 };
 
 export type TransactionOrderForm = {
     menu_id: string;
     quantity: number;
     addon_option_ids: number[];
+    note?: string;
 };
 
 export type CreateTransactionForm = {
     customer_name: string;
     customer_phone: string;
+    customer_phone_country: string;
     service_type: TransactionServiceType;
     items: Array<{
         menu_id: number;
         quantity: number;
         addon_option_ids: number[];
+        note?: string | null;
     }>;
 };

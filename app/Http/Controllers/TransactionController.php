@@ -4,14 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreTransactionItemRequest;
 use App\Http\Requests\StoreTransactionRequest;
+use App\Http\Requests\UpdateTransactionItemRequest;
+use App\Http\Requests\UpdateTransactionRequest;
 use App\Models\MenuModel;
 use App\Models\Transaction;
+use App\Models\TransactionItem;
 use App\Services\TransactionOrderService;
 use App\Support\TransactionItemGrouper;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -22,6 +23,7 @@ class TransactionController extends Controller
     public function index(): Response
     {
         $transactions = Transaction::query()
+            ->with('salesChannel')
             ->orderByDesc('created_at')
             ->get();
 
@@ -41,6 +43,7 @@ class TransactionController extends Controller
         $to = $validated['to'] ?? now()->toDateString();
 
         $transactions = Transaction::query()
+            ->with('salesChannel')
             ->whereDate('created_at', '>=', $from)
             ->whereDate('created_at', '<=', $to)
             ->orderByDesc('created_at')
@@ -83,28 +86,7 @@ class TransactionController extends Controller
 
     public function store(StoreTransactionRequest $request): RedirectResponse
     {
-        $validated = $request->validated();
-
-        $transaction = DB::transaction(function () use ($validated) {
-            $transaction = Transaction::query()->create([
-                'customer_name' => $validated['customer_name'],
-                'customer_phone' => $validated['customer_phone'],
-                'service_type' => $validated['service_type'] ?? 'dine_in',
-                'status' => 'in_progress',
-                'total_bill' => 0,
-            ]);
-
-            foreach ($validated['items'] ?? [] as $itemData) {
-                $this->orderService->addMenuItem(
-                    $transaction,
-                    $itemData['menu_id'],
-                    $itemData['quantity'],
-                    $itemData['addon_option_ids'] ?? [],
-                );
-            }
-
-            return $transaction;
-        });
+        $transaction = $this->orderService->createAdminTransaction($request->validated());
 
         return redirect()
             ->route('admin.transaction.show', $transaction)
@@ -113,11 +95,19 @@ class TransactionController extends Controller
 
     public function show(Transaction $transaction): Response
     {
-        $transaction->load('items');
+        $transaction->load(['items', 'salesChannel']);
+
+        $itemMenuIds = $transaction->items->pluck('menu_id');
 
         $menus = MenuModel::query()
-            ->where('is_available', true)
             ->with(['addonGroups.options'])
+            ->where(function ($query) use ($itemMenuIds) {
+                $query->where('is_available', true);
+
+                if ($itemMenuIds->isNotEmpty()) {
+                    $query->orWhereIn('id', $itemMenuIds);
+                }
+            })
             ->orderBy('name')
             ->get();
 
@@ -130,26 +120,66 @@ class TransactionController extends Controller
 
     public function storeItem(StoreTransactionItemRequest $request, Transaction $transaction): RedirectResponse
     {
-        if ($transaction->isPaid()) {
-            throw ValidationException::withMessages([
-                'menu_id' => 'Cannot add items to a paid transaction.',
-            ]);
-        }
-
         $validated = $request->validated();
 
-        DB::transaction(function () use ($transaction, $validated) {
-            $this->orderService->addMenuItem(
-                $transaction,
-                $validated['menu_id'],
-                $validated['quantity'],
-                $validated['addon_option_ids'] ?? [],
-            );
-        });
+        $this->orderService->addMenuItem(
+            $transaction,
+            $validated['menu_id'],
+            (int) ($validated['quantity'] ?? 1),
+            $validated['addon_option_ids'] ?? [],
+            $validated['note'] ?? null,
+            isset($validated['weight_grams']) ? (int) $validated['weight_grams'] : null,
+        );
 
         return redirect()
             ->route('admin.transaction.show', $transaction)
             ->with('success', 'Item added to transaction.');
+    }
+
+    public function update(UpdateTransactionRequest $request, Transaction $transaction): RedirectResponse
+    {
+        $this->orderService->updateHeader($transaction, $request->validated());
+
+        return redirect()
+            ->route('admin.transaction.show', $transaction)
+            ->with('success', 'Transaction updated successfully.');
+    }
+
+    public function updateItem(
+        UpdateTransactionItemRequest $request,
+        Transaction $transaction,
+        TransactionItem $item,
+    ): RedirectResponse {
+        if ($item->transaction_id !== $transaction->id) {
+            abort(404);
+        }
+
+        $validated = $request->validated();
+
+        $this->orderService->updateMenuItem(
+            $item,
+            (int) ($validated['quantity'] ?? $item->quantity ?? 1),
+            $validated['addon_option_ids'] ?? [],
+            $validated['note'] ?? null,
+            isset($validated['weight_grams']) ? (int) $validated['weight_grams'] : $item->weight_grams,
+        );
+
+        return redirect()
+            ->route('admin.transaction.show', $transaction)
+            ->with('success', 'Item updated successfully.');
+    }
+
+    public function destroyItem(Transaction $transaction, TransactionItem $item): RedirectResponse
+    {
+        if ($item->transaction_id !== $transaction->id) {
+            abort(404);
+        }
+
+        $this->orderService->deleteMenuItem($item);
+
+        return redirect()
+            ->route('admin.transaction.show', $transaction)
+            ->with('success', 'Item removed from transaction.');
     }
 
     public function updateStatus(Transaction $transaction): RedirectResponse

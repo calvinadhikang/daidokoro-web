@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateCustomerCartItemRequest;
 use App\Models\Customer;
 use App\Services\CustomerCartService;
 use App\Services\CustomerTransactionService;
@@ -22,11 +23,37 @@ class CustomerCartController extends Controller
 
     public function index(): Response
     {
+        $this->cart->syncPrices();
+
         return Inertia::render('customer/cart/index', [
             'serviceType' => session('service_type'),
             'cart' => $this->cart->items(),
             'cartTotal' => $this->cart->total(),
         ]);
+    }
+
+    public function update(UpdateCustomerCartItemRequest $request, int $index): RedirectResponse
+    {
+        if (! $this->cart->updateQuantity($index, (int) $request->validated('quantity'))) {
+            throw ValidationException::withMessages([
+                'cart' => 'That item is no longer in your cart.',
+            ]);
+        }
+
+        return redirect()->route('customer.cart.index');
+    }
+
+    public function destroy(int $index): RedirectResponse
+    {
+        if (! $this->cart->removeItem($index)) {
+            throw ValidationException::withMessages([
+                'cart' => 'That item is no longer in your cart.',
+            ]);
+        }
+
+        return redirect()
+            ->route('customer.cart.index')
+            ->with('success', 'Item removed from your cart.');
     }
 
     public function checkout(): RedirectResponse
@@ -57,8 +84,10 @@ class CustomerCartController extends Controller
 
         $this->pushNotifications->notifyCustomerOrderCheckedOut($transaction);
 
+        Inertia::clearHistory();
+
         return redirect()
             ->route('customer.order.index')
-            ->with('success', 'Order sent! Your items have been added to your bill.');
+            ->with('success', 'Order sent! A new bill has been created for your items.');
     }
 }

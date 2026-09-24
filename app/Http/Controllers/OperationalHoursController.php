@@ -41,6 +41,7 @@ class OperationalHoursController extends Controller
                 'starts_at' => $closure->starts_at->toDateString(),
                 'ends_at' => $closure->ends_at->toDateString(),
                 'label' => $closure->label,
+                'sales_channel_id' => $closure->sales_channel_id,
             ]);
 
         return Inertia::render('admin/hours/index', [
@@ -62,10 +63,10 @@ class OperationalHoursController extends Controller
                 ['day_of_week' => $day['day_of_week']],
                 [
                     'is_closed' => $isClosed,
-                    'session_1_starts_at' => $isClosed ? null : $this->formatTimeForStorage($day['session_1_starts_at']),
-                    'session_1_ends_at' => $isClosed ? null : $this->formatTimeForStorage($day['session_1_ends_at']),
-                    'session_2_starts_at' => $isClosed ? null : $this->formatTimeForStorage($day['session_2_starts_at'] ?? null),
-                    'session_2_ends_at' => $isClosed ? null : $this->formatTimeForStorage($day['session_2_ends_at'] ?? null),
+                    'session_1_starts_at' => $isClosed ? null : OperatingHour::formatTimeForStorage($day['session_1_starts_at']),
+                    'session_1_ends_at' => $isClosed ? null : OperatingHour::formatTimeForStorage($day['session_1_ends_at']),
+                    'session_2_starts_at' => $isClosed ? null : OperatingHour::formatTimeForStorage($day['session_2_starts_at'] ?? null),
+                    'session_2_ends_at' => $isClosed ? null : OperatingHour::formatTimeForStorage($day['session_2_ends_at'] ?? null),
                 ],
             );
         }
@@ -92,19 +93,16 @@ class OperationalHoursController extends Controller
 
     public function destroyClosure(OperatingClosure $closure): RedirectResponse
     {
+        if ($closure->sales_channel_id !== null) {
+            return redirect()
+                ->route('admin.hours.edit')
+                ->with('error', 'This closed period belongs to an event. Edit or archive the event instead.');
+        }
+
         $closure->delete();
 
         return redirect()
             ->route('admin.hours.edit')
             ->with('success', 'Closed period removed successfully.');
-    }
-
-    private function formatTimeForStorage(?string $time): ?string
-    {
-        if ($time === null || $time === '') {
-            return null;
-        }
-
-        return strlen($time) === 5 ? "{$time}:00" : $time;
     }
 }

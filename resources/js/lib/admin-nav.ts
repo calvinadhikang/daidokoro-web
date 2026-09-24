@@ -1,6 +1,9 @@
 import { edit as hoursEdit } from '@/routes/admin/hours';
 import { index as menusIndex } from '@/routes/admin/menus';
 import { index as categoriesIndex } from '@/routes/admin/categories';
+import { index as customersIndex } from '@/routes/admin/customers';
+import { index as mejasIndex } from '@/routes/admin/mejas';
+import { index as reportsIndex } from '@/routes/admin/reports';
 import { history as transactionHistory, index as transactionsIndex } from '@/routes/admin/transaction';
 
 export const primaryNavItems = [
@@ -19,16 +22,40 @@ export const primaryNavItems = [
 
 export const secondaryNavItems = [
     {
+        label: 'Customers',
+        description: 'Search and edit diner profiles',
+        href: customersIndex.url(),
+        match: 'customers' as const,
+    },
+    {
+        label: 'Tables',
+        description: 'Table codes & ordering QR',
+        href: mejasIndex.url(),
+        match: 'mejas' as const,
+    },
+    {
         label: 'Hours',
         description: 'Operating hours & closures',
         href: hoursEdit.url(),
         match: 'hours' as const,
     },
     {
+        label: 'Events',
+        description: 'Bazaar dates & event menus',
+        href: '/admin/events',
+        match: 'events' as const,
+    },
+    {
         label: 'History',
         description: 'Past transactions',
         href: transactionHistory.url(),
         match: 'history' as const,
+    },
+    {
+        label: 'Laporan',
+        description: 'Sales & income reports',
+        href: reportsIndex.url(),
+        match: 'reports' as const,
     },
 ] as const;
 
@@ -51,7 +78,27 @@ export function isNavActive(url: string, item: NavItem): boolean {
         return url === item.href || url.startsWith(`${item.href}?`);
     }
 
+    if (item.match === 'events') {
+        return url === item.href || url.startsWith(`${item.href}/`);
+    }
+
+    if (item.match === 'reports') {
+        return (
+            url === item.href ||
+            url.startsWith(`${item.href}/`) ||
+            url.startsWith(`${item.href}?`)
+        );
+    }
+
     if (item.match === 'categories') {
+        return url === item.href || url.startsWith(`${item.href}/`);
+    }
+
+    if (item.match === 'customers') {
+        return url === item.href || url.startsWith(`${item.href}/`);
+    }
+
+    if (item.match === 'mejas') {
         return url === item.href || url.startsWith(`${item.href}/`);
     }
 

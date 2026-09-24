@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\PushDevice;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -9,6 +10,52 @@ use Tests\TestCase;
 class NotificationApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_broadcast_test_notification_returns_success(): void
+    {
+        Http::fake([
+            'exp.host/*' => Http::response([
+                'data' => [
+                    ['status' => 'ok', 'id' => 'abc-123'],
+                ],
+            ]),
+        ]);
+
+        PushDevice::query()->create([
+            'device_key' => 'device-1',
+            'expo_push_token' => 'ExponentPushToken[test-token]',
+            'platform' => 'android',
+            'last_registered_at' => now(),
+        ]);
+
+        $response = $this->getJson('/api/notification/test');
+
+        $response->assertOk();
+        $response->assertJson([
+            'success' => true,
+            'message' => 'Test push notification sent to all registered devices.',
+            'device_count' => 1,
+        ]);
+
+        Http::assertSent(function ($request) {
+            return $request->url() === 'https://exp.host/--/api/v2/push/send'
+                && $request['to'] === ['ExponentPushToken[test-token]']
+                && $request['title'] === 'test'
+                && $request['body'] === 'this is test'
+                && $request['data']['screen'] === 'index';
+        });
+    }
+
+    public function test_broadcast_test_notification_requires_registered_devices(): void
+    {
+        $response = $this->getJson('/api/notification/test');
+
+        $response->assertStatus(422);
+        $response->assertJson([
+            'success' => false,
+            'message' => 'No push devices registered.',
+        ]);
+    }
 
     public function test_send_test_notification_returns_success(): void
     {

@@ -1,15 +1,14 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 
 import { MenuBrowsePanel } from '@/components/menu/menu-browse-panel';
-import type { Customer } from '@/types/customer';
+import { cn } from '@/lib/utils';
+import type { CustomerNav } from '@/types/customer';
 import type { Menu, MenuCategory } from '@/types/menu';
-import {
-    serviceTypeLabel,
-    type TransactionServiceType,
-} from '@/types/transaction';
+import { serviceTypeLabel } from '@/types/transaction';
+import type { TransactionServiceType } from '@/types/transaction';
 
 type PageProps = {
-    customer: Customer | null;
+    customerNav: CustomerNav | null;
 };
 
 type Props = {
@@ -23,28 +22,30 @@ export default function CustomerMenuIndex({
     categories,
     serviceType,
 }: Props) {
-    const { customer } = usePage<PageProps>().props;
+    const { customerNav } = usePage<PageProps>().props;
+    const showCartBar = (customerNav?.cartCount ?? 0) > 0;
 
     return (
         <>
             <Head title="Menu" />
 
-            <div className="mx-auto max-w-md px-4 py-4">
-                <header className="mb-4">
-                    <Link
-                        href="/"
-                        className="text-sm text-[#706f6c] dark:text-[#A1A09A]"
-                    >
-                        ← Home
-                    </Link>
-                    <div className="mt-2 flex items-start justify-between gap-3">
+            <div
+                className={cn(
+                    'mx-auto flex max-w-md min-w-0 flex-col px-4 py-4',
+                    showCartBar
+                        ? '-mb-40 h-[calc(100dvh-10.5rem)]'
+                        : '-mb-24 h-[calc(100dvh-8rem)]',
+                )}
+            >
+                <header className="mb-4 shrink-0">
+                    <div className="flex items-start justify-between gap-3">
                         <div>
-                            <h1 className="text-2xl font-semibold">Menu</h1>
-                            {customer !== null && (
-                                <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                    Hi, {customer.name}
-                                </p>
-                            )}
+                            <h1 className="text-2xl font-semibold tracking-tight">
+                                Menu
+                            </h1>
+                            <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                                Choose a dish to add to your cart
+                            </p>
                         </div>
                         {serviceType !== null && (
                             <span className="shrink-0 rounded-full bg-[#eff8ff] px-2.5 py-1 text-xs font-medium text-[#175cd3] dark:bg-[#102a56] dark:text-[#84caff]">
@@ -57,8 +58,15 @@ export default function CustomerMenuIndex({
                 <MenuBrowsePanel
                     menus={menus}
                     categories={categories}
-                    availability="available"
-                    menuHref={(menu) => `/customer/menu/${menu.id}`}
+                    availability="all"
+                    variant="customer"
+                    stickyFilters
+                    unavailableLabel="Sold out"
+                    menuHref={(menu) =>
+                        menu.is_available
+                            ? `/customer/menu/${menu.id}`
+                            : undefined
+                    }
                     emptyMessage="No menu items available right now."
                 />
             </div>

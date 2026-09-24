@@ -1,7 +1,11 @@
-import { usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 
+import { CustomerCartBar } from '@/components/customer/customer-cart-bar';
 import { CustomerNavbar } from '@/components/customer/customer-navbar';
+import { isCustomerCartUrl, isCustomerMenuDetailUrl } from '@/lib/customer-nav';
+import { cn } from '@/lib/utils';
+import type { Customer, CustomerNav } from '@/types/customer';
 
 type CustomerLayoutProps = {
     children: ReactNode;
@@ -11,11 +15,18 @@ type PageProps = {
     flash: {
         success?: string;
     };
+    customer: Customer | null;
+    customerNav: CustomerNav | null;
 };
 
 export default function CustomerLayout({ children }: CustomerLayoutProps) {
-    const { props } = usePage<PageProps>();
-    const { flash } = props;
+    const { url, props } = usePage<PageProps>();
+    const { flash, customer, customerNav } = props;
+    const isMenuDetail = isCustomerMenuDetailUrl(url);
+    const showCartBar =
+        (customerNav?.cartCount ?? 0) > 0 &&
+        !isCustomerCartUrl(url) &&
+        !isMenuDetail;
 
     return (
         <div className="min-h-screen bg-[#FDFDFC] text-[#1b1b18] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]">
@@ -27,8 +38,29 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
                 </div>
             )}
 
-            <main className="pb-24">{children}</main>
+            {customer !== null && !isMenuDetail && (
+                <div className="mx-auto flex max-w-md items-center justify-between gap-3 px-4 pt-4">
+                    <p className="truncate text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                        Hi, {customer.name}
+                    </p>
+                    <Link
+                        href="/customer/logout"
+                        method="post"
+                        as="button"
+                        className="shrink-0 text-sm font-medium text-[#706f6c] underline-offset-2 hover:underline dark:text-[#A1A09A]"
+                    >
+                        Logout
+                    </Link>
+                </div>
+            )}
 
+            <main
+                className={cn(showCartBar || isMenuDetail ? 'pb-40' : 'pb-24')}
+            >
+                {children}
+            </main>
+
+            <CustomerCartBar />
             <CustomerNavbar />
         </div>
     );

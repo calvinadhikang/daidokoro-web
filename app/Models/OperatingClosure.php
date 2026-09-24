@@ -6,17 +6,20 @@ use App\Services\StoreHoursService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
- * @property string $starts_at
- * @property string $ends_at
+ * @property int|null $sales_channel_id
+ * @property Carbon $starts_at
+ * @property Carbon $ends_at
  * @property string|null $label
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read SalesChannel|null $salesChannel
  */
-#[Fillable(['starts_at', 'ends_at', 'label'])]
+#[Fillable(['sales_channel_id', 'starts_at', 'ends_at', 'label'])]
 class OperatingClosure extends Model
 {
     /**
@@ -37,6 +40,14 @@ class OperatingClosure extends Model
     public function scopeEndingOnOrAfterToday(Builder $query): Builder
     {
         return $query->whereDate('ends_at', '>=', app(StoreHoursService::class)->today());
+    }
+
+    /**
+     * @return BelongsTo<SalesChannel, $this>
+     */
+    public function salesChannel(): BelongsTo
+    {
+        return $this->belongsTo(SalesChannel::class);
     }
 
     public static function overlaps(string $startsAt, string $endsAt, ?int $exceptId = null): bool

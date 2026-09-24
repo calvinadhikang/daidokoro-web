@@ -4,11 +4,27 @@ export type Customer = {
     phone: string;
     phone_display: string;
     phone_local: string;
+    phone_country?: string;
+    phone_calling_code?: string;
+    transactions_count?: number;
+};
+
+export type CustomerAdminForm = {
+    name: string;
+    phone: string;
+    phone_country: string;
+};
+
+export type CustomerNav = {
+    cartCount: number;
+    cartTotal: number;
+    hasOrder: boolean;
 };
 
 export type CustomerLoginForm = {
     name: string;
     phone: string;
+    phone_country: string;
     service_type: 'dine_in' | 'takeaway' | '';
 };
 
@@ -16,6 +32,8 @@ export type CartItem = {
     menu_id: number;
     menu_name: string;
     quantity: number;
+    weight_grams?: number | null;
+    pricing_type?: 'standard' | 'weight_based';
     unit_price: number;
     line_total: number;
     addon_option_ids: number[];
@@ -25,4 +43,5 @@ export type CartItem = {
         name: string;
         price: number;
     }>;
+    note?: string | null;
 };

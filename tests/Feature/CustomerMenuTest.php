@@ -19,7 +19,7 @@ class CustomerMenuTest extends TestCase
         $response->assertRedirect(route('customer.login'));
     }
 
-    public function test_menu_page_shows_available_menus_and_categories(): void
+    public function test_menu_page_shows_available_and_sold_out_menus(): void
     {
         $customer = Customer::query()->create([
             'name' => 'Alex Tan',
@@ -50,8 +50,41 @@ class CustomerMenuTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->component('customer/menu/index')
             ->where('serviceType', 'takeaway')
-            ->has('menus', 1)
+            ->has('menus', 2)
             ->where('menus.0.name', 'Chicken Rice')
+            ->where('menus.0.is_available', true)
+            ->where('menus.1.name', 'Sold Out Dish')
+            ->where('menus.1.is_available', false)
+            ->has('categories', 1)
+            ->where('categories.0.name', 'Mains')
+        );
+    }
+
+    public function test_menu_page_excludes_hardcoded_recommended_category(): void
+    {
+        $customer = Customer::query()->create([
+            'name' => 'Alex Tan',
+            'phone' => '6281234567890',
+        ]);
+
+        $mains = Category::query()->create(['name' => 'Mains']);
+        Category::query()->create(['name' => 'Recommended']);
+
+        $menu = MenuModel::query()->create([
+            'name' => 'Chicken Rice',
+            'price' => 35000,
+            'is_available' => true,
+            'is_recommended' => true,
+        ]);
+        $menu->categories()->attach($mains);
+
+        $response = $this
+            ->withSession(['customer_id' => $customer->id, 'service_type' => 'takeaway'])
+            ->get(route('customer.menu.index'));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('customer/menu/index')
             ->has('categories', 1)
             ->where('categories.0.name', 'Mains')
         );

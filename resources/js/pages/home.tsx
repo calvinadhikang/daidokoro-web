@@ -127,7 +127,7 @@ export default function Home({ storeStatus, nextSession }: Props) {
                             href="/menu"
                             className="flex w-full items-center justify-center rounded-md border border-[#e3e3e0] px-4 py-3 text-sm font-medium dark:border-[#3E3E3A]"
                         >
-                            View menu & prices
+                            Lihat Menu
                         </Link>
                     </section>
 

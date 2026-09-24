@@ -17,13 +17,16 @@ export function TransactionOrderForm({ transactionId, menus }: Props) {
         menu_id: 0,
         quantity: 1,
         addon_option_ids: [] as number[],
+        note: '' as string | null,
     });
 
     function handleAdd(item: TransactionMenuPickerItem) {
         form.transform(() => ({
             menu_id: item.menu_id,
             quantity: item.quantity,
+            weight_grams: item.weight_grams,
             addon_option_ids: item.addon_option_ids,
+            note: item.note,
         }));
 
         form.post(storeItem.url(transactionId), {
@@ -33,7 +36,7 @@ export function TransactionOrderForm({ transactionId, menus }: Props) {
 
     return (
         <TransactionMenuPicker
-            menus={menus}
+            menus={menus.filter((menu) => menu.is_available)}
             onAdd={handleAdd}
             submitLabel={form.processing ? 'Adding...' : 'Add to order'}
             disabled={form.processing}

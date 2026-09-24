@@ -39,17 +39,17 @@ class MenuApiTest extends TestCase
         ]);
     }
 
-    public function test_categories_endpoint_returns_all_categories(): void
+    public function test_categories_endpoint_excludes_hardcoded_recommended_category(): void
     {
         $sushi = Category::query()->create(['name' => 'Sushi']);
-        $drinks = Category::query()->create(['name' => 'Drinks']);
+        Category::query()->create(['name' => 'Recommended']);
 
         $response = $this->getJson('/api/menu/categories');
 
         $response->assertOk();
-        $response->assertJsonCount(2);
+        $response->assertJsonCount(1);
         $response->assertJsonFragment(['id' => $sushi->id, 'name' => 'Sushi']);
-        $response->assertJsonFragment(['id' => $drinks->id, 'name' => 'Drinks']);
+        $response->assertJsonMissing(['name' => 'Recommended']);
     }
 
     public function test_detail_returns_menu_with_addon_groups(): void
@@ -212,5 +212,185 @@ class MenuApiTest extends TestCase
         $response->assertOk();
         $response->assertJson(['success' => true]);
         $this->assertDatabaseMissing('menus', ['id' => $menu->id]);
+    }
+
+    public function test_toggle_availability_flips_is_available(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Salmon Nigiri',
+            'price' => 25000,
+            'is_available' => true,
+        ]);
+
+        $response = $this->postJson("/api/menu/toggle-availability/{$menu->id}");
+
+        $response->assertOk();
+        $response->assertJson([
+            'success' => true,
+            'menu' => [
+                'id' => $menu->id,
+                'name' => 'Salmon Nigiri',
+                'is_available' => false,
+            ],
+        ]);
+        $this->assertTrue($menu->fresh()->is_available);
+        $this->assertFalse((bool) $menu->salesChannels()->first()?->pivot?->is_available);
+
+        $response = $this->postJson("/api/menu/toggle-availability/{$menu->id}");
+
+        $response->assertOk();
+        $response->assertJsonPath('menu.is_available', true);
+        $this->assertTrue((bool) $menu->salesChannels()->first()?->pivot?->is_available);
+    }
+
+    public function test_create_category(): void
+    {
+        $response = $this->postJson('/api/menu/categories/create', [
+            'name' => 'Sushi',
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('success', true);
+        $response->assertJsonPath('category.name', 'Sushi');
+        $response->assertJsonPath('category.menus_count', 0);
+        $this->assertDatabaseHas('categories', ['name' => 'Sushi']);
+    }
+
+    public function test_update_category_renames_without_removing_menus(): void
+    {
+        $category = Category::query()->create(['name' => 'Sushi']);
+        $menu = MenuModel::query()->create([
+            'name' => 'Salmon Roll',
+            'price' => 45000,
+            'is_available' => true,
+        ]);
+        $menu->categories()->attach($category);
+
+        $response = $this->postJson("/api/menu/categories/update/{$category->id}", [
+            'name' => 'Nigiri',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('category.name', 'Nigiri');
+        $response->assertJsonPath('category.menus_count', 1);
+        $this->assertDatabaseHas('categories', ['id' => $category->id, 'name' => 'Nigiri']);
+        $this->assertTrue($menu->fresh()->categories()->whereKey($category->id)->exists());
+    }
+
+    public function test_delete_category_does_not_delete_menus(): void
+    {
+        $category = Category::query()->create(['name' => 'Sushi']);
+        $menu = MenuModel::query()->create([
+            'name' => 'Salmon Roll',
+            'price' => 45000,
+            'is_available' => true,
+        ]);
+        $menu->categories()->attach($category);
+
+        $response = $this->postJson("/api/menu/categories/delete/{$category->id}");
+
+        $response->assertOk();
+        $response->assertJsonPath('success', true);
+        $this->assertDatabaseMissing('categories', ['id' => $category->id]);
+        $this->assertDatabaseHas('menus', ['id' => $menu->id]);
+        $this->assertSame(0, $menu->fresh()->categories()->count());
+    }
+
+    public function test_create_rejects_hardcoded_recommended_category(): void
+    {
+        $response = $this->postJson('/api/menu/categories/create', [
+            'name' => 'Recommended',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['name']);
+        $this->assertDatabaseMissing('categories', ['name' => 'Recommended']);
+    }
+
+    public function test_category_detail_lists_every_menu_with_assignment(): void
+    {
+        $sushi = Category::query()->create(['name' => 'Sushi']);
+        $drinks = Category::query()->create(['name' => 'Drinks']);
+        $assigned = MenuModel::query()->create([
+            'name' => 'Salmon Roll',
+            'price' => 45000,
+            'is_available' => true,
+        ]);
+        $other = MenuModel::query()->create([
+            'name' => 'Green Tea',
+            'price' => 15000,
+            'is_available' => false,
+        ]);
+        $assigned->categories()->attach([$sushi->id, $drinks->id]);
+        $other->categories()->attach($drinks);
+
+        $response = $this->getJson("/api/menu/categories/detail/{$sushi->id}");
+
+        $response->assertOk();
+        $response->assertJsonPath('category.name', 'Sushi');
+        $response->assertJsonPath('category.menus_count', 1);
+        $response->assertJsonFragment([
+            'id' => $assigned->id,
+            'name' => 'Salmon Roll',
+            'assigned' => true,
+        ]);
+        $response->assertJsonFragment([
+            'id' => $other->id,
+            'name' => 'Green Tea',
+            'assigned' => false,
+            'is_available' => false,
+        ]);
+    }
+
+    public function test_assign_and_unassign_category_menu_keeps_other_categories(): void
+    {
+        $sushi = Category::query()->create(['name' => 'Sushi']);
+        $drinks = Category::query()->create(['name' => 'Drinks']);
+        $menu = MenuModel::query()->create([
+            'name' => 'Salmon Roll',
+            'price' => 45000,
+            'is_available' => true,
+        ]);
+        $menu->categories()->attach($drinks);
+
+        $assign = $this->postJson("/api/menu/categories/menus/assign/{$sushi->id}", [
+            'menu_id' => $menu->id,
+        ]);
+
+        $assign->assertOk();
+        $assign->assertJsonPath('assigned', true);
+        $assign->assertJsonPath('category.menus_count', 1);
+        $this->assertTrue($menu->fresh()->categories()->whereKey($sushi->id)->exists());
+        $this->assertTrue($menu->fresh()->categories()->whereKey($drinks->id)->exists());
+
+        $unassign = $this->postJson("/api/menu/categories/menus/unassign/{$sushi->id}", [
+            'menu_id' => $menu->id,
+        ]);
+
+        $unassign->assertOk();
+        $unassign->assertJsonPath('assigned', false);
+        $unassign->assertJsonPath('category.menus_count', 0);
+        $this->assertFalse($menu->fresh()->categories()->whereKey($sushi->id)->exists());
+        $this->assertTrue($menu->fresh()->categories()->whereKey($drinks->id)->exists());
+    }
+
+    public function test_categories_list_includes_menus_count(): void
+    {
+        $sushi = Category::query()->create(['name' => 'Sushi']);
+        $menu = MenuModel::query()->create([
+            'name' => 'Salmon Roll',
+            'price' => 45000,
+            'is_available' => true,
+        ]);
+        $menu->categories()->attach($sushi);
+
+        $response = $this->getJson('/api/menu/categories');
+
+        $response->assertOk();
+        $response->assertJsonFragment([
+            'id' => $sushi->id,
+            'name' => 'Sushi',
+            'menus_count' => 1,
+        ]);
     }
 }

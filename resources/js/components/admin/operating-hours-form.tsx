@@ -325,12 +325,16 @@ export function ClosureListItem({
     label,
     onRemove,
     removing,
+    readOnly = false,
+    badge,
 }: {
     startsAt: string;
     endsAt: string;
     label: string | null;
     onRemove: () => void;
     removing: boolean;
+    readOnly?: boolean;
+    badge?: string | null;
 }) {
     return (
         <div className="flex items-center justify-between gap-3 rounded-md border border-[#e3e3e0] px-3 py-2.5 dark:border-[#3E3E3A]">
@@ -343,17 +347,28 @@ export function ClosureListItem({
                         {label}
                     </p>
                 )}
-            </div>
-            <button
-                type="button"
-                onClick={onRemove}
-                disabled={removing}
-                className={cn(
-                    'shrink-0 text-sm font-medium text-[#b42318] disabled:opacity-50',
+                {badge && (
+                    <p className="mt-0.5 text-xs font-medium text-[#c2410c]">
+                        {badge}
+                    </p>
                 )}
-            >
-                Remove
-            </button>
+            </div>
+            {readOnly ? (
+                <span className="shrink-0 text-xs text-[#706f6c] dark:text-[#A1A09A]">
+                    Event
+                </span>
+            ) : (
+                <button
+                    type="button"
+                    onClick={onRemove}
+                    disabled={removing}
+                    className={cn(
+                        'shrink-0 text-sm font-medium text-[#b42318] disabled:opacity-50',
+                    )}
+                >
+                    Remove
+                </button>
+            )}
         </div>
     );
 }

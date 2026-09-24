@@ -1,0 +1,236 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\MenuModel;
+use App\Models\Transaction;
+use App\Models\TransactionItem;
+use App\Services\StoreHoursService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Tests\TestCase;
+
+class AdminReportTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_reports_index_renders(): void
+    {
+        $response = $this->get(route('admin.reports.index'));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('admin/reports/index')
+        );
+    }
+
+    public function test_sales_report_defaults_to_today(): void
+    {
+        $today = now()->toDateString();
+        $yesterday = now()->subDay()->toDateString();
+
+        Transaction::query()->create([
+            'customer_name' => 'Today Paid',
+            'customer_phone' => '6281111111111',
+            'service_type' => 'dine_in',
+            'status' => 'paid',
+            'total_bill' => 50000,
+            'business_date' => $today,
+            'daily_number' => 1,
+        ]);
+
+        Transaction::query()->create([
+            'customer_name' => 'Today Open',
+            'customer_phone' => '6282222222222',
+            'service_type' => 'takeaway',
+            'status' => 'in_progress',
+            'total_bill' => 20000,
+            'business_date' => $today,
+            'daily_number' => 2,
+        ]);
+
+        Transaction::query()->create([
+            'customer_name' => 'Yesterday Paid',
+            'customer_phone' => '6283333333333',
+            'service_type' => 'dine_in',
+            'status' => 'paid',
+            'total_bill' => 90000,
+            'business_date' => $yesterday,
+            'daily_number' => 1,
+        ]);
+
+        $response = $this->get(route('admin.reports.sales'));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('admin/reports/sales')
+            ->where('filters.preset', 'today')
+            ->where('filters.from', $today)
+            ->where('filters.to', $today)
+            ->where('summary.revenue', 50000)
+            ->where('summary.total_count', 2)
+            ->where('summary.paid_count', 1)
+            ->where('summary.unpaid_count', 1)
+            ->where('summary.unpaid_revenue', 20000)
+            ->has('groups', 1)
+            ->where('groups.0.date', $today)
+            ->has('groups.0.transactions', 2)
+        );
+    }
+
+    public function test_sales_report_filters_by_date_range_and_groups_by_date(): void
+    {
+        $dayOne = now()->subDays(2)->toDateString();
+        $dayTwo = now()->subDay()->toDateString();
+
+        Transaction::query()->create([
+            'customer_name' => 'Day One',
+            'customer_phone' => '6281111111111',
+            'service_type' => 'dine_in',
+            'status' => 'paid',
+            'total_bill' => 30000,
+            'business_date' => $dayOne,
+            'daily_number' => 1,
+        ]);
+
+        Transaction::query()->create([
+            'customer_name' => 'Day Two A',
+            'customer_phone' => '6282222222222',
+            'service_type' => 'takeaway',
+            'status' => 'paid',
+            'total_bill' => 40000,
+            'business_date' => $dayTwo,
+            'daily_number' => 1,
+        ]);
+
+        Transaction::query()->create([
+            'customer_name' => 'Day Two B',
+            'customer_phone' => '6283333333333',
+            'service_type' => 'dine_in',
+            'status' => 'in_progress',
+            'total_bill' => 10000,
+            'business_date' => $dayTwo,
+            'daily_number' => 2,
+        ]);
+
+        $response = $this->get(route('admin.reports.sales', [
+            'preset' => 'range',
+            'from' => $dayOne,
+            'to' => $dayTwo,
+        ]));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('admin/reports/sales')
+            ->where('filters.preset', 'range')
+            ->where('filters.from', $dayOne)
+            ->where('filters.to', $dayTwo)
+            ->where('summary.revenue', 70000)
+            ->where('summary.total_count', 3)
+            ->where('summary.paid_count', 2)
+            ->where('summary.unpaid_count', 1)
+            ->where('summary.unpaid_revenue', 10000)
+            ->has('groups', 2)
+            ->where('groups.0.date', $dayTwo)
+            ->has('groups.0.transactions', 2)
+            ->where('groups.1.date', $dayOne)
+            ->has('groups.1.transactions', 1)
+        );
+    }
+
+    public function test_menu_report_defaults_to_current_month(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-09-15 12:00:00', StoreHoursService::TIMEZONE));
+
+        $menu = MenuModel::query()->create([
+            'name' => 'Salmon Roll',
+            'price' => 45000,
+            'is_available' => true,
+        ]);
+
+        $transaction = Transaction::query()->create([
+            'customer_name' => 'This Month',
+            'customer_phone' => '6281111111111',
+            'service_type' => 'dine_in',
+            'status' => 'paid',
+            'total_bill' => 90000,
+            'business_date' => '2026-09-10',
+            'daily_number' => 1,
+        ]);
+        TransactionItem::query()->create([
+            'transaction_id' => $transaction->id,
+            'menu_id' => $menu->id,
+            'menu_name' => $menu->name,
+            'quantity' => 2,
+            'unit_price' => 45000,
+            'line_total' => 90000,
+        ]);
+
+        $response = $this->get(route('admin.reports.menus'));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('admin/reports/menus')
+            ->where('filters.preset', 'month')
+            ->where('filters.from', '2026-09-01')
+            ->where('filters.to', '2026-09-30')
+            ->where('summary.menu_count', 1)
+            ->where('summary.quantity_sold', 2)
+            ->where('summary.revenue', 90000)
+            ->has('items', 1)
+            ->where('items.0.rank', 1)
+            ->where('items.0.menu_name', 'Salmon Roll')
+            ->where('items.0.quantity_sold', 2)
+        );
+    }
+
+    public function test_sales_report_defaults_to_store_channel(): void
+    {
+        $store = \App\Models\SalesChannel::store();
+        $event = \App\Models\SalesChannel::query()->create([
+            'type' => \App\Models\SalesChannel::TYPE_EVENT,
+            'name' => 'Bazaar',
+            'starts_at' => now()->toDateString(),
+            'ends_at' => now()->toDateString(),
+            'closes_store' => true,
+        ]);
+
+        $today = now()->toDateString();
+
+        Transaction::query()->create([
+            'customer_name' => 'Store Sale',
+            'customer_phone' => '6281111111111',
+            'service_type' => 'takeaway',
+            'status' => 'paid',
+            'total_bill' => 50000,
+            'business_date' => $today,
+            'daily_number' => 1,
+            'sales_channel_id' => $store->id,
+        ]);
+
+        Transaction::query()->create([
+            'customer_name' => 'Event Sale',
+            'customer_phone' => '6282222222222',
+            'service_type' => 'takeaway',
+            'status' => 'paid',
+            'total_bill' => 80000,
+            'business_date' => $today,
+            'daily_number' => 1,
+            'sales_channel_id' => $event->id,
+        ]);
+
+        $this->get(route('admin.reports.sales'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('summary.revenue', 50000)
+                ->where('summary.total_count', 1)
+            );
+
+        $this->get(route('admin.reports.sales', ['sales_channel_id' => 'all']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('summary.revenue', 130000)
+                ->where('summary.total_count', 2)
+            );
+    }
+}

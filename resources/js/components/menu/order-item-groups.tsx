@@ -36,9 +36,16 @@ function ItemAddons({ item }: { item: TransactionItem }) {
 type OrderItemRowProps = {
     item: TransactionItem;
     compact?: boolean;
+    onEdit?: (item: TransactionItem) => void;
+    onDelete?: (item: TransactionItem) => void;
 };
 
-export function OrderItemRow({ item, compact = false }: OrderItemRowProps) {
+export function OrderItemRow({
+    item,
+    compact = false,
+    onEdit,
+    onDelete,
+}: OrderItemRowProps) {
     return (
         <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -46,9 +53,38 @@ export function OrderItemRow({ item, compact = false }: OrderItemRowProps) {
                     {item.menu_name}
                 </p>
                 <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                    Qty {item.quantity} · {formatPrice(item.unit_price)} each
+                    {item.weight_grams
+                        ? `${item.weight_grams} g · ${formatPrice(item.unit_price)} / 100g`
+                        : `Qty ${item.quantity} · ${formatPrice(item.unit_price)} each`}
                 </p>
                 <ItemAddons item={item} />
+                {item.note ? (
+                    <p className="mt-2 text-xs italic text-[#706f6c] dark:text-[#A1A09A]">
+                        Note: {item.note}
+                    </p>
+                ) : null}
+                {(onEdit || onDelete) && (
+                    <div className="mt-3 flex gap-2">
+                        {onEdit ? (
+                            <button
+                                type="button"
+                                onClick={() => onEdit(item)}
+                                className="rounded-md border border-[#e3e3e0] px-2.5 py-1 text-xs font-medium dark:border-[#3E3E3A]"
+                            >
+                                Edit
+                            </button>
+                        ) : null}
+                        {onDelete ? (
+                            <button
+                                type="button"
+                                onClick={() => onDelete(item)}
+                                className="rounded-md border border-[#fda29b] px-2.5 py-1 text-xs font-medium text-[#b42318] dark:border-[#912018]"
+                            >
+                                Remove
+                            </button>
+                        ) : null}
+                    </div>
+                )}
             </div>
             <p className="shrink-0 font-medium tabular-nums">
                 {formatPrice(item.line_total)}
@@ -64,12 +100,16 @@ type OrderItemGroupsProps = {
     }>;
     compact?: boolean;
     emptyMessage?: string;
+    onEditItem?: (item: TransactionItem) => void;
+    onDeleteItem?: (item: TransactionItem) => void;
 };
 
 export function OrderItemGroups({
     groups,
     compact = false,
     emptyMessage = 'No items ordered yet.',
+    onEditItem,
+    onDeleteItem,
 }: OrderItemGroupsProps) {
     if (groups.length === 0) {
         return (
@@ -96,7 +136,12 @@ export function OrderItemGroups({
                                         : 'rounded-lg border border-[#e3e3e0] bg-white p-4 dark:border-[#3E3E3A] dark:bg-[#161615]'
                                 }
                             >
-                                <OrderItemRow item={item} compact={compact} />
+                                <OrderItemRow
+                                    item={item}
+                                    compact={compact}
+                                    onEdit={onEditItem}
+                                    onDelete={onDeleteItem}
+                                />
                             </li>
                         ))}
                     </ul>

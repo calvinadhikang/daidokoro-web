@@ -5,7 +5,9 @@ namespace App\Http\Middleware;
 use App\Models\Customer;
 use App\Services\CustomerCartService;
 use App\Services\CustomerTransactionService;
+use App\Support\CustomerFormatter;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -45,7 +47,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'customer' => fn () => $this->resolveCustomer($request),
-            'customerNav' => fn () => $this->resolveCustomerNav($request),
+            'customerNav' => Inertia::always(fn () => $this->resolveCustomerNav($request)),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
             ],
@@ -69,17 +71,11 @@ class HandleInertiaRequests extends Middleware
             return null;
         }
 
-        return [
-            'id' => $customer->id,
-            'name' => $customer->name,
-            'phone' => $customer->phone,
-            'phone_display' => $customer->phone_display,
-            'phone_local' => $customer->phone_local,
-        ];
+        return CustomerFormatter::format($customer);
     }
 
     /**
-     * @return array{cartCount: int, hasOrder: bool}|null
+     * @return array{cartCount: int, cartTotal: int, hasOrder: bool}|null
      */
     private function resolveCustomerNav(Request $request): ?array
     {
@@ -94,12 +90,13 @@ class HandleInertiaRequests extends Middleware
             return null;
         }
 
-        $transaction = app(CustomerTransactionService::class)
-            ->findActiveByPhone($customer->phone);
+        $hasOrder = app(CustomerTransactionService::class)
+            ->hasTodayOrdersByPhone($customer->phone);
 
         return [
-            'cartCount' => $cart->count(),
-            'hasOrder' => $transaction !== null && $transaction->items()->exists(),
+            'cartCount' => $cart->quantity(),
+            'cartTotal' => $cart->total(),
+            'hasOrder' => $hasOrder,
         ];
     }
 }

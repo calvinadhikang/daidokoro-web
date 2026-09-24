@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreCustomerLoginRequest;
 use App\Models\Customer;
 use App\Services\CustomerTransactionService;
-use App\Support\PhoneNumber;
+use App\Support\CustomerFormatter;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,6 +16,14 @@ class CustomerLoginController extends Controller
 
     public function create(): Response
     {
+        $queryTable = request()->query('table');
+        if (is_string($queryTable) && $queryTable !== '') {
+            session([
+                'table_code' => $queryTable,
+                'service_type' => request()->query('service_type') ?? session('service_type') ?? 'dine_in',
+            ]);
+        }
+
         $customerId = session('customer_id');
         $customer = $customerId !== null
             ? Customer::query()->find($customerId)
@@ -26,15 +34,9 @@ class CustomerLoginController extends Controller
             : null;
 
         return Inertia::render('customer/login', [
-            'phonePrefix' => PhoneNumber::DISPLAY_PREFIX,
-            'serviceType' => request()->query('service_type'),
-            'customer' => $customer === null ? null : [
-                'id' => $customer->id,
-                'name' => $customer->name,
-                'phone' => $customer->phone,
-                'phone_display' => $customer->phone_display,
-                'phone_local' => $customer->phone_local,
-            ],
+            'serviceType' => request()->query('service_type') ?? session('service_type'),
+            'tableCode' => session('table_code'),
+            'customer' => $customer === null ? null : CustomerFormatter::format($customer),
             'hasActiveOrder' => $activeTransaction !== null,
         ]);
     }
@@ -48,9 +50,16 @@ class CustomerLoginController extends Controller
             ['name' => $validated['name']],
         );
 
+        $tableCode = session('table_code');
+        $queryTable = request()->query('table');
+        if (is_string($queryTable) && $queryTable !== '') {
+            $tableCode = $queryTable;
+        }
+
         session([
             'customer_id' => $customer->id,
             'service_type' => $validated['service_type'] ?? session('service_type'),
+            'table_code' => $tableCode,
         ]);
 
         $activeTransaction = $this->transactions->syncSessionTransaction(
@@ -65,5 +74,18 @@ class CustomerLoginController extends Controller
         return redirect()
             ->route('customer.menu.index')
             ->with('success', $message);
+    }
+
+    public function destroy(): RedirectResponse
+    {
+        session()->forget([
+            'customer_id',
+            'service_type',
+            'table_code',
+            'customer_cart',
+            'transaction_id',
+        ]);
+
+        return redirect()->route('home');
     }
 }

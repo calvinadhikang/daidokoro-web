@@ -9,6 +9,7 @@ import {
     inputClassName,
     labelClassName,
 } from '@/components/admin/menu-form';
+import { TableCodeBadge } from '@/components/admin/table-code-badge';
 import type { Transaction } from '@/types/transaction';
 import { serviceTypeLabel } from '@/types/transaction';
 
@@ -45,6 +46,9 @@ function statusClassName(status: Transaction['status']): string {
         ? 'shrink-0 rounded-full bg-[#ecfdf3] px-2.5 py-1 text-xs font-medium text-[#027a48] dark:bg-[#053321] dark:text-[#75e0a7]'
         : 'shrink-0 rounded-full bg-[#fffaeb] px-2.5 py-1 text-xs font-medium text-[#b54708] dark:bg-[#4e1d09] dark:text-[#fec84b]';
 }
+
+const adminPillClassName =
+    'shrink-0 rounded-full bg-[#eff8ff] px-2.5 py-1 text-xs font-medium text-[#175cd3] dark:bg-[#102a56] dark:text-[#84caff]';
 
 export default function AdminTransactionHistory({
     transactions,
@@ -149,10 +153,13 @@ export default function AdminTransactionHistory({
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="min-w-0 flex-1">
                                                 <p className="truncate font-medium">
+                                                    #{transaction.transaction_number}
+                                                    {' · '}
                                                     {transaction.customer_name}
                                                 </p>
                                                 <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                                    {transaction.customer_phone}
+                                                    {transaction.customer_phone_display ??
+                                                        transaction.customer_phone}
                                                     {' · '}
                                                     {serviceTypeLabel(
                                                         transaction.service_type,
@@ -164,15 +171,25 @@ export default function AdminTransactionHistory({
                                                     )}
                                                 </p>
                                             </div>
-                                            <span
-                                                className={statusClassName(
-                                                    transaction.status,
+                                            <div className="flex shrink-0 flex-col items-end gap-1.5">
+                                                <TableCodeBadge
+                                                    code={transaction.table_code}
+                                                />
+                                                {transaction.is_admin_created && (
+                                                    <span className={adminPillClassName}>
+                                                        Admin
+                                                    </span>
                                                 )}
-                                            >
-                                                {statusLabel(
-                                                    transaction.status,
-                                                )}
-                                            </span>
+                                                <span
+                                                    className={statusClassName(
+                                                        transaction.status,
+                                                    )}
+                                                >
+                                                    {statusLabel(
+                                                        transaction.status,
+                                                    )}
+                                                </span>
+                                            </div>
                                         </div>
 
                                         <p className="mt-3 tabular-nums text-sm font-medium">

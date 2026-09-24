@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\MenuAddonGroup;
+use App\Models\MenuAddonOption;
 use App\Models\MenuModel;
 use App\Models\OperatingHour;
 use App\Models\Transaction;
@@ -37,6 +39,8 @@ class TransactionApiTest extends TestCase
             'customer_phone' => '081234567890',
             'status' => 'in_progress',
             'total_bill' => 45000,
+            'service_type' => 'dine_in',
+            'table_code' => 'A1',
         ]);
         $inSession->created_at = Carbon::parse('2026-07-06 09:30:00', StoreHoursService::TIMEZONE);
         $inSession->saveQuietly();
@@ -77,6 +81,7 @@ class TransactionApiTest extends TestCase
             'name' => 'Alex Tan',
             'status' => 'in_progress',
             'total_amount' => '45000',
+            'table_code' => 'A1',
         ]);
         $response->assertJsonMissing(['id' => $outsideSession->id]);
     }
@@ -115,6 +120,7 @@ class TransactionApiTest extends TestCase
             'customer_name' => 'Alex Tan',
             'customer_phone' => '081234567890',
             'service_type' => 'dine_in',
+            'table_code' => 'B2',
             'status' => 'in_progress',
             'total_bill' => 70000,
         ]);
@@ -134,18 +140,81 @@ class TransactionApiTest extends TestCase
         $response->assertJsonFragment([
             'id' => $transaction->id,
             'name' => 'Alex Tan',
-            'customer_phone' => '081234567890',
+            'customer_phone' => '6281234567890',
             'service_type' => 'dine_in',
+            'table_code' => 'B2',
             'status' => 'in_progress',
             'total_amount' => '70000',
         ]);
         $response->assertJsonStructure([
             'order_items' => [
-                ['id', 'menu_id', 'menu', 'quantity', 'line_total'],
+                ['id', 'menu_id', 'menu', 'quantity', 'line_total', 'note'],
             ],
             'item_groups' => [
                 ['ordered_at', 'items'],
             ],
+        ]);
+        $response->assertJsonPath('order_items.0.note', null);
+    }
+
+    public function test_detail_returns_item_note_for_receipts(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Chicken Rice',
+            'price' => 35000,
+            'is_available' => true,
+        ]);
+
+        $transaction = Transaction::query()->create([
+            'customer_name' => 'Alex Tan',
+            'customer_phone' => '081234567890',
+            'service_type' => 'dine_in',
+            'status' => 'in_progress',
+            'total_bill' => 35000,
+        ]);
+
+        TransactionItem::query()->create([
+            'transaction_id' => $transaction->id,
+            'menu_id' => $menu->id,
+            'menu_name' => $menu->name,
+            'quantity' => 1,
+            'unit_price' => 35000,
+            'line_total' => 35000,
+            'note' => 'no onions',
+        ]);
+
+        $response = $this->getJson("/api/transaction/detail/{$transaction->id}");
+
+        $response->assertOk();
+        $response->assertJsonPath('order_items.0.note', 'no onions');
+        $response->assertJsonPath('item_groups.0.items.0.note', 'no onions');
+    }
+
+    public function test_admin_create_persists_item_note(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Chicken Rice',
+            'price' => 35000,
+            'is_available' => true,
+        ]);
+
+        $response = $this->post(route('admin.transaction.store'), [
+            'customer_name' => 'Alex Tan',
+            'customer_phone' => '081234567890',
+            'service_type' => 'dine_in',
+            'items' => [
+                [
+                    'menu_id' => $menu->id,
+                    'quantity' => 1,
+                    'note' => 'extra spicy',
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('transaction_items', [
+            'menu_id' => $menu->id,
+            'note' => 'extra spicy',
         ]);
     }
 
@@ -224,5 +293,517 @@ class TransactionApiTest extends TestCase
         $response->assertOk();
         $response->assertJson(['success' => true]);
         $this->assertDatabaseMissing('transactions', ['id' => $transaction->id]);
+    }
+
+    public function test_create_persists_admin_transaction_with_addons(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Chicken Rice',
+            'price' => 35000,
+            'is_available' => true,
+        ]);
+
+        $group = MenuAddonGroup::query()->create([
+            'menu_id' => $menu->id,
+            'name' => 'Spice Level',
+            'selection_type' => 'single',
+            'is_required' => true,
+            'sort_order' => 0,
+        ]);
+
+        $option = MenuAddonOption::query()->create([
+            'menu_addon_group_id' => $group->id,
+            'name' => 'Extra spicy',
+            'price' => 5000,
+            'is_available' => true,
+            'sort_order' => 0,
+        ]);
+
+        $response = $this->postJson('/api/transaction/create', [
+            'customer_name' => 'Budi',
+            'customer_phone' => '081234567890',
+            'service_type' => 'takeaway',
+            'items' => [
+                [
+                    'menu_id' => $menu->id,
+                    'quantity' => 2,
+                    'addon_option_ids' => [$option->id],
+                    'note' => 'no onions',
+                ],
+            ],
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('success', true);
+        $response->assertJsonPath('transaction.name', 'Budi');
+        $response->assertJsonPath('transaction.customer_phone', '6281234567890');
+        $response->assertJsonPath('transaction.service_type', 'takeaway');
+        $response->assertJsonPath('transaction.is_admin_created', true);
+        $response->assertJsonPath('transaction.status', 'in_progress');
+        $response->assertJsonPath('transaction.total_amount', '80000');
+        $response->assertJsonPath('transaction.order_items.0.note', 'no onions');
+        $response->assertJsonPath('transaction.order_items.0.quantity', 2);
+
+        $this->assertDatabaseHas('transactions', [
+            'customer_name' => 'Budi',
+            'customer_phone' => '6281234567890',
+            'service_type' => 'takeaway',
+            'is_admin_created' => true,
+            'status' => 'in_progress',
+            'total_bill' => 80000,
+        ]);
+        $this->assertDatabaseHas('transaction_items', [
+            'menu_id' => $menu->id,
+            'quantity' => 2,
+            'unit_price' => 40000,
+            'line_total' => 80000,
+            'note' => 'no onions',
+        ]);
+    }
+
+    public function test_create_rejects_empty_cart(): void
+    {
+        $response = $this->postJson('/api/transaction/create', [
+            'customer_name' => 'Budi',
+            'customer_phone' => '081234567890',
+            'items' => [],
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['items']);
+        $this->assertDatabaseCount('transactions', 0);
+    }
+
+    public function test_create_rejects_unavailable_menu(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Sold Out Roll',
+            'price' => 45000,
+            'is_available' => false,
+        ]);
+
+        $response = $this->postJson('/api/transaction/create', [
+            'customer_name' => 'Budi',
+            'customer_phone' => '081234567890',
+            'items' => [
+                [
+                    'menu_id' => $menu->id,
+                    'quantity' => 1,
+                ],
+            ],
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['items']);
+        $this->assertDatabaseCount('transactions', 0);
+        $this->assertDatabaseCount('transaction_items', 0);
+    }
+
+    public function test_create_normalizes_customer_phone(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Edamame',
+            'price' => 18000,
+            'is_available' => true,
+        ]);
+
+        $response = $this->postJson('/api/transaction/create', [
+            'customer_name' => 'Sari',
+            'customer_phone' => '0812-3456-7890',
+            'items' => [
+                [
+                    'menu_id' => $menu->id,
+                    'quantity' => 1,
+                ],
+            ],
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('transaction.customer_phone', '6281234567890');
+        $this->assertDatabaseHas('transactions', [
+            'customer_name' => 'Sari',
+            'customer_phone' => '6281234567890',
+        ]);
+    }
+
+    public function test_create_accepts_cashier_queue_label_without_valid_mobile(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Edamame',
+            'price' => 18000,
+            'is_available' => true,
+        ]);
+
+        $response = $this->postJson('/api/transaction/create', [
+            'customer_name' => '42',
+            'customer_phone' => '42',
+            'items' => [
+                [
+                    'menu_id' => $menu->id,
+                    'quantity' => 1,
+                ],
+            ],
+        ]);
+
+        $response->assertCreated();
+        $this->assertDatabaseHas('transactions', [
+            'customer_name' => '42',
+            'customer_phone' => '42',
+        ]);
+        $this->assertDatabaseCount('customers', 0);
+    }
+
+    public function test_create_walk_in_phone_does_not_upsert_customer(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Edamame',
+            'price' => 18000,
+            'is_available' => true,
+        ]);
+
+        $response = $this->postJson('/api/transaction/create', [
+            'customer_name' => '042',
+            'customer_phone' => 'walkin:042',
+            'items' => [
+                [
+                    'menu_id' => $menu->id,
+                    'quantity' => 1,
+                ],
+            ],
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('transaction.customer_phone', 'walkin:042');
+        $response->assertJsonPath('transaction.is_walk_in', true);
+        $this->assertDatabaseCount('customers', 0);
+    }
+
+    public function test_create_normalizes_singapore_phone(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Edamame',
+            'price' => 18000,
+            'is_available' => true,
+        ]);
+
+        $response = $this->postJson('/api/transaction/create', [
+            'customer_name' => 'Wei',
+            'customer_phone' => '81234567',
+            'customer_phone_country' => 'SG',
+            'items' => [
+                [
+                    'menu_id' => $menu->id,
+                    'quantity' => 1,
+                ],
+            ],
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('transaction.customer_phone', '6581234567');
+        $response->assertJsonPath('transaction.customer_phone_country', 'SG');
+        $this->assertDatabaseHas('transactions', [
+            'customer_name' => 'Wei',
+            'customer_phone' => '6581234567',
+        ]);
+        $this->assertDatabaseHas('customers', [
+            'name' => 'Wei',
+            'phone' => '6581234567',
+        ]);
+    }
+
+    public function test_update_header_normalizes_customer_phone(): void
+    {
+        $transaction = Transaction::query()->create([
+            'customer_name' => 'Alex Tan',
+            'customer_phone' => '6281111111111',
+            'service_type' => 'dine_in',
+            'status' => 'in_progress',
+            'total_bill' => 0,
+        ]);
+
+        $response = $this->postJson("/api/transaction/update/{$transaction->id}", [
+            'customer_name' => 'Budi',
+            'customer_phone' => '0812-3456-7890',
+            'service_type' => 'takeaway',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('success', true);
+        $response->assertJsonPath('transaction.name', 'Budi');
+        $response->assertJsonPath('transaction.customer_phone', '6281234567890');
+        $response->assertJsonPath('transaction.service_type', 'takeaway');
+
+        $this->assertDatabaseHas('transactions', [
+            'id' => $transaction->id,
+            'customer_name' => 'Budi',
+            'customer_phone' => '6281234567890',
+            'service_type' => 'takeaway',
+        ]);
+    }
+
+    public function test_store_item_adds_menu_with_addons_and_recalculates_total(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Ramen',
+            'price' => 35000,
+            'is_available' => true,
+        ]);
+
+        $group = MenuAddonGroup::query()->create([
+            'menu_id' => $menu->id,
+            'name' => 'Topping',
+            'selection_type' => 'multiple',
+            'is_required' => false,
+            'sort_order' => 0,
+        ]);
+
+        $egg = MenuAddonOption::query()->create([
+            'menu_addon_group_id' => $group->id,
+            'name' => 'Telur',
+            'price' => 5000,
+            'is_available' => true,
+            'sort_order' => 0,
+        ]);
+
+        $transaction = Transaction::query()->create([
+            'customer_name' => 'Alex Tan',
+            'customer_phone' => '6281111111111',
+            'status' => 'in_progress',
+            'total_bill' => 0,
+        ]);
+
+        $response = $this->postJson("/api/transaction/items/create/{$transaction->id}", [
+            'menu_id' => $menu->id,
+            'quantity' => 1,
+            'addon_option_ids' => [$egg->id],
+            'note' => 'extra spicy',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('success', true);
+        $response->assertJsonPath('transaction.total_amount', '40000');
+        $response->assertJsonPath('transaction.order_items.0.note', 'extra spicy');
+        $response->assertJsonPath('transaction.order_items.0.addons.0.name', 'Telur');
+
+        $this->assertDatabaseHas('transaction_items', [
+            'transaction_id' => $transaction->id,
+            'menu_id' => $menu->id,
+            'quantity' => 1,
+            'unit_price' => 40000,
+            'line_total' => 40000,
+            'note' => 'extra spicy',
+        ]);
+        $this->assertDatabaseHas('transactions', [
+            'id' => $transaction->id,
+            'total_bill' => 40000,
+        ]);
+    }
+
+    public function test_update_item_changes_addons_and_keeps_separate_lines(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Ramen',
+            'price' => 35000,
+            'is_available' => true,
+        ]);
+
+        $group = MenuAddonGroup::query()->create([
+            'menu_id' => $menu->id,
+            'name' => 'Topping',
+            'selection_type' => 'multiple',
+            'is_required' => false,
+            'sort_order' => 0,
+        ]);
+
+        $egg = MenuAddonOption::query()->create([
+            'menu_addon_group_id' => $group->id,
+            'name' => 'Telur',
+            'price' => 5000,
+            'is_available' => true,
+            'sort_order' => 0,
+        ]);
+
+        $transaction = Transaction::query()->create([
+            'customer_name' => 'Alex Tan',
+            'customer_phone' => '6281111111111',
+            'status' => 'in_progress',
+            'total_bill' => 105000,
+        ]);
+
+        $withEgg = TransactionItem::query()->create([
+            'transaction_id' => $transaction->id,
+            'menu_id' => $menu->id,
+            'menu_name' => $menu->name,
+            'quantity' => 1,
+            'unit_price' => 40000,
+            'line_total' => 40000,
+            'addons' => [[
+                'menu_addon_option_id' => $egg->id,
+                'group_name' => 'Topping',
+                'name' => 'Telur',
+                'price' => 5000,
+            ]],
+        ]);
+
+        $plain = TransactionItem::query()->create([
+            'transaction_id' => $transaction->id,
+            'menu_id' => $menu->id,
+            'menu_name' => $menu->name,
+            'quantity' => 2,
+            'unit_price' => 35000,
+            'line_total' => 70000,
+            'addons' => [],
+        ]);
+
+        $response = $this->postJson("/api/transaction/items/update/{$withEgg->id}", [
+            'quantity' => 1,
+            'addon_option_ids' => [],
+            'note' => 'no egg',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('transaction.total_amount', '105000');
+        $response->assertJsonPath('success', true);
+
+        $this->assertDatabaseHas('transaction_items', [
+            'id' => $withEgg->id,
+            'quantity' => 1,
+            'unit_price' => 35000,
+            'line_total' => 35000,
+            'note' => 'no egg',
+        ]);
+        $this->assertDatabaseHas('transaction_items', [
+            'id' => $plain->id,
+            'quantity' => 2,
+            'unit_price' => 35000,
+            'line_total' => 70000,
+        ]);
+        $this->assertDatabaseCount('transaction_items', 2);
+        $this->assertDatabaseHas('transactions', [
+            'id' => $transaction->id,
+            'total_bill' => 105000,
+        ]);
+    }
+
+    public function test_delete_item_recalculates_total_and_allows_empty_transaction(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Edamame',
+            'price' => 18000,
+            'is_available' => true,
+        ]);
+
+        $transaction = Transaction::query()->create([
+            'customer_name' => 'Alex Tan',
+            'customer_phone' => '6281111111111',
+            'status' => 'in_progress',
+            'total_bill' => 18000,
+        ]);
+
+        $item = TransactionItem::query()->create([
+            'transaction_id' => $transaction->id,
+            'menu_id' => $menu->id,
+            'menu_name' => $menu->name,
+            'quantity' => 1,
+            'unit_price' => 18000,
+            'line_total' => 18000,
+        ]);
+
+        $response = $this->postJson("/api/transaction/items/delete/{$item->id}");
+
+        $response->assertOk();
+        $response->assertJsonPath('success', true);
+        $response->assertJsonPath('transaction.total_amount', '0');
+        $response->assertJsonPath('transaction.order_items', []);
+
+        $this->assertDatabaseMissing('transaction_items', ['id' => $item->id]);
+        $this->assertDatabaseHas('transactions', [
+            'id' => $transaction->id,
+            'total_bill' => 0,
+        ]);
+    }
+
+    public function test_paid_transaction_rejects_all_item_and_header_mutations(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Edamame',
+            'price' => 18000,
+            'is_available' => true,
+        ]);
+
+        $transaction = Transaction::query()->create([
+            'customer_name' => 'Alex Tan',
+            'customer_phone' => '6281111111111',
+            'status' => 'paid',
+            'total_bill' => 18000,
+        ]);
+
+        $item = TransactionItem::query()->create([
+            'transaction_id' => $transaction->id,
+            'menu_id' => $menu->id,
+            'menu_name' => $menu->name,
+            'quantity' => 1,
+            'unit_price' => 18000,
+            'line_total' => 18000,
+        ]);
+
+        $this->postJson("/api/transaction/update/{$transaction->id}", [
+            'customer_name' => 'Budi',
+            'customer_phone' => '081234567890',
+            'service_type' => 'takeaway',
+        ])->assertStatus(422)->assertJsonValidationErrors(['transaction']);
+
+        $this->postJson("/api/transaction/items/create/{$transaction->id}", [
+            'menu_id' => $menu->id,
+            'quantity' => 1,
+        ])->assertStatus(422)->assertJsonValidationErrors(['transaction']);
+
+        $this->postJson("/api/transaction/items/update/{$item->id}", [
+            'quantity' => 2,
+        ])->assertStatus(422)->assertJsonValidationErrors(['transaction']);
+
+        $this->postJson("/api/transaction/items/delete/{$item->id}")
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['transaction']);
+
+        $this->assertDatabaseHas('transaction_items', [
+            'id' => $item->id,
+            'quantity' => 1,
+        ]);
+    }
+
+    public function test_update_item_returns_404_for_missing_item(): void
+    {
+        $this->postJson('/api/transaction/items/update/99999', [
+            'quantity' => 1,
+        ])->assertNotFound();
+
+        $this->postJson('/api/transaction/items/delete/99999')
+            ->assertNotFound();
+    }
+
+    public function test_store_item_rejects_unavailable_menu(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Sold Out Roll',
+            'price' => 45000,
+            'is_available' => false,
+        ]);
+
+        $transaction = Transaction::query()->create([
+            'customer_name' => 'Alex Tan',
+            'customer_phone' => '6281111111111',
+            'status' => 'in_progress',
+            'total_bill' => 0,
+        ]);
+
+        $response = $this->postJson("/api/transaction/items/create/{$transaction->id}", [
+            'menu_id' => $menu->id,
+            'quantity' => 1,
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['items']);
+        $this->assertDatabaseCount('transaction_items', 0);
     }
 }

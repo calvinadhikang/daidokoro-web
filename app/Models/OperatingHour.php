@@ -75,4 +75,13 @@ class OperatingHour extends Model
 
         return substr($time, 0, 5);
     }
+
+    public static function formatTimeForStorage(?string $time): ?string
+    {
+        if ($time === null || $time === '') {
+            return null;
+        }
+
+        return strlen($time) === 5 ? "{$time}:00" : $time;
+    }
 }

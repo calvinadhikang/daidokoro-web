@@ -7,16 +7,20 @@ import {
 } from '@/actions/App/Http/Controllers/MenuController';
 import { inputClassName } from '@/components/admin/menu-form';
 import { MenuImage } from '@/components/admin/menu-image';
-import { cn } from '@/lib/utils';
+import {
+    CategoryFilterRow,
+    FilterButton,
+} from '@/components/menu/category-filter-row';
 import {
     prepareMenuList,
     type MenuAvailabilityFilter,
-    type MenuRecommendedFilter,
+    type MenuBrowseFilter,
 } from '@/lib/menu-list';
-import type { Menu } from '@/types/menu';
+import type { Menu, MenuCategory } from '@/types/menu';
 
 type Props = {
     menus: Menu[];
+    categories: MenuCategory[];
 };
 
 function formatPrice(price: number): string {
@@ -31,39 +35,6 @@ const availabilityFilters: Array<{
     { value: 'available', label: 'Available' },
     { value: 'unavailable', label: 'Unavailable' },
 ];
-
-const recommendedFilters: Array<{
-    value: MenuRecommendedFilter;
-    label: string;
-}> = [
-    { value: 'all', label: 'All' },
-    { value: 'recommended', label: 'Recommended' },
-];
-
-function FilterButton({
-    active,
-    label,
-    onClick,
-}: {
-    active: boolean;
-    label: string;
-    onClick: () => void;
-}) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            className={cn(
-                'rounded-full border px-3 py-1.5 text-xs font-medium',
-                active
-                    ? 'border-[#1b1b18] bg-[#1b1b18] text-white dark:border-[#EDEDEC] dark:bg-[#EDEDEC] dark:text-[#1b1b18]'
-                    : 'border-[#e3e3e0] text-[#706f6c] dark:border-[#3E3E3A] dark:text-[#A1A09A]',
-            )}
-        >
-            {label}
-        </button>
-    );
-}
 
 function MenuListItem({ menu }: { menu: Menu }) {
     return (
@@ -92,6 +63,9 @@ function MenuListItem({ menu }: { menu: Menu }) {
                             </div>
                             <p className="mt-1 tabular-nums text-sm text-[#706f6c] dark:text-[#A1A09A]">
                                 {formatPrice(menu.price)}
+                                {menu.pricing_type === 'weight_based'
+                                    ? ' / 100g'
+                                    : ''}
                             </p>
                         </div>
                         <span
@@ -121,16 +95,15 @@ function MenuListItem({ menu }: { menu: Menu }) {
     );
 }
 
-export default function AdminMenusIndex({ menus }: Props) {
+export default function AdminMenusIndex({ menus, categories }: Props) {
     const [search, setSearch] = useState('');
     const [availability, setAvailability] =
         useState<MenuAvailabilityFilter>('all');
-    const [recommended, setRecommended] =
-        useState<MenuRecommendedFilter>('all');
+    const [browseFilter, setBrowseFilter] = useState<MenuBrowseFilter>('all');
 
     const groupedMenus = useMemo(
-        () => prepareMenuList(menus, search, availability, recommended),
-        [menus, search, availability, recommended],
+        () => prepareMenuList(menus, search, availability, browseFilter),
+        [menus, search, availability, browseFilter],
     );
 
     const filteredCount = useMemo(
@@ -142,13 +115,13 @@ export default function AdminMenusIndex({ menus }: Props) {
     const isFiltering =
         search.trim() !== '' ||
         availability !== 'all' ||
-        recommended !== 'all';
+        browseFilter !== 'all';
 
     return (
         <>
             <Head title="Menu Master" />
             <div className="flex h-[calc(100dvh-7.5rem)] flex-col px-4 py-4">
-                <div className="mx-auto flex w-full max-w-lg shrink-0 flex-col">
+                <div className="mx-auto flex w-full min-w-0 max-w-lg shrink-0 flex-col">
                     <header className="mb-4">
                         <h1 className="text-2xl font-semibold">Menu Master</h1>
                         <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
@@ -179,16 +152,11 @@ export default function AdminMenusIndex({ menus }: Props) {
                                 />
                             ))}
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                            {recommendedFilters.map((filter) => (
-                                <FilterButton
-                                    key={filter.value}
-                                    active={recommended === filter.value}
-                                    label={filter.label}
-                                    onClick={() => setRecommended(filter.value)}
-                                />
-                            ))}
-                        </div>
+                        <CategoryFilterRow
+                            categories={categories}
+                            value={browseFilter}
+                            onChange={setBrowseFilter}
+                        />
                     </div>
 
                     <Link

@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Models\Customer;
 use App\Models\MenuModel;
+use App\Models\SalesChannel;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -14,38 +16,60 @@ class CustomerTransactionService
     public function __construct(
         private TransactionOrderService $orderService,
         private MenuOrderLineBuilder $lineBuilder,
+        private StoreHoursService $storeHours,
     ) {}
 
     public function findActiveByPhone(string $phone): ?Transaction
     {
         return Transaction::query()
-            ->where('customer_phone', $phone)
+            ->forPhone($phone)
+            ->where('sales_channel_id', SalesChannel::store()->id)
             ->where('status', 'in_progress')
+            ->whereDate('business_date', $this->storeHours->today())
             ->latest()
             ->first();
     }
 
-    public function getOrCreateForCustomer(
+    /**
+     * @return Collection<int, Transaction>
+     */
+    public function listTodayByPhone(string $phone): Collection
+    {
+        return Transaction::query()
+            ->forPhone($phone)
+            ->where('sales_channel_id', SalesChannel::store()->id)
+            ->whereDate('business_date', $this->storeHours->today())
+            ->with('items')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->get();
+    }
+
+    public function hasTodayOrdersByPhone(string $phone): bool
+    {
+        return Transaction::query()
+            ->forPhone($phone)
+            ->where('sales_channel_id', SalesChannel::store()->id)
+            ->whereDate('business_date', $this->storeHours->today())
+            ->whereHas('items')
+            ->exists();
+    }
+
+    public function createForCustomer(
         Customer $customer,
         ?string $serviceType,
     ): Transaction {
-        return DB::transaction(function () use ($customer, $serviceType) {
-            $transaction = $this->findActiveByPhone($customer->phone);
+        $tableCode = session('table_code');
+        $tableCode = is_string($tableCode) && $tableCode !== '' ? $tableCode : null;
 
-            if ($transaction !== null) {
-                $this->syncCustomerDetails($transaction, $customer, $serviceType);
-
-                return $transaction;
-            }
-
-            return Transaction::query()->create([
-                'customer_name' => $customer->name,
-                'customer_phone' => $customer->phone,
-                'service_type' => $serviceType ?? 'dine_in',
-                'status' => 'in_progress',
-                'total_bill' => 0,
-            ]);
-        });
+        return Transaction::query()->create([
+            'customer_name' => $customer->name,
+            'customer_phone' => $customer->phone,
+            'service_type' => $serviceType ?? 'dine_in',
+            'table_code' => $tableCode,
+            'status' => 'in_progress',
+            'total_bill' => 0,
+        ]);
     }
 
     /**
@@ -56,7 +80,8 @@ class CustomerTransactionService
      *     unit_price: int,
      *     line_total: int,
      *     addon_option_ids?: array<int, int>,
-     *     addons: array<int, array<string, mixed>>
+     *     addons: array<int, array<string, mixed>>,
+     *     note?: string|null
      * }>  $cartItems
      */
     public function checkoutCart(
@@ -67,7 +92,7 @@ class CustomerTransactionService
         $this->assertCartItemsAvailable($cartItems);
 
         return DB::transaction(function () use ($customer, $serviceType, $cartItems) {
-            $transaction = $this->getOrCreateForCustomer($customer, $serviceType);
+            $transaction = $this->createForCustomer($customer, $serviceType);
 
             foreach ($cartItems as $lineItem) {
                 $this->orderService->addMenuItem(
@@ -75,6 +100,8 @@ class CustomerTransactionService
                     $lineItem['menu_id'],
                     $lineItem['quantity'],
                     $lineItem['addon_option_ids'] ?? [],
+                    $lineItem['note'] ?? null,
+                    isset($lineItem['weight_grams']) ? (int) $lineItem['weight_grams'] : null,
                 );
             }
 
@@ -90,7 +117,8 @@ class CustomerTransactionService
      *     unit_price: int,
      *     line_total: int,
      *     addon_option_ids?: array<int, int>,
-     *     addons: array<int, array<string, mixed>>
+     *     addons: array<int, array<string, mixed>>,
+     *     note?: string|null
      * }>  $cartItems
      */
     private function assertCartItemsAvailable(array $cartItems): void
@@ -114,6 +142,8 @@ class CustomerTransactionService
                     $menu,
                     $lineItem['quantity'],
                     $lineItem['addon_option_ids'] ?? [],
+                    SalesChannel::store(),
+                    isset($lineItem['weight_grams']) ? (int) $lineItem['weight_grams'] : null,
                 );
             } catch (ValidationException) {
                 $unavailable[] = $lineItem['menu_name'];
@@ -135,7 +165,8 @@ class CustomerTransactionService
      *     unit_price: int,
      *     line_total: int,
      *     addon_option_ids?: array<int, int>,
-     *     addons: array<int, array<string, mixed>>
+     *     addons: array<int, array<string, mixed>>,
+     *     note?: string|null
      * }  $lineItem
      */
     public function addItem(
@@ -144,7 +175,7 @@ class CustomerTransactionService
         array $lineItem,
     ): TransactionItem {
         return DB::transaction(function () use ($customer, $serviceType, $lineItem) {
-            $transaction = $this->getOrCreateForCustomer($customer, $serviceType);
+            $transaction = $this->createForCustomer($customer, $serviceType);
 
             return $this->orderService->addLineItem($transaction, $lineItem);
         });
@@ -162,10 +193,14 @@ class CustomerTransactionService
             return null;
         }
 
+        $tableCode = session('table_code');
+        $tableCode = is_string($tableCode) && $tableCode !== '' ? $tableCode : null;
+
         $this->syncCustomerDetails(
             $transaction,
             $customer,
             $serviceType ?? session('service_type'),
+            $tableCode,
         );
 
         session(['transaction_id' => $transaction->id]);
@@ -177,6 +212,7 @@ class CustomerTransactionService
         Transaction $transaction,
         Customer $customer,
         ?string $serviceType,
+        ?string $tableCode = null,
     ): void {
         $updates = [];
 
@@ -186,6 +222,10 @@ class CustomerTransactionService
 
         if ($serviceType !== null && $transaction->service_type !== $serviceType) {
             $updates['service_type'] = $serviceType;
+        }
+
+        if ($tableCode !== null && $transaction->table_code !== $tableCode) {
+            $updates['table_code'] = $tableCode;
         }
 
         if ($updates !== []) {
