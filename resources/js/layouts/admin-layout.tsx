@@ -48,8 +48,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                                       : url.startsWith('/admin/mejas')
                                         ? 'Tables'
                                         : url.startsWith('/admin/customers')
-                                          ? 'Customers'
-                                          : 'History'}
+                                      ? 'Customers'
+                                      : url.startsWith('/admin/events')
+                                        ? 'Events'
+                                        : 'History'}
                             </p>
                         )}
                     </div>

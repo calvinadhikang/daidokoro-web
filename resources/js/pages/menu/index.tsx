@@ -17,29 +17,36 @@ export default function MenuIndex({ menus, categories, storeStatus }: Props) {
             <Head title="Menu" />
 
             <div className="flex h-dvh min-h-0 flex-col bg-[#FDFDFC] text-[#1b1b18] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]">
-                <header className="shrink-0 border-b border-[#e3e3e0] bg-[#FDFDFC]/95 px-4 py-4 backdrop-blur dark:border-[#3E3E3A] dark:bg-[#0a0a0a]/95">
-                    <div className="mx-auto max-w-md">
+                <header className="shrink-0 border-b border-[#e3e3e0] bg-[#FDFDFC]/95 px-4 py-3 backdrop-blur dark:border-[#3E3E3A] dark:bg-[#0a0a0a]/95">
+                    <div className="mx-auto flex max-w-md items-center gap-3">
                         <Link
                             href="/"
                             className="text-sm text-[#706f6c] dark:text-[#A1A09A]"
                         >
                             ← Home
                         </Link>
-                        <h1 className="mt-2 text-2xl font-semibold">Menu</h1>
-                        <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                            Browse availability and prices. Order from the
-                            button below.
-                        </p>
+                        <p className="text-sm font-medium">Daidokoro</p>
                     </div>
                 </header>
 
-                <main className="mx-auto flex w-full min-h-0 min-w-0 max-w-md flex-1 flex-col overflow-y-auto px-4 py-4">
+                <main className="mx-auto flex w-full min-h-0 min-w-0 max-w-md flex-1 flex-col px-4 pt-4">
+                    <header className="mb-4 shrink-0">
+                        <h1 className="text-2xl font-semibold tracking-tight">
+                            Menu
+                        </h1>
+                        <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                            Lihat menu dan harga. Pesan lewat tombol di bawah.
+                        </p>
+                    </header>
+
                     <MenuBrowsePanel
                         menus={menus}
                         categories={categories}
                         availability="all"
-                        showAvailabilityBadge
+                        variant="customer"
+                        stickyFilters
                         enableAvailabilityToggle
+                        unavailableLabel="Sold out"
                         emptyMessage="No menu items yet."
                     />
                 </main>

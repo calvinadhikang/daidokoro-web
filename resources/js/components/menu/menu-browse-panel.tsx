@@ -245,7 +245,9 @@ export function MenuBrowsePanel({
         [groupedMenus],
     );
 
-    const isFiltering = search.trim() !== '' || browseFilter !== 'all';
+    const isSearching = search.trim() !== '';
+    const categorySelected = browseFilter !== 'all';
+    const isFiltering = isSearching || categorySelected;
     const availableCount = menus.filter((menu) => menu.is_available).length;
     const defaultSummary =
         availability === 'available'
@@ -273,7 +275,7 @@ export function MenuBrowsePanel({
 
     const filters = (
         <>
-            {(!isCustomer || isFiltering) && (
+            {(!isCustomer || (isSearching && !categorySelected)) && (
                 <p
                     className={cn(
                         'text-sm text-[#706f6c] dark:text-[#A1A09A]',
