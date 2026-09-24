@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AssignCategoryMenuRequest;
 use App\Http\Requests\StoreApiCategoryRequest;
 use App\Models\Category;
+use App\Models\MenuModel;
 use App\Services\MenuCatalogService;
 use App\Services\SalesChannelService;
+use App\Support\PriceLabel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -43,6 +46,65 @@ class CategoryApiController extends Controller
             'message' => 'Category created successfully.',
             'category' => $this->format($category->loadCount('menus')),
         ], 201);
+    }
+
+    public function show(Category $category): JsonResponse
+    {
+        $this->assertAssignable($category);
+
+        $assignedIds = array_fill_keys(
+            $category->menus()->pluck('menus.id')->map(fn ($id) => (int) $id)->all(),
+            true,
+        );
+
+        $menus = MenuModel::query()
+            ->orderByDesc('is_available')
+            ->orderBy('name')
+            ->get(['id', 'name', 'price', 'pricing_type', 'is_available']);
+
+        return response()->json([
+            'category' => $this->format($category->loadCount('menus')),
+            'menus' => $menus->map(function (MenuModel $menu) use ($assignedIds) {
+                $pricingType = $menu->pricing_type ?: MenuModel::PRICING_STANDARD;
+
+                return [
+                    'id' => $menu->id,
+                    'name' => $menu->name,
+                    'price' => (int) $menu->price,
+                    'price_label' => PriceLabel::format((int) $menu->price, $pricingType),
+                    'is_available' => (bool) $menu->is_available,
+                    'assigned' => isset($assignedIds[$menu->id]),
+                ];
+            })->values(),
+        ]);
+    }
+
+    public function assignMenu(AssignCategoryMenuRequest $request, Category $category): JsonResponse
+    {
+        $this->assertAssignable($category);
+
+        $category->menus()->syncWithoutDetaching([(int) $request->validated('menu_id')]);
+        $category->loadCount('menus');
+
+        return response()->json([
+            'success' => true,
+            'assigned' => true,
+            'category' => $this->format($category),
+        ]);
+    }
+
+    public function unassignMenu(AssignCategoryMenuRequest $request, Category $category): JsonResponse
+    {
+        $this->assertAssignable($category);
+
+        $category->menus()->detach((int) $request->validated('menu_id'));
+        $category->loadCount('menus');
+
+        return response()->json([
+            'success' => true,
+            'assigned' => false,
+            'category' => $this->format($category),
+        ]);
     }
 
     public function update(StoreApiCategoryRequest $request, Category $category): JsonResponse

@@ -14,9 +14,12 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('menu')->group(function () {
     Route::get('/', [MenuApiController::class, 'index']);
     Route::get('/categories', [CategoryApiController::class, 'index']);
+    Route::get('/categories/detail/{category}', [CategoryApiController::class, 'show']);
     Route::post('/categories/create', [CategoryApiController::class, 'store']);
     Route::post('/categories/update/{category}', [CategoryApiController::class, 'update']);
     Route::post('/categories/delete/{category}', [CategoryApiController::class, 'destroy']);
+    Route::post('/categories/menus/assign/{category}', [CategoryApiController::class, 'assignMenu']);
+    Route::post('/categories/menus/unassign/{category}', [CategoryApiController::class, 'unassignMenu']);
     Route::get('/detail/{menuModel}', [MenuApiController::class, 'show']);
     Route::post('/create', [MenuApiController::class, 'store']);
     Route::post('/update/{menuModel}', [MenuApiController::class, 'update']);

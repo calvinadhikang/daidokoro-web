@@ -307,6 +307,73 @@ class MenuApiTest extends TestCase
         $this->assertDatabaseMissing('categories', ['name' => 'Recommended']);
     }
 
+    public function test_category_detail_lists_every_menu_with_assignment(): void
+    {
+        $sushi = Category::query()->create(['name' => 'Sushi']);
+        $drinks = Category::query()->create(['name' => 'Drinks']);
+        $assigned = MenuModel::query()->create([
+            'name' => 'Salmon Roll',
+            'price' => 45000,
+            'is_available' => true,
+        ]);
+        $other = MenuModel::query()->create([
+            'name' => 'Green Tea',
+            'price' => 15000,
+            'is_available' => false,
+        ]);
+        $assigned->categories()->attach([$sushi->id, $drinks->id]);
+        $other->categories()->attach($drinks);
+
+        $response = $this->getJson("/api/menu/categories/detail/{$sushi->id}");
+
+        $response->assertOk();
+        $response->assertJsonPath('category.name', 'Sushi');
+        $response->assertJsonPath('category.menus_count', 1);
+        $response->assertJsonFragment([
+            'id' => $assigned->id,
+            'name' => 'Salmon Roll',
+            'assigned' => true,
+        ]);
+        $response->assertJsonFragment([
+            'id' => $other->id,
+            'name' => 'Green Tea',
+            'assigned' => false,
+            'is_available' => false,
+        ]);
+    }
+
+    public function test_assign_and_unassign_category_menu_keeps_other_categories(): void
+    {
+        $sushi = Category::query()->create(['name' => 'Sushi']);
+        $drinks = Category::query()->create(['name' => 'Drinks']);
+        $menu = MenuModel::query()->create([
+            'name' => 'Salmon Roll',
+            'price' => 45000,
+            'is_available' => true,
+        ]);
+        $menu->categories()->attach($drinks);
+
+        $assign = $this->postJson("/api/menu/categories/menus/assign/{$sushi->id}", [
+            'menu_id' => $menu->id,
+        ]);
+
+        $assign->assertOk();
+        $assign->assertJsonPath('assigned', true);
+        $assign->assertJsonPath('category.menus_count', 1);
+        $this->assertTrue($menu->fresh()->categories()->whereKey($sushi->id)->exists());
+        $this->assertTrue($menu->fresh()->categories()->whereKey($drinks->id)->exists());
+
+        $unassign = $this->postJson("/api/menu/categories/menus/unassign/{$sushi->id}", [
+            'menu_id' => $menu->id,
+        ]);
+
+        $unassign->assertOk();
+        $unassign->assertJsonPath('assigned', false);
+        $unassign->assertJsonPath('category.menus_count', 0);
+        $this->assertFalse($menu->fresh()->categories()->whereKey($sushi->id)->exists());
+        $this->assertTrue($menu->fresh()->categories()->whereKey($drinks->id)->exists());
+    }
+
     public function test_categories_list_includes_menus_count(): void
     {
         $sushi = Category::query()->create(['name' => 'Sushi']);
