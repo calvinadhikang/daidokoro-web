@@ -4,7 +4,10 @@ import { index as categoriesIndex } from '@/routes/admin/categories';
 import { index as customersIndex } from '@/routes/admin/customers';
 import { index as mejasIndex } from '@/routes/admin/mejas';
 import { index as reportsIndex } from '@/routes/admin/reports';
-import { history as transactionHistory, index as transactionsIndex } from '@/routes/admin/transaction';
+import {
+    history as transactionHistory,
+    index as transactionsIndex,
+} from '@/routes/admin/transaction';
 
 export const primaryNavItems = [
     { label: 'Menus', href: menusIndex.url(), match: 'menus' as const },
@@ -46,6 +49,12 @@ export const secondaryNavItems = [
         match: 'events' as const,
     },
     {
+        label: 'Omakase',
+        description: 'Sessions and omakase menus',
+        href: '/admin/omakase',
+        match: 'omakase' as const,
+    },
+    {
         label: 'History',
         description: 'Past transactions',
         href: transactionHistory.url(),
@@ -78,7 +87,7 @@ export function isNavActive(url: string, item: NavItem): boolean {
         return url === item.href || url.startsWith(`${item.href}?`);
     }
 
-    if (item.match === 'events') {
+    if (item.match === 'events' || item.match === 'omakase') {
         return url === item.href || url.startsWith(`${item.href}/`);
     }
 

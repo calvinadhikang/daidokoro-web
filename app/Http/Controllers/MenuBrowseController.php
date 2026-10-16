@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\MenuModel;
+use App\Models\SalesChannel;
 use App\Services\MenuCatalogService;
 use App\Services\StoreHoursService;
 use Illuminate\Http\RedirectResponse;
@@ -18,9 +19,11 @@ class MenuBrowseController extends Controller
 
     public function index(): Response
     {
+        $store = SalesChannel::store();
+
         return Inertia::render('menu/index', [
-            'menus' => $this->menuCatalog->allForBrowse(),
-            'categories' => $this->menuCatalog->categoriesForBrowse(),
+            'menus' => $this->menuCatalog->allForBrowse($store),
+            'categories' => $this->menuCatalog->categoriesForBrowse($store),
             'storeStatus' => $this->storeHours->status(),
         ]);
     }

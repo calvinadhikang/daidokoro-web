@@ -12,6 +12,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MejaController;
 use App\Http\Controllers\MenuBrowseController;
 use App\Http\Controllers\MenuController;
+use App\Http\Controllers\OmakaseAdminController;
 use App\Http\Controllers\OperationalHoursController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TableEntryController;
@@ -84,6 +85,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('/events/{salesChannel}/menus/assign', [EventController::class, 'assignMenus'])->name('events.menus.assign');
     Route::post('/events/{salesChannel}/menus/{menuModel}', [EventController::class, 'updateMenu'])->name('events.menus.update');
     Route::delete('/events/{salesChannel}/menus/{menuModel}', [EventController::class, 'unassignMenu'])->name('events.menus.unassign');
+
+    Route::get('/omakase', [OmakaseAdminController::class, 'index'])->name('omakase.index');
+    Route::get('/omakase/create', [OmakaseAdminController::class, 'create'])->name('omakase.create');
+    Route::post('/omakase', [OmakaseAdminController::class, 'store'])->name('omakase.store');
+    Route::get('/omakase/{omakaseSession}', [OmakaseAdminController::class, 'show'])->name('omakase.show');
+    Route::put('/omakase/{omakaseSession}', [OmakaseAdminController::class, 'update'])->name('omakase.update');
+    Route::delete('/omakase/{omakaseSession}', [OmakaseAdminController::class, 'destroy'])->name('omakase.destroy');
+    Route::post('/omakase/{omakaseSession}/import', [OmakaseAdminController::class, 'importMenus'])->name('omakase.import');
+    Route::post('/omakase/{omakaseSession}/menus', [OmakaseAdminController::class, 'storeMenu'])->name('omakase.menus.store');
+    Route::put('/omakase/{omakaseSession}/menus/{omakaseMenu}', [OmakaseAdminController::class, 'updateMenu'])->name('omakase.menus.update');
+    Route::delete('/omakase/{omakaseSession}/menus/{omakaseMenu}', [OmakaseAdminController::class, 'destroyMenu'])->name('omakase.menus.destroy');
 
     Route::get('/hours', [OperationalHoursController::class, 'edit'])->name('hours.edit');
     Route::put('/hours', [OperationalHoursController::class, 'update'])->name('hours.update');
