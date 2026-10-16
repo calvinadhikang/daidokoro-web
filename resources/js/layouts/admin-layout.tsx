@@ -1,6 +1,6 @@
 import { usePage } from '@inertiajs/react';
-import { useState  } from 'react';
-import type {ReactNode} from 'react';
+import { useState } from 'react';
+import type { ReactNode } from 'react';
 
 import {
     AdminMenuButton,
@@ -50,10 +50,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                                       : url.startsWith('/admin/mejas')
                                         ? 'Tables'
                                         : url.startsWith('/admin/customers')
-                                      ? 'Customers'
-                                      : url.startsWith('/admin/events')
-                                        ? 'Events'
-                                        : 'History'}
+                                          ? 'Customers'
+                                          : url.startsWith('/admin/events')
+                                            ? 'Events'
+                                            : url.startsWith('/admin/omakase')
+                                              ? 'Omakase'
+                                              : 'History'}
                             </p>
                         )}
                     </div>
