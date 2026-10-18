@@ -11,6 +11,13 @@ class CategoryAdminTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->actingAsAdmin();
+    }
+
     public function test_admin_can_list_create_and_assign_menus_on_a_category(): void
     {
         $menu = MenuModel::query()->create([

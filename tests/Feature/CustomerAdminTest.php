@@ -11,6 +11,13 @@ class CustomerAdminTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->actingAsAdmin();
+    }
+
     public function test_index_lists_customers(): void
     {
         Customer::query()->create([

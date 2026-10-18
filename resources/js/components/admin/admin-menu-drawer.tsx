@@ -1,4 +1,4 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useId, useRef, useState } from 'react';
 
 import {
@@ -171,6 +171,19 @@ export function AdminMenuDrawer({ open, onClose }: AdminMenuDrawerProps) {
                         })}
                     </ul>
                 </nav>
+
+                <div className="border-t border-[#e3e3e0] p-3 dark:border-[#3E3E3A]">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            onClose();
+                            router.post('/admin/logout');
+                        }}
+                        className="w-full rounded-lg border border-[#e3e3e0] bg-white px-4 py-3 text-left text-sm font-medium active:bg-[#FDFDFC] dark:border-[#3E3E3A] dark:bg-[#161615] dark:active:bg-[#0a0a0a]"
+                    >
+                        Log out
+                    </button>
+                </div>
             </aside>
         </div>
     );

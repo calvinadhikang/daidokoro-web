@@ -237,7 +237,7 @@ export function CustomerCartPanel({
                 type="button"
                 onClick={() => setConfirmOpen(true)}
                 disabled={controlsBusy}
-                className="w-full rounded-md bg-[#E24E1B] px-4 py-3 text-sm font-medium text-white disabled:opacity-50"
+                className="w-full rounded-md bg-[#C56A3E] px-4 py-3 text-sm font-medium text-white disabled:opacity-50"
             >
                 {checkingOut
                     ? 'Sending order...'

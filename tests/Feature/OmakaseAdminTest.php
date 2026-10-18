@@ -16,6 +16,7 @@ class OmakaseAdminTest extends TestCase
     {
         parent::setUp();
 
+        $this->actingAsAdmin();
         Carbon::setTestNow(Carbon::parse('2026-10-17 10:00:00', StoreHoursService::TIMEZONE));
     }
 

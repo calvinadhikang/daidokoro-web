@@ -68,7 +68,7 @@ export default function CustomerOrderIndex({
                             </p>
                         </div>
                         {serviceType !== null && (
-                            <span className="shrink-0 rounded-full bg-[#FFF1E8] px-2.5 py-1 text-xs font-medium text-[#C2410C] dark:bg-[#4A1D0C] dark:text-[#FDBA8C]">
+                            <span className="shrink-0 rounded-full bg-[#F6EBE2] px-2.5 py-1 text-xs font-medium text-[#A4532E] dark:bg-[#3A2A22] dark:text-[#F3D5C2]">
                                 {serviceTypeLabel(serviceType)}
                             </span>
                         )}
@@ -136,7 +136,7 @@ export default function CustomerOrderIndex({
                                             <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
                                                 Bill total
                                             </p>
-                                            <p className="text-lg font-semibold text-[#E24E1B] tabular-nums">
+                                            <p className="text-lg font-semibold text-[#C56A3E] tabular-nums">
                                                 Rp{' '}
                                                 {formatPrice(
                                                     transaction.total_bill,
@@ -150,7 +150,7 @@ export default function CustomerOrderIndex({
                     </div>
                 ) : (
                     <div className="rounded-2xl border border-dashed border-[#e3e3e0] bg-white px-6 py-12 text-center dark:border-[#3E3E3A] dark:bg-[#161615]">
-                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#FFF1E8] text-[#E24E1B] dark:bg-[#4A1D0C] dark:text-[#FDBA8C]">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#F6EBE2] text-[#C56A3E] dark:bg-[#3A2A22] dark:text-[#F3D5C2]">
                             <svg
                                 viewBox="0 0 24 24"
                                 fill="none"
@@ -173,7 +173,7 @@ export default function CustomerOrderIndex({
                         </p>
                         <Link
                             href="/customer/menu"
-                            className="mt-5 inline-flex items-center justify-center rounded-full bg-[#E24E1B] px-4 py-2.5 text-sm font-medium text-white"
+                            className="mt-5 inline-flex items-center justify-center rounded-full bg-[#C56A3E] px-4 py-2.5 text-sm font-medium text-white"
                         >
                             Browse menu
                         </Link>

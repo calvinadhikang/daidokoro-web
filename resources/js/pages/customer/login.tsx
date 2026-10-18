@@ -50,7 +50,7 @@ export default function CustomerLogin({
         <>
             <Head title="Your details" />
 
-            <div className="flex min-h-screen flex-col bg-[#FFF7F2] text-[#1b1b18] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]">
+            <div className="flex min-h-screen flex-col bg-[#FBF6F1] text-[#1b1b18] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]">
                 <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 py-8">
                     <header className="mb-8">
                         <BrandLogo className="mb-4 h-20 w-20" />
@@ -124,7 +124,7 @@ export default function CustomerLogin({
                         <button
                             type="submit"
                             disabled={form.processing}
-                            className="w-full rounded-md bg-[#E24E1B] px-4 py-3 text-sm font-medium text-white disabled:opacity-50"
+                            className="w-full rounded-md bg-[#C56A3E] px-4 py-3 text-sm font-medium text-white disabled:opacity-50"
                         >
                             {form.processing ? 'Saving...' : 'Continue'}
                         </button>

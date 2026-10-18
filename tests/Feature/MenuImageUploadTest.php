@@ -16,6 +16,7 @@ class MenuImageUploadTest extends TestCase
     {
         parent::setUp();
 
+        $this->actingAsAdmin();
         Storage::fake('public');
     }
 

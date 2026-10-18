@@ -19,7 +19,7 @@ createInertiaApp({
             import.meta.glob('./pages/**/*.tsx'),
         )) as { default: ResolvedComponent };
 
-        if (name.startsWith('admin/')) {
+        if (name.startsWith('admin/') && name !== 'admin/login') {
             page.default.layout = (page: ReactNode) => (
                 <AdminLayout>{page}</AdminLayout>
             );

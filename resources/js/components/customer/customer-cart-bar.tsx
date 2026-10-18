@@ -33,7 +33,7 @@ export function CustomerCartBar() {
             <Link
                 href="/customer/cart"
                 className={cn(
-                    'pointer-events-auto mx-auto flex max-w-md items-center justify-between gap-3 rounded-full bg-[#E24E1B] px-5 py-3 text-white shadow-lg shadow-[#E24E1B]/25',
+                    'pointer-events-auto mx-auto flex max-w-md items-center justify-between gap-3 rounded-full bg-[#C56A3E] px-5 py-3 text-white shadow-lg shadow-[#C56A3E]/25',
                     highlighted && 'cart-bar-highlight',
                 )}
             >

@@ -10,6 +10,13 @@ class MejaAdminTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->actingAsAdmin();
+    }
+
     public function test_index_lists_tables(): void
     {
         Meja::query()->create(['code' => 'A1']);
