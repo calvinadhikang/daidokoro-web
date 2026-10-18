@@ -19,7 +19,7 @@ export function CustomerNavbar() {
     const highlightCart = cartCount > 0 && Boolean(flash.success);
 
     return (
-        <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-[#F3D2C4] bg-[#FFF7F2]/95 backdrop-blur dark:border-[#3E3E3A] dark:bg-[#0a0a0a]/95">
+        <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-[#E6D5C6] bg-[#FBF6F1]/95 backdrop-blur dark:border-[#3E3E3A] dark:bg-[#0a0a0a]/95">
             <div className="mx-auto flex max-w-md pb-[env(safe-area-inset-bottom)]">
                 {customerNavItems.map((item) => {
                     const isActive = isCustomerNavActive(url, item);
@@ -39,7 +39,7 @@ export function CustomerNavbar() {
                             className={cn(
                                 'relative flex flex-1 flex-col items-center gap-1 px-2 py-2.5 text-[11px] font-medium',
                                 isActive || (isCart && cartCount > 0)
-                                    ? 'text-[#E24E1B] dark:text-[#FF8A4C]'
+                                    ? 'text-[#C56A3E] dark:text-[#E7B08C]'
                                     : 'text-[#706f6c] dark:text-[#A1A09A]',
                             )}
                         >
@@ -52,7 +52,7 @@ export function CustomerNavbar() {
                                     <span
                                         className={cn(
                                             'absolute -top-1.5 -right-2.5 flex min-h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold',
-                                            'bg-[#E24E1B] text-white',
+                                            'bg-[#C56A3E] text-white',
                                             highlightCart &&
                                                 isCart &&
                                                 'cart-nav-badge-highlight',

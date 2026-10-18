@@ -30,7 +30,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
         !isMenuDetail;
 
     return (
-        <div className="min-h-screen bg-[#FFF7F2] text-[#1b1b18] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]">
+        <div className="min-h-screen bg-[#FBF6F1] text-[#1b1b18] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]">
             {flash.success && (
                 <div className="px-4 pt-4">
                     <div className="mx-auto max-w-md rounded-lg border border-[#abefc6] bg-[#ecfdf3] px-4 py-3 text-sm text-[#027a48] dark:border-[#053321] dark:bg-[#053321] dark:text-[#75e0a7]">

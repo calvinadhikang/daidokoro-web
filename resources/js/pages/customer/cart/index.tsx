@@ -40,7 +40,7 @@ export default function CustomerCartIndex({
                             </p>
                         </div>
                         {serviceType !== null && (
-                            <span className="shrink-0 rounded-full bg-[#FFF1E8] px-2.5 py-1 text-xs font-medium text-[#C2410C] dark:bg-[#4A1D0C] dark:text-[#FDBA8C]">
+                            <span className="shrink-0 rounded-full bg-[#F6EBE2] px-2.5 py-1 text-xs font-medium text-[#A4532E] dark:bg-[#3A2A22] dark:text-[#F3D5C2]">
                                 {serviceTypeLabel(serviceType)}
                             </span>
                         )}
@@ -60,7 +60,7 @@ export default function CustomerCartIndex({
                     emptyAction={
                         <Link
                             href="/customer/menu"
-                            className="mt-4 inline-block text-sm font-medium text-[#E24E1B]"
+                            className="mt-4 inline-block text-sm font-medium text-[#C56A3E]"
                         >
                             Browse menu
                         </Link>

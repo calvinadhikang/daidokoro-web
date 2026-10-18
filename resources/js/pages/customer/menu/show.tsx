@@ -87,11 +87,11 @@ export default function CustomerMenuShow({ menu, serviceType }: Props) {
                     )}
                 </div>
 
-                <div className="relative -mt-6 rounded-t-3xl bg-[#FFF7F2] px-4 pt-6 pb-4 dark:bg-[#0a0a0a]">
+                <div className="relative -mt-6 rounded-t-3xl bg-[#FBF6F1] px-4 pt-6 pb-4 dark:bg-[#0a0a0a]">
                     {(menu.is_recommended || categories.length > 0) && (
                         <div className="mb-3 flex flex-wrap items-center gap-2">
                             {menu.is_recommended && (
-                                <span className="rounded-full bg-[#FFF1E8] px-2.5 py-1 text-[11px] font-medium text-[#C2410C] dark:bg-[#4A1D0C] dark:text-[#FDBA8C]">
+                                <span className="rounded-full bg-[#F6EBE2] px-2.5 py-1 text-[11px] font-medium text-[#A4532E] dark:bg-[#3A2A22] dark:text-[#F3D5C2]">
                                     Recommended
                                 </span>
                             )}
@@ -110,7 +110,7 @@ export default function CustomerMenuShow({ menu, serviceType }: Props) {
                         <h1 className="text-2xl font-semibold tracking-tight">
                             {menu.name}
                         </h1>
-                        <p className="shrink-0 text-right text-lg font-semibold text-[#E24E1B] tabular-nums">
+                        <p className="shrink-0 text-right text-lg font-semibold text-[#C56A3E] tabular-nums">
                             Rp {formatPrice(menu.price)}
                             {menu.pricing_type === 'weight_based' && (
                                 <span className="mt-0.5 block text-xs font-medium text-[#706f6c] dark:text-[#A1A09A]">

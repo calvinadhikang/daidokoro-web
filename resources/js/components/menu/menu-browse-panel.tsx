@@ -64,7 +64,7 @@ function MenuCard({
                     )}
                 />
                 {menu.is_recommended && menu.is_available && (
-                    <span className="absolute top-1.5 left-1.5 rounded-full bg-[#FFF1E8] px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-[#C2410C] uppercase">
+                    <span className="absolute top-1.5 left-1.5 rounded-full bg-[#F6EBE2] px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-[#A4532E] uppercase">
                         Rec
                     </span>
                 )}
@@ -79,22 +79,22 @@ function MenuCard({
                     {menu.name}
                 </h2>
                 {addonSummary !== null && (
-                    <p className="mt-1 line-clamp-1 text-xs text-[#706f6c] dark:text-[#A1A09A]">
+                    <p className="mt-1 line-clamp-1 text-xs text-[#44403c] dark:text-[#D6D3D1]">
                         {addonSummary}
                     </p>
                 )}
                 <div className="mt-auto flex items-end justify-between gap-3 pt-2">
-                    <p className="text-sm font-semibold text-[#E24E1B] tabular-nums">
+                    <p className="text-sm font-semibold text-[#C56A3E] tabular-nums">
                         {formatPrice(menu.price)}
                         {menu.pricing_type === 'weight_based' && (
-                            <span className="ml-1 text-xs font-medium text-[#706f6c] dark:text-[#A1A09A]">
+                            <span className="ml-1 text-xs font-medium text-[#44403c] dark:text-[#D6D3D1]">
                                 / 100g
                             </span>
                         )}
                     </p>
                     {href ? (
                         <span
-                            className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E24E1B] text-white shadow-sm"
+                            className="flex h-8 w-8 items-center justify-center rounded-full bg-[#C56A3E] text-white shadow-sm"
                             aria-hidden="true"
                         >
                             <svg
@@ -293,8 +293,10 @@ export function MenuBrowsePanel({
             {(!isCustomer || (isSearching && !categorySelected)) && (
                 <p
                     className={cn(
-                        'text-sm text-[#706f6c] dark:text-[#A1A09A]',
-                        isCustomer ? 'mb-3' : 'mb-4',
+                        'text-sm',
+                        isCustomer
+                            ? 'mb-3 text-[#44403c] dark:text-[#D6D3D1]'
+                            : 'mb-4 text-[#706f6c] dark:text-[#A1A09A]',
                     )}
                 >
                     {isFiltering
@@ -312,7 +314,7 @@ export function MenuBrowsePanel({
                         strokeWidth="1.75"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#706f6c] dark:text-[#A1A09A]"
+                        className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#44403c] dark:text-[#D6D3D1]"
                         aria-hidden="true"
                     >
                         <circle cx="11" cy="11" r="7" />
@@ -323,7 +325,7 @@ export function MenuBrowsePanel({
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
                         placeholder="Search menu..."
-                        className={`${inputClassName} rounded-xl py-2.5 pr-3 pl-10`}
+                        className={`${inputClassName} rounded-xl py-2.5 pr-3 pl-10 text-[#1b1b18] placeholder:text-[#44403c] dark:text-[#EDEDEC] dark:placeholder:text-[#D6D3D1]`}
                     />
                 </div>
             ) : (
@@ -354,13 +356,25 @@ export function MenuBrowsePanel({
     const list =
         menus.length === 0 ? (
             <div className={emptyClassName}>
-                <p className="text-[#706f6c] dark:text-[#A1A09A]">
+                <p
+                    className={
+                        isCustomer
+                            ? 'text-[#44403c] dark:text-[#D6D3D1]'
+                            : 'text-[#706f6c] dark:text-[#A1A09A]'
+                    }
+                >
                     {emptyMessage}
                 </p>
             </div>
         ) : filteredCount === 0 ? (
             <div className={emptyClassName}>
-                <p className="text-[#706f6c] dark:text-[#A1A09A]">
+                <p
+                    className={
+                        isCustomer
+                            ? 'text-[#44403c] dark:text-[#D6D3D1]'
+                            : 'text-[#706f6c] dark:text-[#A1A09A]'
+                    }
+                >
                     No menus match your search.
                 </p>
             </div>
@@ -383,7 +397,7 @@ export function MenuBrowsePanel({
                                 className={cn(
                                     'mb-3 font-semibold',
                                     isCustomer
-                                        ? 'flex items-center gap-2 text-[13px] tracking-wide text-[#706f6c] uppercase dark:text-[#A1A09A]'
+                                        ? 'flex items-center gap-2 text-[13px] tracking-wide text-[#1b1b18] uppercase dark:text-[#EDEDEC]'
                                         : 'text-sm text-[#706f6c] dark:text-[#A1A09A]',
                                 )}
                             >
@@ -453,8 +467,8 @@ export function MenuBrowsePanel({
 
             {stickyFilters ? (
                 <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                    <div className="min-w-0 shrink-0">{filters}</div>
-                    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                    <div className="w-full min-w-0 shrink-0">{filters}</div>
+                    <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-y-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0">
                         {list}
                     </div>
                 </div>

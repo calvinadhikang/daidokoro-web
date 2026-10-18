@@ -17,12 +17,12 @@ export default function MenuIndex({ menus, categories, storeStatus }: Props) {
         <>
             <Head title="Menu" />
 
-            <div className="flex h-dvh min-h-0 flex-col bg-[#FFF7F2] text-[#1b1b18] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]">
-                <header className="shrink-0 border-b border-[#F3D2C4] bg-[#FFF7F2]/95 px-4 py-3 backdrop-blur dark:border-[#3E3E3A] dark:bg-[#0a0a0a]/95">
+            <div className="flex h-dvh min-h-0 flex-col bg-[#FBF6F1] text-[#1b1b18] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]">
+                <header className="shrink-0 border-b border-[#E6D5C6] bg-[#FBF6F1]/95 px-4 py-3 backdrop-blur dark:border-[#3E3E3A] dark:bg-[#0a0a0a]/95">
                     <div className="mx-auto flex max-w-md items-center gap-3">
                         <Link
                             href="/"
-                            className="flex items-center gap-2 text-sm text-[#706f6c] dark:text-[#A1A09A]"
+                            className="flex items-center gap-2 text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]"
                         >
                             <BrandLogo className="h-9 w-9" />
                             <span>Daidokoro</span>
@@ -35,7 +35,7 @@ export default function MenuIndex({ menus, categories, storeStatus }: Props) {
                         <h1 className="text-2xl font-semibold tracking-tight">
                             Menu
                         </h1>
-                        <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                        <p className="mt-1 text-sm text-[#44403c] dark:text-[#D6D3D1]">
                             Lihat menu dan harga. Pesan lewat tombol di bawah.
                         </p>
                     </header>
@@ -52,14 +52,14 @@ export default function MenuIndex({ menus, categories, storeStatus }: Props) {
                     />
                 </main>
 
-                <footer className="shrink-0 border-t border-[#F3D2C4] bg-[#FFF7F2]/95 px-4 py-4 backdrop-blur dark:border-[#3E3E3A] dark:bg-[#0a0a0a]/95">
+                <footer className="shrink-0 border-t border-[#E6D5C6] bg-[#FBF6F1]/95 px-4 py-4 backdrop-blur dark:border-[#3E3E3A] dark:bg-[#0a0a0a]/95">
                     <div className="mx-auto max-w-md">
                         {storeStatus.is_open ? (
                             <Link
                                 href="/customer/login"
                                 className={cn(
                                     'flex w-full items-center justify-center rounded-md px-4 py-3 text-sm font-medium transition-colors',
-                                    'bg-[#E24E1B] text-white active:bg-[#C2410C]',
+                                    'bg-[#C56A3E] text-white active:bg-[#A4532E]',
                                 )}
                             >
                                 Pesan sekarang
@@ -70,14 +70,14 @@ export default function MenuIndex({ menus, categories, storeStatus }: Props) {
                                 disabled
                                 className={cn(
                                     'flex w-full items-center justify-center rounded-md px-4 py-3 text-sm font-medium transition-colors',
-                                    'cursor-not-allowed border border-[#e3e3e0] bg-[#FDFDFC] text-[#706f6c] opacity-60 dark:border-[#3E3E3A] dark:bg-[#0a0a0a] dark:text-[#A1A09A]',
+                                    'cursor-not-allowed border border-[#d6d3d1] bg-[#F5F0EC] text-[#44403c] dark:border-[#57534e] dark:bg-[#161615] dark:text-[#D6D3D1]',
                                 )}
                             >
                                 Pesan sekarang
                             </button>
                         )}
                         {!storeStatus.is_open && (
-                            <p className="mt-3 text-center text-xs text-[#706f6c] dark:text-[#A1A09A]">
+                            <p className="mt-3 text-center text-xs text-[#44403c] dark:text-[#D6D3D1]">
                                 Ordering is available during operating hours
                                 only.
                             </p>

@@ -38,7 +38,7 @@ function OrderButton({
             href={href}
             className={cn(
                 'flex flex-1 items-center justify-center rounded-md px-4 py-3 text-sm font-medium transition-colors',
-                'bg-[#E24E1B] text-white active:bg-[#C2410C]',
+                'bg-[#C56A3E] text-white active:bg-[#A4532E]',
             )}
         >
             {label}
@@ -62,7 +62,7 @@ export default function Home({ storeStatus, nextSession }: Props) {
         <>
             <Head title="Order" />
 
-            <div className="flex min-h-screen flex-col bg-[#FFF7F2] text-[#1b1b18] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]">
+            <div className="flex min-h-screen flex-col bg-[#FBF6F1] text-[#1b1b18] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]">
                 <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 py-8">
                     <header className="mb-8">
                         <BrandLogo className="h-28 w-28" />
