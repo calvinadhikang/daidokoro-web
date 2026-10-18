@@ -18,6 +18,7 @@ class EventAdminTest extends TestCase
     {
         parent::setUp();
 
+        $this->actingAsAdmin();
         OperatingHour::ensureWeekExists();
         Carbon::setTestNow(Carbon::parse('2026-09-23 10:00:00', StoreHoursService::TIMEZONE));
     }

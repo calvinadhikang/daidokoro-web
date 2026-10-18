@@ -192,6 +192,8 @@ class TransactionApiTest extends TestCase
 
     public function test_admin_create_persists_item_note(): void
     {
+        $this->actingAsAdmin();
+
         $menu = MenuModel::query()->create([
             'name' => 'Chicken Rice',
             'price' => 35000,

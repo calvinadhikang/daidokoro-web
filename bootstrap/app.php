@@ -17,6 +17,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->redirectGuestsTo('/admin/login');
+
         $middleware->alias([
             'customer' => EnsureCustomerSession::class,
             'store.open' => EnsureStoreIsOpen::class,

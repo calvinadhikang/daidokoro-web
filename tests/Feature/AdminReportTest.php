@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\MenuModel;
+use App\Models\SalesChannel;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Services\StoreHoursService;
@@ -13,6 +14,13 @@ use Tests\TestCase;
 class AdminReportTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->actingAsAdmin();
+    }
 
     public function test_reports_index_renders(): void
     {
@@ -186,9 +194,9 @@ class AdminReportTest extends TestCase
 
     public function test_sales_report_defaults_to_store_channel(): void
     {
-        $store = \App\Models\SalesChannel::store();
-        $event = \App\Models\SalesChannel::query()->create([
-            'type' => \App\Models\SalesChannel::TYPE_EVENT,
+        $store = SalesChannel::store();
+        $event = SalesChannel::query()->create([
+            'type' => SalesChannel::TYPE_EVENT,
             'name' => 'Bazaar',
             'starts_at' => now()->toDateString(),
             'ends_at' => now()->toDateString(),

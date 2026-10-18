@@ -15,11 +15,13 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::query()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => 'password',
-        ]);
+        User::query()->updateOrCreate(
+            ['email' => 'daidokoro'],
+            [
+                'name' => 'Daidokoro',
+                'password' => 'daidokoro',
+            ],
+        );
 
         $this->call(MenuSeeder::class);
         $this->call(MenuAddonSeeder::class);

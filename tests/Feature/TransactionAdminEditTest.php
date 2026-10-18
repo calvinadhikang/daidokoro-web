@@ -12,6 +12,13 @@ class TransactionAdminEditTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->actingAsAdmin();
+    }
+
     public function test_admin_can_update_transaction_header(): void
     {
         $transaction = Transaction::query()->create([

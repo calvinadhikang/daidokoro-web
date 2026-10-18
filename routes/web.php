@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminLoginController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CustomerCartController;
 use App\Http\Controllers\CustomerController;
@@ -48,73 +49,79 @@ Route::prefix('customer')->name('customer.')->group(function () {
 });
 
 Route::prefix('admin')->name('admin.')->group(function () {
-    Route::redirect('/', '/admin/menus');
-    Route::get('/menus', [MenuController::class, 'index'])->name('menus.index');
-    Route::get('/menus/create', [MenuController::class, 'create'])->name('menus.create');
-    Route::post('/menus', [MenuController::class, 'store'])->name('menus.store');
-    Route::get('/menus/{menuModel}', [MenuController::class, 'show'])->name('menus.show');
-    Route::put('/menus/{menuModel}', [MenuController::class, 'update'])->name('menus.update');
+    Route::get('/login', [AdminLoginController::class, 'create'])->name('login');
+    Route::post('/login', [AdminLoginController::class, 'store'])->name('login.store');
 
-    Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
-    Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create');
-    Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
-    Route::get('/categories/{category}', [CategoryController::class, 'show'])->name('categories.show');
-    Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
-    Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+    Route::middleware('auth')->group(function () {
+        Route::post('/logout', [AdminLoginController::class, 'destroy'])->name('logout');
+        Route::redirect('/', '/admin/menus');
+        Route::get('/menus', [MenuController::class, 'index'])->name('menus.index');
+        Route::get('/menus/create', [MenuController::class, 'create'])->name('menus.create');
+        Route::post('/menus', [MenuController::class, 'store'])->name('menus.store');
+        Route::get('/menus/{menuModel}', [MenuController::class, 'show'])->name('menus.show');
+        Route::put('/menus/{menuModel}', [MenuController::class, 'update'])->name('menus.update');
 
-    Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
-    Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
-    Route::put('/customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
+        Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
+        Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create');
+        Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
+        Route::get('/categories/{category}', [CategoryController::class, 'show'])->name('categories.show');
+        Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
+        Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 
-    Route::get('/mejas', [MejaController::class, 'index'])->name('mejas.index');
-    Route::get('/mejas/create', [MejaController::class, 'create'])->name('mejas.create');
-    Route::post('/mejas', [MejaController::class, 'store'])->name('mejas.store');
-    Route::get('/mejas/{meja}', [MejaController::class, 'show'])->name('mejas.show');
-    Route::put('/mejas/{meja}', [MejaController::class, 'update'])->name('mejas.update');
-    Route::delete('/mejas/{meja}', [MejaController::class, 'destroy'])->name('mejas.destroy');
+        Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
+        Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+        Route::put('/customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
 
-    Route::get('/events', [EventController::class, 'index'])->name('events.index');
-    Route::get('/events/create', [EventController::class, 'create'])->name('events.create');
-    Route::post('/events', [EventController::class, 'store'])->name('events.store');
-    Route::get('/events/{salesChannel}', [EventController::class, 'show'])->name('events.show');
-    Route::put('/events/{salesChannel}', [EventController::class, 'update'])->name('events.update');
-    Route::post('/events/{salesChannel}/archive', [EventController::class, 'archive'])->name('events.archive');
-    Route::post('/events/{salesChannel}/unarchive', [EventController::class, 'unarchive'])->name('events.unarchive');
-    Route::get('/events/{salesChannel}/menus/create', [EventController::class, 'createMenu'])->name('events.menus.create');
-    Route::post('/events/{salesChannel}/menus', [EventController::class, 'storeMenu'])->name('events.menus.store');
-    Route::post('/events/{salesChannel}/menus/assign', [EventController::class, 'assignMenus'])->name('events.menus.assign');
-    Route::post('/events/{salesChannel}/menus/{menuModel}', [EventController::class, 'updateMenu'])->name('events.menus.update');
-    Route::delete('/events/{salesChannel}/menus/{menuModel}', [EventController::class, 'unassignMenu'])->name('events.menus.unassign');
+        Route::get('/mejas', [MejaController::class, 'index'])->name('mejas.index');
+        Route::get('/mejas/create', [MejaController::class, 'create'])->name('mejas.create');
+        Route::post('/mejas', [MejaController::class, 'store'])->name('mejas.store');
+        Route::get('/mejas/{meja}', [MejaController::class, 'show'])->name('mejas.show');
+        Route::put('/mejas/{meja}', [MejaController::class, 'update'])->name('mejas.update');
+        Route::delete('/mejas/{meja}', [MejaController::class, 'destroy'])->name('mejas.destroy');
 
-    Route::get('/omakase', [OmakaseAdminController::class, 'index'])->name('omakase.index');
-    Route::get('/omakase/create', [OmakaseAdminController::class, 'create'])->name('omakase.create');
-    Route::post('/omakase', [OmakaseAdminController::class, 'store'])->name('omakase.store');
-    Route::get('/omakase/{omakaseSession}', [OmakaseAdminController::class, 'show'])->name('omakase.show');
-    Route::put('/omakase/{omakaseSession}', [OmakaseAdminController::class, 'update'])->name('omakase.update');
-    Route::delete('/omakase/{omakaseSession}', [OmakaseAdminController::class, 'destroy'])->name('omakase.destroy');
-    Route::post('/omakase/{omakaseSession}/import', [OmakaseAdminController::class, 'importMenus'])->name('omakase.import');
-    Route::post('/omakase/{omakaseSession}/menus', [OmakaseAdminController::class, 'storeMenu'])->name('omakase.menus.store');
-    Route::put('/omakase/{omakaseSession}/menus/{omakaseMenu}', [OmakaseAdminController::class, 'updateMenu'])->name('omakase.menus.update');
-    Route::delete('/omakase/{omakaseSession}/menus/{omakaseMenu}', [OmakaseAdminController::class, 'destroyMenu'])->name('omakase.menus.destroy');
+        Route::get('/events', [EventController::class, 'index'])->name('events.index');
+        Route::get('/events/create', [EventController::class, 'create'])->name('events.create');
+        Route::post('/events', [EventController::class, 'store'])->name('events.store');
+        Route::get('/events/{salesChannel}', [EventController::class, 'show'])->name('events.show');
+        Route::put('/events/{salesChannel}', [EventController::class, 'update'])->name('events.update');
+        Route::post('/events/{salesChannel}/archive', [EventController::class, 'archive'])->name('events.archive');
+        Route::post('/events/{salesChannel}/unarchive', [EventController::class, 'unarchive'])->name('events.unarchive');
+        Route::get('/events/{salesChannel}/menus/create', [EventController::class, 'createMenu'])->name('events.menus.create');
+        Route::post('/events/{salesChannel}/menus', [EventController::class, 'storeMenu'])->name('events.menus.store');
+        Route::post('/events/{salesChannel}/menus/assign', [EventController::class, 'assignMenus'])->name('events.menus.assign');
+        Route::post('/events/{salesChannel}/menus/{menuModel}', [EventController::class, 'updateMenu'])->name('events.menus.update');
+        Route::delete('/events/{salesChannel}/menus/{menuModel}', [EventController::class, 'unassignMenu'])->name('events.menus.unassign');
 
-    Route::get('/hours', [OperationalHoursController::class, 'edit'])->name('hours.edit');
-    Route::put('/hours', [OperationalHoursController::class, 'update'])->name('hours.update');
-    Route::post('/hours/closures', [OperationalHoursController::class, 'storeClosure'])->name('hours.closures.store');
-    Route::delete('/hours/closures/{closure}', [OperationalHoursController::class, 'destroyClosure'])->name('hours.closures.destroy');
+        Route::get('/omakase', [OmakaseAdminController::class, 'index'])->name('omakase.index');
+        Route::get('/omakase/create', [OmakaseAdminController::class, 'create'])->name('omakase.create');
+        Route::post('/omakase', [OmakaseAdminController::class, 'store'])->name('omakase.store');
+        Route::get('/omakase/{omakaseSession}', [OmakaseAdminController::class, 'show'])->name('omakase.show');
+        Route::put('/omakase/{omakaseSession}', [OmakaseAdminController::class, 'update'])->name('omakase.update');
+        Route::delete('/omakase/{omakaseSession}', [OmakaseAdminController::class, 'destroy'])->name('omakase.destroy');
+        Route::post('/omakase/{omakaseSession}/import', [OmakaseAdminController::class, 'importMenus'])->name('omakase.import');
+        Route::post('/omakase/{omakaseSession}/menus', [OmakaseAdminController::class, 'storeMenu'])->name('omakase.menus.store');
+        Route::put('/omakase/{omakaseSession}/menus/{omakaseMenu}', [OmakaseAdminController::class, 'updateMenu'])->name('omakase.menus.update');
+        Route::delete('/omakase/{omakaseSession}/menus/{omakaseMenu}', [OmakaseAdminController::class, 'destroyMenu'])->name('omakase.menus.destroy');
 
-    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
-    Route::get('/reports/sales', [ReportController::class, 'sales'])->name('reports.sales');
-    Route::get('/reports/menus', [ReportController::class, 'menus'])->name('reports.menus');
+        Route::get('/hours', [OperationalHoursController::class, 'edit'])->name('hours.edit');
+        Route::put('/hours', [OperationalHoursController::class, 'update'])->name('hours.update');
+        Route::post('/hours/closures', [OperationalHoursController::class, 'storeClosure'])->name('hours.closures.store');
+        Route::delete('/hours/closures/{closure}', [OperationalHoursController::class, 'destroyClosure'])->name('hours.closures.destroy');
 
-    Route::get('/transaction', [TransactionController::class, 'index'])->name('transaction.index');
-    Route::get('/transaction/history', [TransactionController::class, 'history'])->name('transaction.history');
-    Route::get('/transaction/create', [TransactionController::class, 'create'])->name('transaction.create');
-    Route::post('/transaction', [TransactionController::class, 'store'])->name('transaction.store');
-    Route::get('/transaction/{transaction}', [TransactionController::class, 'show'])->name('transaction.show');
-    Route::patch('/transaction/{transaction}', [TransactionController::class, 'update'])->name('transaction.update');
-    Route::post('/transaction/{transaction}/items', [TransactionController::class, 'storeItem'])->name('transaction.items.store');
-    Route::patch('/transaction/{transaction}/items/{item}', [TransactionController::class, 'updateItem'])->name('transaction.items.update');
-    Route::delete('/transaction/{transaction}/items/{item}', [TransactionController::class, 'destroyItem'])->name('transaction.items.destroy');
-    Route::patch('/transaction/{transaction}/status', [TransactionController::class, 'updateStatus'])->name('transaction.status.update');
-    Route::delete('/transaction/{transaction}', [TransactionController::class, 'destroy'])->name('transaction.destroy');
+        Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('/reports/sales', [ReportController::class, 'sales'])->name('reports.sales');
+        Route::get('/reports/menus', [ReportController::class, 'menus'])->name('reports.menus');
+
+        Route::get('/transaction', [TransactionController::class, 'index'])->name('transaction.index');
+        Route::get('/transaction/history', [TransactionController::class, 'history'])->name('transaction.history');
+        Route::get('/transaction/create', [TransactionController::class, 'create'])->name('transaction.create');
+        Route::post('/transaction', [TransactionController::class, 'store'])->name('transaction.store');
+        Route::get('/transaction/{transaction}', [TransactionController::class, 'show'])->name('transaction.show');
+        Route::patch('/transaction/{transaction}', [TransactionController::class, 'update'])->name('transaction.update');
+        Route::post('/transaction/{transaction}/items', [TransactionController::class, 'storeItem'])->name('transaction.items.store');
+        Route::patch('/transaction/{transaction}/items/{item}', [TransactionController::class, 'updateItem'])->name('transaction.items.update');
+        Route::delete('/transaction/{transaction}/items/{item}', [TransactionController::class, 'destroyItem'])->name('transaction.items.destroy');
+        Route::patch('/transaction/{transaction}/status', [TransactionController::class, 'updateStatus'])->name('transaction.status.update');
+        Route::delete('/transaction/{transaction}', [TransactionController::class, 'destroy'])->name('transaction.destroy');
+    });
 });
