@@ -6,14 +6,11 @@ import {
     sales as salesReport,
 } from '@/actions/App/Http/Controllers/ReportController';
 import { show as showTransaction } from '@/actions/App/Http/Controllers/TransactionController';
-import {
-    inputClassName,
-    labelClassName,
-} from '@/components/admin/menu-form';
+import { inputClassName, labelClassName } from '@/components/admin/menu-form';
 import { TableCodeBadge } from '@/components/admin/table-code-badge';
 import { cn } from '@/lib/utils';
 import type { Transaction } from '@/types/transaction';
-import { serviceTypeLabel } from '@/types/transaction';
+import { serviceTypeLabel, transactionStatusLabel } from '@/types/transaction';
 import type { SalesChannel } from '@/types/sales-channel';
 
 type SalesGroup = {
@@ -59,10 +56,6 @@ function formatTime(iso: string): string {
     });
 }
 
-function statusLabel(status: Transaction['status']): string {
-    return status === 'paid' ? 'Paid' : 'In progress';
-}
-
 function statusClassName(status: Transaction['status']): string {
     return status === 'paid'
         ? 'shrink-0 rounded-full bg-[#ecfdf3] px-2.5 py-1 text-xs font-medium text-[#027a48] dark:bg-[#053321] dark:text-[#75e0a7]'
@@ -81,12 +74,16 @@ export default function AdminReportsSales({
     const [preset, setPreset] = useState<'today' | 'range'>(filters.preset);
     const [from, setFrom] = useState(filters.from);
     const [to, setTo] = useState(filters.to);
-    const [channelId, setChannelId] = useState(String(filters.sales_channel_id));
+    const [channelId, setChannelId] = useState(
+        String(filters.sales_channel_id),
+    );
 
     function applyToday() {
         setPreset('today');
         router.get(
-            salesReport.url({ query: { preset: 'today', sales_channel_id: channelId } }),
+            salesReport.url({
+                query: { preset: 'today', sales_channel_id: channelId },
+            }),
             {},
             { preserveState: true, preserveScroll: true },
         );
@@ -97,7 +94,12 @@ export default function AdminReportsSales({
         setPreset('range');
         router.get(
             salesReport.url({
-                query: { preset: 'range', from, to, sales_channel_id: channelId },
+                query: {
+                    preset: 'range',
+                    from,
+                    to,
+                    sales_channel_id: channelId,
+                },
             }),
             {},
             { preserveState: true, preserveScroll: true },
@@ -125,7 +127,10 @@ export default function AdminReportsSales({
                     </header>
 
                     <div className="mb-4">
-                        <label htmlFor="sales-channel" className={labelClassName}>
+                        <label
+                            htmlFor="sales-channel"
+                            className={labelClassName}
+                        >
                             Saluran
                         </label>
                         <select
@@ -144,7 +149,10 @@ export default function AdminReportsSales({
                                         },
                                     }),
                                     {},
-                                    { preserveState: true, preserveScroll: true },
+                                    {
+                                        preserveState: true,
+                                        preserveScroll: true,
+                                    },
                                 );
                             }}
                             className={inputClassName}
@@ -337,9 +345,16 @@ export default function AdminReportsSales({
                                                                         transaction.table_code
                                                                     }
                                                                 />
-                                                                {transaction.sales_channel?.type === 'event' && (
+                                                                {transaction
+                                                                    .sales_channel
+                                                                    ?.type ===
+                                                                    'event' && (
                                                                     <span className="shrink-0 rounded-full bg-[#fff7ed] px-2.5 py-1 text-xs font-medium text-[#c2410c] dark:bg-[#431407] dark:text-[#fdba74]">
-                                                                        {transaction.sales_channel.name}
+                                                                        {
+                                                                            transaction
+                                                                                .sales_channel
+                                                                                .name
+                                                                        }
                                                                     </span>
                                                                 )}
                                                                 {transaction.is_admin_created && (
@@ -356,8 +371,9 @@ export default function AdminReportsSales({
                                                                         transaction.status,
                                                                     )}
                                                                 >
-                                                                    {statusLabel(
+                                                                    {transactionStatusLabel(
                                                                         transaction.status,
+                                                                        transaction.paid_via,
                                                                     )}
                                                                 </span>
                                                             </div>

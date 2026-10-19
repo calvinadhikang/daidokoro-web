@@ -3,14 +3,10 @@ import { Link } from '@inertiajs/react';
 import { show as showTransaction } from '@/actions/App/Http/Controllers/TransactionController';
 import { TableCodeBadge } from '@/components/admin/table-code-badge';
 import type { Transaction } from '@/types/transaction';
-import { serviceTypeLabel } from '@/types/transaction';
+import { serviceTypeLabel, transactionStatusLabel } from '@/types/transaction';
 
 function formatPrice(price: number): string {
     return price.toLocaleString();
-}
-
-function statusLabel(status: Transaction['status']): string {
-    return status === 'paid' ? 'Paid' : 'In progress';
 }
 
 function statusClassName(status: Transaction['status']): string {
@@ -60,12 +56,15 @@ export function AdminTransactionListCard({
                         <span className={adminPillClassName}>Admin</span>
                     )}
                     <span className={statusClassName(transaction.status)}>
-                        {statusLabel(transaction.status)}
+                        {transactionStatusLabel(
+                            transaction.status,
+                            transaction.paid_via,
+                        )}
                     </span>
                 </div>
             </div>
 
-            <p className="mt-3 tabular-nums text-sm font-medium">
+            <p className="mt-3 text-sm font-medium tabular-nums">
                 Total {formatPrice(transaction.total_bill)}
             </p>
         </Link>

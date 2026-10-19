@@ -190,7 +190,7 @@ class TransactionController extends Controller
                 ->with('success', 'Transaction is already paid.');
         }
 
-        $transaction->update(['status' => 'paid']);
+        $transaction->markPaidByCashier();
 
         return redirect()
             ->route('admin.transaction.show', $transaction)

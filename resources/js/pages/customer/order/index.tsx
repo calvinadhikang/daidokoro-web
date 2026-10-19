@@ -1,31 +1,42 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 
-import { OrderItemGroups, formatPrice } from '@/components/menu/order-item-groups';
+import { QrisPaymentSection } from '@/components/customer/qris-payment-section';
+import {
+    OrderItemGroups,
+    formatPrice,
+} from '@/components/menu/order-item-groups';
 import {
     serviceTypeLabel,
+    transactionStatusLabel,
+    type PaidVia,
     type TransactionItemGroup,
     type TransactionServiceType,
     type TransactionStatus,
 } from '@/types/transaction';
 
+type CustomerQris = {
+    qr_content: string;
+    amount: number;
+    expires_at: string;
+};
+
 type CustomerOrderTransaction = {
     id: number;
     transaction_number: string;
     status: TransactionStatus;
+    paid_via: PaidVia | null;
     total_bill: number;
     service_type: TransactionServiceType;
     created_at: string | null;
     item_groups: TransactionItemGroup[];
+    qris: CustomerQris | null;
 };
 
 type Props = {
     serviceType: TransactionServiceType | null;
     transactions: CustomerOrderTransaction[];
 };
-
-function statusLabel(status: TransactionStatus): string {
-    return status === 'paid' ? 'Paid' : 'In progress';
-}
 
 function statusClassName(status: TransactionStatus): string {
     return status === 'paid'
@@ -48,15 +59,55 @@ export default function CustomerOrderIndex({
     serviceType,
     transactions,
 }: Props) {
+    const { errors } = usePage().props as { errors?: Record<string, string> };
+    const [payingId, setPayingId] = useState<number | null>(null);
     const hasOrders = transactions.some(
         (transaction) => transaction.item_groups.length > 0,
     );
+    const waitingForPayment = transactions.some(
+        (transaction) =>
+            transaction.status === 'in_progress' && transaction.qris !== null,
+    );
+
+    useEffect(() => {
+        if (!waitingForPayment) {
+            return;
+        }
+
+        const timer = window.setInterval(() => {
+            router.visit(window.location.href, {
+                only: ['transactions'],
+                preserveScroll: true,
+                preserveState: true,
+                preserveUrl: true,
+            });
+        }, 5000);
+
+        return () => window.clearInterval(timer);
+    }, [waitingForPayment]);
+
+    function pay(transactionId: number) {
+        setPayingId(transactionId);
+        router.post(
+            `/customer/order/${transactionId}/qris`,
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => setPayingId(null),
+            },
+        );
+    }
 
     return (
         <>
             <Head title="Your order" />
 
             <div className="mx-auto max-w-md px-4 py-4">
+                {errors?.qris && (
+                    <div className="mb-4 rounded-lg border border-[#fecdca] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318] dark:border-[#55160c] dark:bg-[#55160c] dark:text-[#fda29b]">
+                        {errors.qris}
+                    </div>
+                )}
                 <header className="mb-5">
                     <div className="flex items-start justify-between gap-3">
                         <div>
@@ -102,7 +153,7 @@ export default function CustomerOrderIndex({
                                                         ? ` · ${orderedAt}`
                                                         : ''}
                                                 </p>
-                                                <p className="mt-1 text-lg font-semibold tabular-nums tracking-tight">
+                                                <p className="mt-1 text-lg font-semibold tracking-tight tabular-nums">
                                                     #
                                                     {
                                                         transaction.transaction_number
@@ -112,7 +163,10 @@ export default function CustomerOrderIndex({
                                             <span
                                                 className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${statusClassName(transaction.status)}`}
                                             >
-                                                {statusLabel(transaction.status)}
+                                                {transactionStatusLabel(
+                                                    transaction.status,
+                                                    transaction.paid_via,
+                                                )}
                                             </span>
                                         </div>
 
@@ -143,6 +197,48 @@ export default function CustomerOrderIndex({
                                                 )}
                                             </p>
                                         </div>
+
+                                        {transaction.status !== 'paid' &&
+                                            transaction.total_bill > 0 &&
+                                            (transaction.qris !== null ? (
+                                                <QrisPaymentSection
+                                                    qrContent={
+                                                        transaction.qris
+                                                            .qr_content
+                                                    }
+                                                    amount={
+                                                        transaction.qris.amount
+                                                    }
+                                                    expiresAt={
+                                                        transaction.qris
+                                                            .expires_at
+                                                    }
+                                                    filename={`qris-${transaction.transaction_number}.png`}
+                                                    regenerating={
+                                                        payingId ===
+                                                        transaction.id
+                                                    }
+                                                    onRegenerate={() =>
+                                                        pay(transaction.id)
+                                                    }
+                                                />
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        pay(transaction.id)
+                                                    }
+                                                    disabled={
+                                                        payingId ===
+                                                        transaction.id
+                                                    }
+                                                    className="mt-4 w-full rounded-full bg-[#C56A3E] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+                                                >
+                                                    {payingId === transaction.id
+                                                        ? 'Creating QR…'
+                                                        : 'Pay with QRIS'}
+                                                </button>
+                                            ))}
                                     </div>
                                 </section>
                             );

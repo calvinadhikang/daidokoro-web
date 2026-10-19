@@ -23,12 +23,14 @@ use Illuminate\Support\Carbon;
  * @property 'dine_in'|'takeaway' $service_type
  * @property string|null $table_code
  * @property 'in_progress'|'paid' $status
+ * @property 'qris'|'cashier'|null $paid_via
  * @property int $total_bill
  * @property bool $is_admin_created
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read string $transaction_number
  * @property-read Collection<int, TransactionItem> $items
+ * @property-read Collection<int, QrisPayment> $qrisPayments
  * @property-read SalesChannel $salesChannel
  */
 #[Fillable([
@@ -40,11 +42,16 @@ use Illuminate\Support\Carbon;
     'service_type',
     'table_code',
     'status',
+    'paid_via',
     'total_bill',
     'is_admin_created',
 ])]
 class Transaction extends Model
 {
+    public const PAID_VIA_QRIS = 'qris';
+
+    public const PAID_VIA_CASHIER = 'cashier';
+
     /**
      * @var list<string>
      */
@@ -89,6 +96,22 @@ class Transaction extends Model
     public function items(): HasMany
     {
         return $this->hasMany(TransactionItem::class)->latest();
+    }
+
+    /**
+     * @return HasMany<QrisPayment, $this>
+     */
+    public function qrisPayments(): HasMany
+    {
+        return $this->hasMany(QrisPayment::class);
+    }
+
+    public function markPaidByCashier(): void
+    {
+        $this->update([
+            'status' => 'paid',
+            'paid_via' => self::PAID_VIA_CASHIER,
+        ]);
     }
 
     /**

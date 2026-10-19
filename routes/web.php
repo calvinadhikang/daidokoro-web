@@ -35,6 +35,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
     Route::middleware('customer')->group(function () {
         Route::post('/logout', [CustomerLoginController::class, 'destroy'])->name('logout');
         Route::get('/order', [CustomerOrderController::class, 'index'])->name('order.index');
+        Route::post('/order/{transaction}/qris', [CustomerOrderController::class, 'storeQris'])->name('order.qris');
 
         Route::middleware('store.open')->group(function () {
             Route::get('/menu', [CustomerMenuController::class, 'index'])->name('menu.index');

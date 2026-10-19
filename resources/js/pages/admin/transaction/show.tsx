@@ -22,10 +22,7 @@ import {
 import { ConfirmDialog } from '@/components/admin/confirm-dialog';
 import { PhoneInput } from '@/components/phone-input';
 import { DEFAULT_PHONE_REGION } from '@/lib/phone-countries';
-import {
-    inputClassName,
-    labelClassName,
-} from '@/components/admin/menu-form';
+import { inputClassName, labelClassName } from '@/components/admin/menu-form';
 import { TableCodeBadge } from '@/components/admin/table-code-badge';
 import { TransactionOrderForm } from '@/components/admin/transaction-order-form';
 import { cn } from '@/lib/utils';
@@ -36,7 +33,7 @@ import type {
     TransactionItemGroup,
     TransactionServiceType,
 } from '@/types/transaction';
-import { serviceTypeLabel } from '@/types/transaction';
+import { serviceTypeLabel, transactionStatusLabel } from '@/types/transaction';
 
 type Props = {
     transaction: Transaction;
@@ -51,10 +48,6 @@ function formatDate(iso: string): string {
         dateStyle: 'medium',
         timeStyle: 'short',
     });
-}
-
-function statusLabel(status: Transaction['status']): string {
-    return status === 'paid' ? 'Paid' : 'In progress';
 }
 
 function statusClassName(status: Transaction['status']): string {
@@ -98,7 +91,9 @@ export default function AdminTransactionShow({
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [markPaidLoading, setMarkPaidLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
-    const [editingItem, setEditingItem] = useState<TransactionItem | null>(null);
+    const [editingItem, setEditingItem] = useState<TransactionItem | null>(
+        null,
+    );
     const [itemToDelete, setItemToDelete] = useState<TransactionItem | null>(
         null,
     );
@@ -214,7 +209,9 @@ export default function AdminTransactionShow({
 
     return (
         <>
-            <Head title={`#${transaction.transaction_number} · ${transaction.customer_name}`} />
+            <Head
+                title={`#${transaction.transaction_number} · ${transaction.customer_name}`}
+            />
 
             <ConfirmDialog
                 open={markPaidOpen}
@@ -288,10 +285,17 @@ export default function AdminTransactionShow({
                         <div className="flex flex-col items-end gap-1.5">
                             <TableCodeBadge code={transaction.table_code} />
                             {transaction.is_admin_created && (
-                                <span className={adminPillClassName}>Admin</span>
+                                <span className={adminPillClassName}>
+                                    Admin
+                                </span>
                             )}
-                            <span className={statusClassName(transaction.status)}>
-                                {statusLabel(transaction.status)}
+                            <span
+                                className={statusClassName(transaction.status)}
+                            >
+                                {transactionStatusLabel(
+                                    transaction.status,
+                                    transaction.paid_via,
+                                )}
                             </span>
                         </div>
                     </div>
@@ -466,15 +470,15 @@ export default function AdminTransactionShow({
                 )}
 
                 <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4">
-                    <h2 className="mb-3 text-base font-semibold">Ordered items</h2>
+                    <h2 className="mb-3 text-base font-semibold">
+                        Ordered items
+                    </h2>
 
                     <div className="mb-6">
                         <OrderItemGroups
                             groups={itemGroups}
                             onEditItem={isPaid ? undefined : handleEditItem}
-                            onDeleteItem={
-                                isPaid ? undefined : setItemToDelete
-                            }
+                            onDeleteItem={isPaid ? undefined : setItemToDelete}
                         />
                     </div>
 
