@@ -93,6 +93,21 @@ class QrisPaymentTest extends TestCase
         ]);
 
         Http::assertSent(function (Request $request) {
+            if (! str_contains($request->url(), '/v1.0/access-token/b2b')) {
+                return false;
+            }
+
+            $timestamp = $request->header('X-TIMESTAMP')[0] ?? '';
+            $pem = file_get_contents($this->keyPath);
+            $this->assertIsString($pem);
+            $expected = ManjoSignature::token('test-client', $timestamp, $pem);
+
+            return ($request->header('X-SIGNATURE')[0] ?? '') === $expected
+                && ($request->header('X-CLIENT-KEY')[0] ?? '') === 'test-client'
+                && ! ctype_xdigit($expected);
+        });
+
+        Http::assertSent(function (Request $request) {
             if (! str_contains($request->url(), '/v1.0/qr/qr-mpm-generate')) {
                 return false;
             }

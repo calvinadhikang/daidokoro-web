@@ -19,7 +19,7 @@ class ManjoSignature
             throw new RuntimeException('QRIS signing key could not be read.');
         }
 
-        return bin2hex($signature);
+        return base64_encode($signature);
     }
 
     public static function request(
