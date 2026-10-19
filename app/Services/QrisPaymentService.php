@@ -44,7 +44,7 @@ class QrisPaymentService
             ]);
         }
 
-        return DB::transaction(function () use ($transaction, $partnerReferenceNo, $externalId, $generated): QrisPayment {
+        return DB::transaction(function () use ($transaction, $partnerReferenceNo, $generated): QrisPayment {
             $locked = Transaction::query()->whereKey($transaction->id)->lockForUpdate()->firstOrFail();
 
             if ($locked->isPaid()) {
@@ -67,7 +67,7 @@ class QrisPaymentService
             return QrisPayment::query()->create([
                 'transaction_id' => $locked->id,
                 'partner_reference_no' => $partnerReferenceNo,
-                'external_id' => $externalId,
+                'external_id' => $generated['external_id'],
                 'reference_no' => $generated['reference_no'],
                 'qr_content' => $generated['qr_content'],
                 'amount' => $locked->total_bill,

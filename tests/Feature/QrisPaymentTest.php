@@ -115,7 +115,7 @@ class QrisPaymentTest extends TestCase
             $timestamp = $request->header('X-TIMESTAMP')[0] ?? '';
             $expected = ManjoSignature::request(
                 'POST',
-                '/api/v1.0/qr/qr-mpm-generate',
+                '/v1.0/qr/qr-mpm-generate',
                 'token-abc',
                 $request->body(),
                 $timestamp,

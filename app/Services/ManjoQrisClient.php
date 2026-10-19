@@ -14,7 +14,7 @@ use RuntimeException;
 class ManjoQrisClient
 {
     /**
-     * @return array{reference_no: string|null, qr_content: string, expires_at: CarbonInterface}
+     * @return array{reference_no: string|null, qr_content: string, expires_at: CarbonInterface, external_id: string}
      */
     public function generateQr(string $partnerReferenceNo, int $amount, string $externalId, string $description): array
     {
@@ -42,8 +42,8 @@ class ManjoQrisClient
 
         $timestamp = $this->timestamp();
         $paths = array_values(array_unique([
-            $this->signedPath('/v1.0/qr/qr-mpm-generate'),
             '/v1.0/qr/qr-mpm-generate',
+            $this->signedPath('/v1.0/qr/qr-mpm-generate'),
         ]));
         $lastCode = '';
         $lastMessage = '';
@@ -84,6 +84,7 @@ class ManjoQrisClient
                         'reference_no' => is_string($referenceNo) ? $referenceNo : null,
                         'qr_content' => $qrContent,
                         'expires_at' => $this->expiresAt($response->json('additionalInfo')),
+                        'external_id' => $externalId,
                     ];
                 }
 
@@ -96,7 +97,9 @@ class ManjoQrisClient
                     'message' => $lastMessage,
                 ]);
 
-                if (! $this->isSignatureRejection($code, $lastMessage)) {
+                $externalId = $this->freshExternalId();
+
+                if (! $this->isSignatureRejection($code, $lastMessage) && ! str_starts_with($code, '409')) {
                     throw new RuntimeException($this->failureMessage('qr', $code, $lastMessage));
                 }
             }
@@ -251,6 +254,11 @@ class ManjoQrisClient
     private function url(string $endpoint): string
     {
         return rtrim((string) config('manjo.base_url'), '/').$endpoint;
+    }
+
+    private function freshExternalId(): string
+    {
+        return substr(now()->format('ymdHis').bin2hex(random_bytes(12)), 0, 36);
     }
 
     private function timestamp(): string
