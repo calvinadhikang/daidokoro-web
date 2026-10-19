@@ -6,7 +6,7 @@ use RuntimeException;
 
 class ManjoSignature
 {
-    public static function token(string $clientId, string $timestamp, string $privateKeyPem): string
+    public static function token(string $clientId, string $timestamp, string $privateKeyPem, string $encoding = 'base64'): string
     {
         $signed = openssl_sign(
             $clientId.'|'.$timestamp,
@@ -19,7 +19,7 @@ class ManjoSignature
             throw new RuntimeException('QRIS signing key could not be read.');
         }
 
-        return base64_encode($signature);
+        return $encoding === 'hex' ? bin2hex($signature) : base64_encode($signature);
     }
 
     public static function request(
@@ -29,9 +29,11 @@ class ManjoSignature
         string $body,
         string $timestamp,
         string $clientSecret,
+        string $encoding = 'hex',
     ): string {
         $stringToSign = strtoupper($method).':'.$endpointUrl.':'.$accessToken.':'.hash('sha256', $body).':'.$timestamp;
+        $binary = hash_hmac('sha512', $stringToSign, $clientSecret, true);
 
-        return hash_hmac('sha512', $stringToSign, $clientSecret);
+        return $encoding === 'base64' ? base64_encode($binary) : bin2hex($binary);
     }
 }
