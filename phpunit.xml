@@ -40,6 +40,7 @@
         <env name="MANJO_PARTNER_ID" value="MTTEST"/>
         <env name="MANJO_CHANNEL_ID" value="05"/>
         <env name="MANJO_PRIVATE_KEY_PATH" value=""/>
+        <env name="MANJO_PROVIDER_PUBLIC_KEY_PATH" value=""/>
         <env name="MANJO_CLIENT_IP" value="127.0.0.1"/>
         <env name="MANJO_ORIGIN" value="staging.daidokoro.my.id"/>
         <env name="MANJO_QR_VALIDITY_SECONDS" value="3600"/>

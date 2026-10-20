@@ -16,6 +16,12 @@ return [
 
     'private_key_path' => env('MANJO_PRIVATE_KEY_PATH'),
 
+    /*
+    | Manjo's public key, used to verify the access-token request they send us.
+    | Empty uses the key bundled in resources/manjo/provider-public.pem.
+    */
+    'provider_public_key_path' => env('MANJO_PROVIDER_PUBLIC_KEY_PATH'),
+
     'origin' => env('MANJO_ORIGIN', 'staging.daidokoro.my.id'),
 
     /*
@@ -26,8 +32,9 @@ return [
     'qr_validity_seconds' => (int) env('MANJO_QR_VALIDITY_SECONDS', 3600),
 
     /*
-    | Path Manjo calls, and the path included in the notification signature.
+    | Extra path accepted in the payment-notification signature.
+    | Manjo also signs the SNAP path /v1.0/qr/qr-mpm-notify.
     */
-    'notify_path' => env('MANJO_NOTIFY_PATH', '/api/manjo/qris/notify'),
+    'notify_path' => env('MANJO_NOTIFY_PATH', '/v1.0/qr/qr-mpm-notify'),
 
 ];

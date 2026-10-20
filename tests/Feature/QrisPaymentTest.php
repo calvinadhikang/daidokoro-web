@@ -19,6 +19,8 @@ class QrisPaymentTest extends TestCase
 
     private string $keyPath;
 
+    private string $publicKeyPath;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -30,9 +32,15 @@ class QrisPaymentTest extends TestCase
         $this->assertNotFalse($key);
         $this->assertTrue(openssl_pkey_export($key, $pem));
 
+        $details = openssl_pkey_get_details($key);
+        $this->assertIsArray($details);
+
         $this->keyPath = tempnam(sys_get_temp_dir(), 'manjo');
+        $this->publicKeyPath = tempnam(sys_get_temp_dir(), 'manjo-pub');
         $this->assertNotFalse($this->keyPath);
+        $this->assertNotFalse($this->publicKeyPath);
         file_put_contents($this->keyPath, $pem);
+        file_put_contents($this->publicKeyPath, $details['key']);
 
         config([
             'manjo.base_url' => 'https://snap-uat.manjo.co.id/api',
@@ -42,6 +50,7 @@ class QrisPaymentTest extends TestCase
             'manjo.partner_id' => 'MTTEST',
             'manjo.channel_id' => '05',
             'manjo.private_key_path' => $this->keyPath,
+            'manjo.provider_public_key_path' => $this->publicKeyPath,
             'manjo.client_ip' => '127.0.0.1',
             'manjo.origin' => 'staging.daidokoro.my.id',
             'manjo.qr_validity_seconds' => 3600,
@@ -54,6 +63,7 @@ class QrisPaymentTest extends TestCase
     protected function tearDown(): void
     {
         @unlink($this->keyPath);
+        @unlink($this->publicKeyPath);
 
         parent::tearDown();
     }
@@ -234,6 +244,87 @@ class QrisPaymentTest extends TestCase
         ]);
     }
 
+    public function test_manjo_can_take_a_token_and_mark_the_bill_paid_on_the_snap_paths(): void
+    {
+        $transaction = $this->bill('6281234567890', 35000);
+        $payment = $this->payment($transaction, 'DK-REF-SNAP');
+        $token = $this->accessToken('/api/v1.0/access-token/b2b');
+        $payload = [
+            'originalReferenceNo' => 'A0000001702',
+            'originalPartnerReferenceNo' => 'DK-REF-SNAP',
+            'latestTransactionStatus' => '00',
+            'transactionStatusDesc' => 'SUCCESS',
+            'amount' => [
+                'value' => '35000.00',
+                'currency' => 'IDR',
+            ],
+        ];
+
+        $response = $this->notifyAt('/api/v1.0/qr/qr-mpm-notify', $payload, '/v1.0/qr/qr-mpm-notify', $token);
+
+        $response->assertOk();
+        $response->assertJsonPath('responseCode', '2005200');
+        $this->assertDatabaseHas('transactions', [
+            'id' => $transaction->id,
+            'status' => 'paid',
+            'paid_via' => 'qris',
+        ]);
+        $this->assertDatabaseHas('qris_payments', [
+            'id' => $payment->id,
+            'status' => 'paid',
+        ]);
+    }
+
+    public function test_site_root_snap_paths_accept_token_and_payment_notification(): void
+    {
+        $transaction = $this->bill('6281234567890', 35000);
+        $this->payment($transaction, 'DK-REF-ROOT');
+        $token = $this->accessToken('/v1.0/access-token/b2b');
+
+        $response = $this->notifyAt(
+            '/v1.0/qr/qr-mpm-notify',
+            [
+                'originalPartnerReferenceNo' => 'DK-REF-ROOT',
+                'latestTransactionStatus' => '00',
+                'amount' => ['value' => '35000.00', 'currency' => 'IDR'],
+            ],
+            '/v1.0/qr/qr-mpm-notify',
+            $token,
+        );
+
+        $response->assertOk();
+        $this->assertDatabaseHas('transactions', [
+            'id' => $transaction->id,
+            'status' => 'paid',
+            'paid_via' => 'qris',
+        ]);
+    }
+
+    public function test_previously_registered_callback_prefix_accepts_the_snap_calls(): void
+    {
+        $transaction = $this->bill('6281234567890', 35000);
+        $this->payment($transaction, 'DK-REF-OLD');
+        $token = $this->accessToken('/api/manjo/qris/notify/v1.0/access-token/b2b');
+
+        $response = $this->notifyAt(
+            '/api/manjo/qris/notify/v1.0/qr/qr-mpm-notify',
+            [
+                'originalPartnerReferenceNo' => 'DK-REF-OLD',
+                'latestTransactionStatus' => '00',
+                'amount' => ['value' => '35000.00', 'currency' => 'IDR'],
+            ],
+            '/v1.0/qr/qr-mpm-notify',
+            $token,
+        );
+
+        $response->assertOk();
+        $this->assertDatabaseHas('transactions', [
+            'id' => $transaction->id,
+            'status' => 'paid',
+            'paid_via' => 'qris',
+        ]);
+    }
+
     public function test_notification_with_a_bad_signature_does_not_mark_the_bill_paid(): void
     {
         $transaction = $this->bill('6281234567890', 35000);
@@ -370,5 +461,48 @@ class QrisPaymentTest extends TestCase
         }
 
         return $this->call('POST', '/api/manjo/qris/notify', [], [], [], $server, $json);
+    }
+
+    private function accessToken(string $path): string
+    {
+        $privateKey = file_get_contents($this->keyPath);
+        $this->assertIsString($privateKey);
+
+        $timestamp = '2026-10-20T14:08:00+07:00';
+        $response = $this->call('POST', $path, [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_ACCEPT' => 'application/json',
+            'HTTP_X_CLIENT_KEY' => 'test-client',
+            'HTTP_X_TIMESTAMP' => $timestamp,
+            'HTTP_X_SIGNATURE' => ManjoSignature::token('test-client', $timestamp, $privateKey),
+        ], '{"grantType":"client_credentials"}');
+
+        $response->assertOk();
+        $response->assertJsonPath('responseCode', '2007300');
+        $token = $response->json('accessToken');
+        $this->assertIsString($token);
+        $this->assertNotSame('', $token);
+
+        return $token;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function notifyAt(string $path, array $payload, string $signedPath, string $token): TestResponse
+    {
+        $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
+        $this->assertIsString($json);
+
+        $timestamp = '2026-10-20T14:09:00+07:00';
+        $signature = ManjoSignature::request('POST', $signedPath, $token, $json, $timestamp, 'test-secret');
+
+        return $this->call('POST', $path, [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_ACCEPT' => 'application/json',
+            'HTTP_X_TIMESTAMP' => $timestamp,
+            'HTTP_X_SIGNATURE' => $signature,
+            'HTTP_AUTHORIZATION' => 'Bearer '.$token,
+        ], $json);
     }
 }

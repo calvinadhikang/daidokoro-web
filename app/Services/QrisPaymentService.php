@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\QrisPayment;
 use App\Models\Transaction;
 use App\Support\ManjoSignature;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -78,12 +79,55 @@ class QrisPaymentService
     }
 
     /**
+     * @return array{status: int, body: array<string, string>}
+     */
+    public function issueAccessToken(string $clientKey, string $timestamp, string $signature, string $rawBody): array
+    {
+        $configuredClient = (string) config('manjo.client_id');
+
+        if ($clientKey === '' || $timestamp === '' || ! $this->sameSecret($configuredClient, $clientKey)) {
+            return $this->response(401, '4017300', 'Unauthorized');
+        }
+
+        $payload = json_decode($rawBody, true);
+        $grantType = is_array($payload) ? ($payload['grantType'] ?? null) : null;
+
+        if ($grantType !== 'client_credentials') {
+            return $this->response(400, '4007301', 'Invalid Field Format grantType');
+        }
+
+        $publicKey = $this->providerPublicKey();
+
+        if ($publicKey === null || ! ManjoSignature::verifyToken($clientKey, $timestamp, $signature, $publicKey)) {
+            return $this->response(401, '4017300', 'Unauthorized Signature');
+        }
+
+        $token = bin2hex(random_bytes(32));
+        Cache::put($this->inboundTokenKey($token), true, now()->addSeconds(900));
+
+        return [
+            'status' => 200,
+            'body' => [
+                'responseCode' => '2007300',
+                'responseMessage' => 'Successful',
+                'accessToken' => $token,
+                'tokenType' => 'Bearer',
+                'expiresIn' => '900',
+            ],
+        ];
+    }
+
+    /**
      * @return array{status: int, body: array{responseCode: string, responseMessage: string}}
      */
-    public function handleNotification(string $rawBody, string $timestamp, string $signature, string $accessToken): array
+    public function handleNotification(string $rawBody, string $timestamp, string $signature, string $accessToken, string $requestPath = ''): array
     {
-        if (! $this->signatureMatches($rawBody, $timestamp, $signature, $accessToken)) {
+        if (! $this->signatureMatches($rawBody, $timestamp, $signature, $accessToken, $requestPath)) {
             return $this->response(401, '4015200', 'Unauthorized');
+        }
+
+        if ($accessToken !== '' && ! Cache::has($this->inboundTokenKey($accessToken))) {
+            return $this->response(401, '4015201', 'Invalid Token');
         }
 
         $payload = json_decode($rawBody, true);
@@ -162,32 +206,87 @@ class QrisPaymentService
         });
     }
 
-    private function signatureMatches(string $rawBody, string $timestamp, string $signature, string $accessToken): bool
+    private function signatureMatches(string $rawBody, string $timestamp, string $signature, string $accessToken, string $requestPath): bool
     {
-        $provided = strtolower(trim($signature));
+        $trimmed = trim($signature);
         $secret = (string) config('manjo.client_secret');
 
-        if ($provided === '' || $timestamp === '' || $secret === '') {
+        if ($trimmed === '' || $timestamp === '' || $secret === '') {
             return false;
         }
 
-        $notifyPath = (string) config('manjo.notify_path');
-        $candidates = [$notifyPath];
-        $appUrl = rtrim((string) config('app.url'), '/');
+        foreach ($this->notifyEndpoints($requestPath) as $endpoint) {
+            foreach (['hex', 'base64'] as $encoding) {
+                $expected = ManjoSignature::request('POST', $endpoint, $accessToken, $rawBody, $timestamp, $secret, $encoding);
+                $actual = $encoding === 'hex' ? strtolower($trimmed) : $trimmed;
 
-        if ($appUrl !== '') {
-            $candidates[] = $appUrl.$notifyPath;
-        }
-
-        foreach (array_unique($candidates) as $endpoint) {
-            $expected = ManjoSignature::request('POST', $endpoint, $accessToken, $rawBody, $timestamp, $secret);
-
-            if (hash_equals($expected, $provided)) {
-                return true;
+                if (strlen($expected) === strlen($actual) && hash_equals($expected, $actual)) {
+                    return true;
+                }
             }
         }
 
         return false;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function notifyEndpoints(string $requestPath): array
+    {
+        $paths = [
+            '/v1.0/qr/qr-mpm-notify',
+            '/api/v1.0/qr/qr-mpm-notify',
+            '/api/manjo/qris/notify',
+            '/api/manjo/qris/notify/v1.0/qr/qr-mpm-notify',
+            (string) config('manjo.notify_path'),
+            $requestPath,
+        ];
+        $appUrl = rtrim((string) config('app.url'), '/');
+        $candidates = [];
+
+        foreach (array_unique($paths) as $path) {
+            if ($path === '') {
+                continue;
+            }
+
+            $candidates[] = $path;
+
+            if ($appUrl !== '') {
+                $candidates[] = $appUrl.$path;
+            }
+        }
+
+        return array_values(array_unique($candidates));
+    }
+
+    private function providerPublicKey(): ?string
+    {
+        $path = trim((string) config('manjo.provider_public_key_path'));
+
+        if ($path === '') {
+            $path = base_path('resources/manjo/provider-public.pem');
+        } elseif (! str_starts_with($path, '/')) {
+            $path = base_path($path);
+        }
+
+        if (! is_readable($path)) {
+            return null;
+        }
+
+        $pem = file_get_contents($path);
+
+        return is_string($pem) && str_contains($pem, 'PUBLIC KEY') ? $pem : null;
+    }
+
+    private function inboundTokenKey(string $token): string
+    {
+        return 'manjo.qris.inbound.'.hash('sha256', $token);
+    }
+
+    private function sameSecret(string $expected, string $actual): bool
+    {
+        return $expected !== '' && strlen($expected) === strlen($actual) && hash_equals($expected, $actual);
     }
 
     /**

@@ -22,6 +22,43 @@ class ManjoSignature
         return $encoding === 'hex' ? bin2hex($signature) : base64_encode($signature);
     }
 
+    public static function verifyToken(string $clientKey, string $timestamp, string $signature, string $publicKeyPem): bool
+    {
+        $payload = $clientKey.'|'.$timestamp;
+
+        foreach (self::signatureBytes($signature) as $bytes) {
+            if (openssl_verify($payload, $bytes, $publicKeyPem, OPENSSL_ALGO_SHA256) === 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function signatureBytes(string $signature): array
+    {
+        $trimmed = trim($signature);
+        $candidates = [];
+        $decoded = base64_decode($trimmed, true);
+
+        if (is_string($decoded) && $decoded !== '') {
+            $candidates[] = $decoded;
+        }
+
+        if ($trimmed !== '' && ctype_xdigit($trimmed) && strlen($trimmed) % 2 === 0) {
+            $hex = hex2bin($trimmed);
+
+            if (is_string($hex) && $hex !== '') {
+                $candidates[] = $hex;
+            }
+        }
+
+        return $candidates;
+    }
+
     public static function request(
         string $method,
         string $endpointUrl,
