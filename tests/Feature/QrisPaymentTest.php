@@ -138,6 +138,7 @@ class QrisPaymentTest extends TestCase
                 && ($request->header('CHANNEL-ID')[0] ?? '') === '05'
                 && ($request->header('Authorization')[0] ?? '') === 'Bearer token-abc'
                 && is_array($body)
+                && ! array_key_exists('merchantId', $body)
                 && ($body['amount']['value'] ?? null) === '35000.00'
                 && ($body['additionalInfo']['dynamicAmount'] ?? null) === 'N';
         });

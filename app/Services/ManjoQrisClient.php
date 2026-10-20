@@ -27,7 +27,6 @@ class ManjoQrisClient
                 'value' => number_format($amount, 2, '.', ''),
                 'currency' => 'IDR',
             ],
-            'merchantId' => (string) config('manjo.merchant_id'),
             'validityPeriod' => (string) config('manjo.qr_validity_seconds'),
             'additionalInfo' => [
                 'paymentId' => '99',
