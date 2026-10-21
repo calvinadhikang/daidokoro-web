@@ -9,7 +9,9 @@ type Props = {
     expiresAt: string;
     filename: string;
     regenerating: boolean;
+    checking: boolean;
     onRegenerate: () => void;
+    onCheck: () => void;
 };
 
 function formatExpiry(iso: string): string {
@@ -25,7 +27,9 @@ export function QrisPaymentSection({
     expiresAt,
     filename,
     regenerating,
+    checking,
     onRegenerate,
+    onCheck,
 }: Props) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [error, setError] = useState<string | null>(null);
@@ -107,8 +111,20 @@ export function QrisPaymentSection({
                 </button>
                 <button
                     type="button"
+                    onClick={onCheck}
+                    disabled={checking || regenerating}
+                    className="w-full rounded-full bg-[#C56A3E] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+                >
+                    {checking ? 'Checking payment…' : 'Check payment status'}
+                </button>
+                <p className="text-center text-xs text-[#706f6c] dark:text-[#A1A09A]">
+                    This page updates on its own. Check payment status if the
+                    bill stays unpaid.
+                </p>
+                <button
+                    type="button"
                     onClick={onRegenerate}
-                    disabled={regenerating}
+                    disabled={regenerating || checking}
                     className="w-full rounded-full px-4 py-2.5 text-sm font-medium text-[#A4532E] disabled:opacity-50 dark:text-[#F3D5C2]"
                 >
                     {regenerating ? 'Creating QR…' : 'Create a new QR'}

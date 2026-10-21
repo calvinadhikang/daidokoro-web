@@ -144,6 +144,200 @@ class QrisPaymentTest extends TestCase
         });
     }
 
+    public function test_customer_can_check_a_paid_qris_when_the_webhook_did_not_arrive(): void
+    {
+        Http::fake([
+            'https://snap-uat.manjo.co.id/api/v1.0/access-token/b2b' => Http::response([
+                'responseCode' => '2007300',
+                'responseMessage' => 'Successful',
+                'accessToken' => 'token-abc',
+                'tokenType' => 'Bearer',
+                'expiresIn' => '900',
+            ]),
+            'https://snap-uat.manjo.co.id/api/v1.0/qr/qr-mpm-query' => Http::response([
+                'responseCode' => '2005100',
+                'responseMessage' => 'Successful',
+                'originalReferenceNo' => 'A0000001703',
+                'originalPartnerReferenceNo' => 'DK-REF-QUERY',
+                'latestTransactionStatus' => '00',
+                'transactionStatusDesc' => 'Success',
+                'amount' => [
+                    'value' => '35000.00',
+                    'currency' => 'IDR',
+                ],
+            ]),
+        ]);
+
+        $customer = $this->customer();
+        $transaction = $this->bill($customer->phone, 35000);
+        $payment = $this->payment($transaction, 'DK-REF-QUERY');
+        $payment->update(['reference_no' => 'A0000001703']);
+
+        $response = $this
+            ->withSession(['customer_id' => $customer->id])
+            ->post(route('customer.order.qris.status', $transaction));
+
+        $response->assertRedirect(route('customer.order.index'));
+        $this->assertDatabaseHas('transactions', [
+            'id' => $transaction->id,
+            'status' => 'paid',
+            'paid_via' => 'qris',
+        ]);
+        $this->assertDatabaseHas('qris_payments', [
+            'id' => $payment->id,
+            'status' => 'paid',
+        ]);
+
+        Http::assertSent(function (Request $request) {
+            if (! str_contains($request->url(), '/v1.0/qr/qr-mpm-query')) {
+                return false;
+            }
+
+            $timestamp = $request->header('X-TIMESTAMP')[0] ?? '';
+            $expected = ManjoSignature::request(
+                'POST',
+                '/v1.0/qr/qr-mpm-query',
+                'token-abc',
+                $request->body(),
+                $timestamp,
+                'test-secret',
+            );
+            $body = json_decode($request->body(), true);
+            $externalId = $request->header('X-EXTERNAL-ID')[0] ?? '';
+
+            return ($request->header('X-SIGNATURE')[0] ?? '') === $expected
+                && ($request->header('X-CLIENT-KEY')[0] ?? '') === 'test-client'
+                && ($request->header('X-PARTNER-ID')[0] ?? '') === 'MTTEST'
+                && $externalId !== ''
+                && $externalId !== 'ext-DK-REF-QUERY'
+                && is_array($body)
+                && ($body['originalReferenceNo'] ?? null) === 'A0000001703'
+                && ($body['originalPartnerReferenceNo'] ?? null) === 'DK-REF-QUERY'
+                && ($body['originalExternalId'] ?? null) === 'ext-DK-REF-QUERY'
+                && ($body['serviceCode'] ?? null) === '99'
+                && ($body['merchantId'] ?? null) === 'MTTEST'
+                && ($body['additionalInfo']['currency'] ?? null) === 'IDR';
+        });
+    }
+
+    public function test_checking_a_pending_qris_does_not_mark_the_bill_paid(): void
+    {
+        Http::fake([
+            'https://snap-uat.manjo.co.id/api/v1.0/access-token/b2b' => Http::response([
+                'responseCode' => '2007300',
+                'accessToken' => 'token-abc',
+                'expiresIn' => '900',
+            ]),
+            'https://snap-uat.manjo.co.id/api/v1.0/qr/qr-mpm-query' => Http::response([
+                'responseCode' => '2005100',
+                'latestTransactionStatus' => '03',
+                'transactionStatusDesc' => 'Pending',
+                'amount' => ['value' => '35000.00', 'currency' => 'IDR'],
+            ]),
+        ]);
+
+        $customer = $this->customer();
+        $transaction = $this->bill($customer->phone, 35000);
+        $payment = $this->payment($transaction, 'DK-REF-PENDING');
+        $payment->update(['reference_no' => 'A0000001703']);
+
+        $response = $this
+            ->from(route('customer.order.index'))
+            ->withSession(['customer_id' => $customer->id])
+            ->post(route('customer.order.qris.status', $transaction));
+
+        $response->assertRedirect(route('customer.order.index'));
+        $response->assertSessionHasErrors([
+            'qris' => 'Payment is not confirmed yet. Try again in a moment.',
+        ]);
+        $this->assertDatabaseHas('transactions', [
+            'id' => $transaction->id,
+            'status' => 'in_progress',
+            'paid_via' => null,
+        ]);
+    }
+
+    public function test_checking_a_failed_qris_does_not_mark_the_bill_paid(): void
+    {
+        Http::fake([
+            'https://snap-uat.manjo.co.id/api/v1.0/access-token/b2b' => Http::response([
+                'responseCode' => '2007300',
+                'accessToken' => 'token-abc',
+                'expiresIn' => '900',
+            ]),
+            'https://snap-uat.manjo.co.id/api/v1.0/qr/qr-mpm-query' => Http::response([
+                'responseCode' => '2005100',
+                'latestTransactionStatus' => '06',
+                'transactionStatusDesc' => 'Success',
+                'amount' => ['value' => '35000.00', 'currency' => 'IDR'],
+            ]),
+        ]);
+
+        $customer = $this->customer();
+        $transaction = $this->bill($customer->phone, 35000);
+        $payment = $this->payment($transaction, 'DK-REF-FAILED');
+        $payment->update(['reference_no' => 'A0000001703']);
+
+        $this
+            ->from(route('customer.order.index'))
+            ->withSession(['customer_id' => $customer->id])
+            ->post(route('customer.order.qris.status', $transaction))
+            ->assertSessionHasErrors([
+                'qris' => 'This payment failed.',
+            ]);
+
+        $this->assertDatabaseHas('transactions', [
+            'id' => $transaction->id,
+            'status' => 'in_progress',
+        ]);
+    }
+
+    public function test_checking_a_qris_with_a_different_amount_does_not_mark_the_bill_paid(): void
+    {
+        Http::fake([
+            'https://snap-uat.manjo.co.id/api/v1.0/access-token/b2b' => Http::response([
+                'responseCode' => '2007300',
+                'accessToken' => 'token-abc',
+                'expiresIn' => '900',
+            ]),
+            'https://snap-uat.manjo.co.id/api/v1.0/qr/qr-mpm-query' => Http::response([
+                'responseCode' => '2005100',
+                'latestTransactionStatus' => '00',
+                'amount' => ['value' => '10000.00', 'currency' => 'IDR'],
+            ]),
+        ]);
+
+        $customer = $this->customer();
+        $transaction = $this->bill($customer->phone, 35000);
+        $payment = $this->payment($transaction, 'DK-REF-AMOUNT');
+        $payment->update(['reference_no' => 'A0000001703']);
+
+        $this
+            ->from(route('customer.order.index'))
+            ->withSession(['customer_id' => $customer->id])
+            ->post(route('customer.order.qris.status', $transaction))
+            ->assertSessionHasErrors([
+                'qris' => 'The paid amount does not match this bill.',
+            ]);
+
+        $this->assertDatabaseHas('transactions', [
+            'id' => $transaction->id,
+            'status' => 'in_progress',
+            'paid_via' => null,
+        ]);
+    }
+
+    public function test_customer_cannot_check_qris_for_someone_elses_bill(): void
+    {
+        $customer = $this->customer();
+        $transaction = $this->bill('6281111111111', 35000);
+
+        $this
+            ->withSession(['customer_id' => $customer->id])
+            ->post(route('customer.order.qris.status', $transaction))
+            ->assertNotFound();
+    }
+
     public function test_order_page_shows_the_active_qris_code(): void
     {
         $customer = $this->customer();

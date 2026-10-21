@@ -108,6 +108,93 @@ class ManjoQrisClient
         throw new RuntimeException($this->failureMessage('qr', $lastCode, $lastMessage));
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    public function queryPayment(string $referenceNo, string $partnerReferenceNo, ?string $originalExternalId): array
+    {
+        $this->ensureConfigured();
+
+        $token = $this->accessToken();
+        $payload = [
+            'originalReferenceNo' => $referenceNo,
+            'originalPartnerReferenceNo' => $partnerReferenceNo,
+            'serviceCode' => '99',
+            'merchantId' => (string) config('manjo.merchant_id'),
+            'additionalInfo' => [
+                'currency' => 'IDR',
+            ],
+        ];
+
+        if (is_string($originalExternalId) && $originalExternalId !== '') {
+            $payload['originalExternalId'] = $originalExternalId;
+        }
+
+        $body = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        if ($body === false) {
+            throw new RuntimeException('Could not check the payment.');
+        }
+
+        $timestamp = $this->timestamp();
+        $externalId = $this->freshExternalId();
+        $paths = array_values(array_unique([
+            '/v1.0/qr/qr-mpm-query',
+            $this->signedPath('/v1.0/qr/qr-mpm-query'),
+        ]));
+        $lastCode = '';
+        $lastMessage = '';
+
+        foreach ($paths as $path) {
+            foreach (['hex', 'base64'] as $encoding) {
+                $signature = ManjoSignature::request(
+                    'POST',
+                    $path,
+                    $token,
+                    $body,
+                    $timestamp,
+                    (string) config('manjo.client_secret'),
+                    $encoding,
+                );
+                $headers = $this->transactionHeaders($token, $timestamp, $signature, $externalId);
+                $headers['X-CLIENT-KEY'] = (string) config('manjo.client_id');
+
+                try {
+                    $response = Http::withHeaders($headers)
+                        ->withBody($body, 'application/json')
+                        ->timeout(20)
+                        ->post($this->url('/v1.0/qr/qr-mpm-query'));
+                } catch (ConnectionException) {
+                    throw new RuntimeException('Payment service is unreachable. Try again.');
+                }
+
+                $code = (string) $response->json('responseCode');
+                $decoded = $response->json();
+
+                if (is_array($decoded) && (($response->successful() && str_starts_with($code, '200')) || $code === '4045101')) {
+                    return $decoded;
+                }
+
+                $lastCode = $code;
+                $lastMessage = (string) $response->json('responseMessage');
+                Log::warning('Manjo QRIS query failed', [
+                    'path' => $path,
+                    'encoding' => $encoding,
+                    'response_code' => $code,
+                    'message' => $lastMessage,
+                ]);
+
+                $externalId = $this->freshExternalId();
+
+                if (! $this->isSignatureRejection($code, $lastMessage) && ! str_starts_with($code, '409')) {
+                    throw new RuntimeException($this->failureMessage('query', $code, $lastMessage, 'Could not check the payment.'));
+                }
+            }
+        }
+
+        throw new RuntimeException($this->failureMessage('query', $lastCode, $lastMessage, 'Could not check the payment.'));
+    }
+
     private function accessToken(): string
     {
         $cacheKey = 'manjo.qris.token.'.(string) config('manjo.client_id');
@@ -206,12 +293,12 @@ class ManjoQrisClient
         return str_starts_with($code, '401') && str_contains(strtolower($message), 'signature');
     }
 
-    private function failureMessage(string $step, string $code, string $message): string
+    private function failureMessage(string $step, string $code, string $message, string $fallback = 'Could not create a QR code.'): string
     {
         $message = trim($message);
 
         if ($message === '') {
-            $message = 'Could not create a QR code.';
+            $message = $fallback;
         }
 
         $detail = $code !== '' ? $step.' '.$code.': ' : $step.': ';

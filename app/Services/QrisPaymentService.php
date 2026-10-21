@@ -78,6 +78,97 @@ class QrisPaymentService
         });
     }
 
+    public function check(Transaction $transaction): void
+    {
+        if ($transaction->isPaid()) {
+            return;
+        }
+
+        $payment = QrisPayment::query()
+            ->where('transaction_id', $transaction->id)
+            ->where('status', QrisPayment::STATUS_PENDING)
+            ->latest('id')
+            ->first();
+
+        if ($payment === null) {
+            throw ValidationException::withMessages([
+                'qris' => 'There is no QR code to check.',
+            ]);
+        }
+
+        $referenceNo = $payment->reference_no;
+
+        if (! is_string($referenceNo) || $referenceNo === '') {
+            throw ValidationException::withMessages([
+                'qris' => 'This QR code cannot be checked yet.',
+            ]);
+        }
+
+        try {
+            $result = $this->client->queryPayment($referenceNo, $payment->partner_reference_no, $payment->external_id);
+        } catch (RuntimeException $exception) {
+            throw ValidationException::withMessages([
+                'qris' => $exception->getMessage(),
+            ]);
+        }
+
+        $status = (string) ($result['latestTransactionStatus'] ?? '');
+
+        if ($status !== '00') {
+            $payment->update(['notify_payload' => $result]);
+
+            throw ValidationException::withMessages([
+                'qris' => $this->queryStatusMessage($status),
+            ]);
+        }
+
+        if (! $this->queryAmountMatches($payment, $transaction, $result)) {
+            $payment->update(['notify_payload' => $result]);
+
+            throw ValidationException::withMessages([
+                'qris' => 'The paid amount does not match this bill.',
+            ]);
+        }
+
+        DB::transaction(function () use ($payment, $result): void {
+            $lockedPayment = QrisPayment::query()->whereKey($payment->id)->lockForUpdate()->first();
+            $locked = Transaction::query()->whereKey($payment->transaction_id)->lockForUpdate()->first();
+
+            if ($lockedPayment === null || $locked === null) {
+                throw ValidationException::withMessages([
+                    'qris' => 'There is no QR code to check.',
+                ]);
+            }
+
+            if ($locked->isPaid()) {
+                return;
+            }
+
+            if (! $this->queryAmountMatches($lockedPayment, $locked, $result)) {
+                throw ValidationException::withMessages([
+                    'qris' => 'The paid amount does not match this bill.',
+                ]);
+            }
+
+            $lockedPayment->update([
+                'status' => QrisPayment::STATUS_PAID,
+                'paid_at' => now(),
+                'notify_payload' => $result,
+            ]);
+
+            $locked->update([
+                'status' => 'paid',
+                'paid_via' => Transaction::PAID_VIA_QRIS,
+            ]);
+
+            QrisPayment::query()
+                ->where('transaction_id', $locked->id)
+                ->whereKeyNot($lockedPayment->id)
+                ->where('status', QrisPayment::STATUS_PENDING)
+                ->update(['status' => QrisPayment::STATUS_SUPERSEDED]);
+        });
+    }
+
     /**
      * @return array{status: int, body: array<string, string>}
      */
@@ -290,8 +381,36 @@ class QrisPaymentService
     }
 
     /**
-     * Manjo's parameter table marks 00 as success and 03 as paid.
-     * The sample body uses 06 with a success description, which the same table calls cancelled.
+     * Query Payment uses a different status table from the webhook.
+     * 00 is the only paid code. 03 means the payment is still pending.
+     */
+    private function queryStatusMessage(string $status): string
+    {
+        return match ($status) {
+            '04' => 'This payment was refunded.',
+            '05' => 'This payment was canceled.',
+            '06' => 'This payment failed.',
+            '07' => 'The payment service has not found this payment yet.',
+            default => 'Payment is not confirmed yet. Try again in a moment.',
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $result
+     */
+    private function queryAmountMatches(QrisPayment $payment, Transaction $transaction, array $result): bool
+    {
+        $amount = is_array($result['amount'] ?? null) ? $result['amount'] : [];
+        $currency = strtoupper((string) ($amount['currency'] ?? ''));
+
+        return $currency === 'IDR'
+            && $this->sameAmount($payment->amount, $amount['value'] ?? null)
+            && (int) $transaction->total_bill === (int) $payment->amount;
+    }
+
+    /**
+     * The webhook table marks 00 as success and 03 as paid.
+     * The sample body uses 06 with a success description, which that table calls cancelled.
      *
      * @param  array<string, mixed>  $payload
      */

@@ -48,6 +48,15 @@ class CustomerOrderController extends Controller
             ->with('success', 'QRIS code is ready.');
     }
 
+    public function checkQris(Transaction $transaction, QrisPaymentService $qris): RedirectResponse
+    {
+        $qris->check($this->ownedTransaction($transaction));
+
+        return redirect()
+            ->route('customer.order.index')
+            ->with('success', 'Payment received.');
+    }
+
     private function ownedTransaction(Transaction $transaction): Transaction
     {
         $customer = Customer::query()->findOrFail(session('customer_id'));

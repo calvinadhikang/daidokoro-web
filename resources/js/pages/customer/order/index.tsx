@@ -61,6 +61,7 @@ export default function CustomerOrderIndex({
 }: Props) {
     const { errors } = usePage().props as { errors?: Record<string, string> };
     const [payingId, setPayingId] = useState<number | null>(null);
+    const [checkingId, setCheckingId] = useState<number | null>(null);
     const hasOrders = transactions.some(
         (transaction) => transaction.item_groups.length > 0,
     );
@@ -86,6 +87,18 @@ export default function CustomerOrderIndex({
         return () => window.clearInterval(timer);
     }, [waitingForPayment]);
 
+    function checkPayment(transactionId: number) {
+        setCheckingId(transactionId);
+        router.post(
+            `/customer/order/${transactionId}/qris/status`,
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => setCheckingId(null),
+            },
+        );
+    }
+
     function pay(transactionId: number) {
         setPayingId(transactionId);
         router.post(
@@ -103,11 +116,14 @@ export default function CustomerOrderIndex({
             <Head title="Your order" />
 
             <div className="mx-auto max-w-md px-4 py-4">
-                {errors?.qris && (
-                    <div className="mb-4 rounded-lg border border-[#fecdca] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318] dark:border-[#55160c] dark:bg-[#55160c] dark:text-[#fda29b]">
-                        {errors.qris}
-                    </div>
-                )}
+                {errors?.qris &&
+                    transactions.some(
+                        (transaction) => transaction.status !== 'paid',
+                    ) && (
+                        <div className="mb-4 rounded-lg border border-[#fecdca] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318] dark:border-[#55160c] dark:bg-[#55160c] dark:text-[#fda29b]">
+                            {errors.qris}
+                        </div>
+                    )}
                 <header className="mb-5">
                     <div className="flex items-start justify-between gap-3">
                         <div>
@@ -218,8 +234,17 @@ export default function CustomerOrderIndex({
                                                         payingId ===
                                                         transaction.id
                                                     }
+                                                    checking={
+                                                        checkingId ===
+                                                        transaction.id
+                                                    }
                                                     onRegenerate={() =>
                                                         pay(transaction.id)
+                                                    }
+                                                    onCheck={() =>
+                                                        checkPayment(
+                                                            transaction.id,
+                                                        )
                                                     }
                                                 />
                                             ) : (
