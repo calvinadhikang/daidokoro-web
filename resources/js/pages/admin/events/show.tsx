@@ -6,18 +6,26 @@ import {
     inputClassName,
     labelClassName,
 } from '@/components/admin/menu-form';
-import type { ChannelMenu, SalesChannel } from '@/types/sales-channel';
+import { eventCopySourceLabel } from '@/lib/event';
+import type {
+    ChannelMenu,
+    EventCopySource,
+    EventSourceMenu,
+    SalesChannel,
+} from '@/types/sales-channel';
 
 type Props = {
     channel: SalesChannel;
     assignedMenus: ChannelMenu[];
     storeMenus: ChannelMenu[];
+    copySources: Array<EventCopySource & { menus: EventSourceMenu[] }>;
 };
 
 export default function AdminEventsShow({
     channel,
     assignedMenus,
     storeMenus,
+    copySources,
 }: Props) {
     const form = useForm({
         name: channel.name,
@@ -26,8 +34,13 @@ export default function AdminEventsShow({
     });
     const [search, setSearch] = useState('');
     const [assignedSearch, setAssignedSearch] = useState('');
+    const [sourceSearch, setSourceSearch] = useState('');
     const [archiveOpen, setArchiveOpen] = useState(false);
     const [restoreOpen, setRestoreOpen] = useState(false);
+    const copyForm = useForm({
+        source_event_id: '',
+        menu_ids: [] as number[],
+    });
     const pageErrors = usePage().props.errors as Record<string, string>;
 
     const assignedIds = useMemo(
@@ -59,6 +72,26 @@ export default function AdminEventsShow({
         });
     }, [assignedIds, search, storeMenus]);
 
+    const selectedSource = copySources.find(
+        (source) => String(source.id) === copyForm.data.source_event_id,
+    );
+
+    const sourceMenus = useMemo(() => {
+        if (!selectedSource) {
+            return [];
+        }
+
+        const query = sourceSearch.trim().toLowerCase();
+
+        return selectedSource.menus.filter((menu) => {
+            if (assignedIds.has(menu.id)) {
+                return false;
+            }
+
+            return query === '' || menu.name.toLowerCase().includes(query);
+        });
+    }, [assignedIds, selectedSource, sourceSearch]);
+
     function handleSubmit(event: React.FormEvent) {
         event.preventDefault();
         form.put(`/admin/events/${channel.id}`);
@@ -76,6 +109,28 @@ export default function AdminEventsShow({
         router.delete(`/admin/events/${channel.id}/menus/${menu.id}`, {
             preserveScroll: true,
         });
+    }
+
+    function copyMenus(event: React.FormEvent) {
+        event.preventDefault();
+        copyForm.post(`/admin/events/${channel.id}/menus/copy`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                copyForm.setData('menu_ids', []);
+                setSourceSearch('');
+            },
+        });
+    }
+
+    function toggleSourceMenu(menuId: number) {
+        const selected = copyForm.data.menu_ids;
+
+        copyForm.setData(
+            'menu_ids',
+            selected.includes(menuId)
+                ? selected.filter((id) => id !== menuId)
+                : [...selected, menuId],
+        );
     }
 
     function saveOverride(menu: ChannelMenu, value: string) {
@@ -144,6 +199,13 @@ export default function AdminEventsShow({
                         {pageErrors.channel}
                     </p>
                 )}
+
+                <Link
+                    href={`/admin/events/create?from=${channel.id}`}
+                    className="mb-8 flex w-full items-center justify-center rounded-md border border-[#e3e3e0] px-4 py-2.5 text-sm font-medium dark:border-[#3E3E3A]"
+                >
+                    Duplicate this event
+                </Link>
 
                 <form onSubmit={handleSubmit} className="mb-8 space-y-4">
                     <div>
@@ -294,6 +356,180 @@ export default function AdminEventsShow({
                         </ul>
                             )}
                         </>
+                    )}
+                </section>
+
+                <section className="mb-8">
+                    <h2 className="mb-1 text-base font-semibold">
+                        Add from another event
+                    </h2>
+                    <p className="mb-4 text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                        Pick menus from an event you already ran. Price
+                        overrides come along. Menus already here are skipped.
+                    </p>
+                    {copySources.length === 0 ? (
+                        <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                            No other events to copy from.
+                        </p>
+                    ) : (
+                        <form onSubmit={copyMenus} className="space-y-3">
+                            <div>
+                                <label
+                                    htmlFor="source_event_id"
+                                    className={labelClassName}
+                                >
+                                    Event
+                                </label>
+                                <select
+                                    id="source_event_id"
+                                    value={copyForm.data.source_event_id}
+                                    onChange={(event) => {
+                                        copyForm.setData({
+                                            source_event_id: event.target.value,
+                                            menu_ids: [],
+                                        });
+                                        setSourceSearch('');
+                                    }}
+                                    className={inputClassName}
+                                >
+                                    <option value="">Choose an event</option>
+                                    {copySources.map((source) => (
+                                        <option
+                                            key={source.id}
+                                            value={String(source.id)}
+                                        >
+                                            {eventCopySourceLabel(source)}
+                                        </option>
+                                    ))}
+                                </select>
+                                {copyForm.errors.source_event_id && (
+                                    <p className="mt-1 text-xs text-[#b42318]">
+                                        {copyForm.errors.source_event_id}
+                                    </p>
+                                )}
+                            </div>
+
+                            {selectedSource &&
+                                (selectedSource.menus.length === 0 ? (
+                                    <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                                        That event has no menus.
+                                    </p>
+                                ) : (
+                                    <>
+                                        <input
+                                            type="search"
+                                            value={sourceSearch}
+                                            onChange={(event) =>
+                                                setSourceSearch(
+                                                    event.target.value,
+                                                )
+                                            }
+                                            placeholder="Search menus from this event"
+                                            className={inputClassName}
+                                        />
+                                        {sourceMenus.length === 0 ? (
+                                            <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                                                {sourceSearch.trim() === ''
+                                                    ? 'Every menu from this event is already here.'
+                                                    : 'No matching menus.'}
+                                            </p>
+                                        ) : (
+                                            <>
+                                                <div className="flex items-center justify-between">
+                                                    <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">
+                                                        {
+                                                            copyForm.data
+                                                                .menu_ids.length
+                                                        }{' '}
+                                                        selected
+                                                    </p>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            copyForm.setData(
+                                                                'menu_ids',
+                                                                sourceMenus.map(
+                                                                    (menu) =>
+                                                                        menu.id,
+                                                                ),
+                                                            )
+                                                        }
+                                                        className="text-sm font-medium text-[#175cd3]"
+                                                    >
+                                                        Select all
+                                                    </button>
+                                                </div>
+                                                <ul className="max-h-80 space-y-2 overflow-y-auto overscroll-contain">
+                                                    {sourceMenus.map((menu) => {
+                                                        const checked =
+                                                            copyForm.data.menu_ids.includes(
+                                                                menu.id,
+                                                            );
+
+                                                        return (
+                                                            <li key={menu.id}>
+                                                                <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-[#e3e3e0] bg-white px-3 py-2.5 dark:border-[#3E3E3A] dark:bg-[#161615]">
+                                                                    <span className="flex min-w-0 items-center gap-3">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={
+                                                                                checked
+                                                                            }
+                                                                            onChange={() =>
+                                                                                toggleSourceMenu(
+                                                                                    menu.id,
+                                                                                )
+                                                                            }
+                                                                            className="size-4 rounded border-[#e3e3e0]"
+                                                                        />
+                                                                        <span className="min-w-0">
+                                                                            <span className="block truncate font-medium">
+                                                                                {
+                                                                                    menu.name
+                                                                                }
+                                                                            </span>
+                                                                            <span className="mt-0.5 block text-xs text-[#706f6c] dark:text-[#A1A09A]">
+                                                                                {
+                                                                                    menu.price_label
+                                                                                }
+                                                                                {menu.price_override !==
+                                                                                    null &&
+                                                                                    ' · event price'}
+                                                                                {!menu.is_available &&
+                                                                                    ' · unavailable'}
+                                                                            </span>
+                                                                        </span>
+                                                                    </span>
+                                                                </label>
+                                                            </li>
+                                                        );
+                                                    })}
+                                                </ul>
+                                            </>
+                                        )}
+                                    </>
+                                ))}
+
+                            {copyForm.errors.menu_ids && (
+                                <p className="text-xs text-[#b42318]">
+                                    {copyForm.errors.menu_ids}
+                                </p>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={
+                                    copyForm.processing ||
+                                    copyForm.data.source_event_id === '' ||
+                                    copyForm.data.menu_ids.length === 0
+                                }
+                                className="w-full rounded-md bg-[#1b1b18] px-4 py-3 text-sm font-medium text-white disabled:opacity-50 dark:bg-[#EDEDEC] dark:text-[#1b1b18]"
+                            >
+                                {copyForm.processing
+                                    ? 'Adding...'
+                                    : 'Add selected menus'}
+                            </button>
+                        </form>
                     )}
                 </section>
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ManagesMenuImages;
 use App\Http\Requests\AssignChannelMenusRequest;
+use App\Http\Requests\CopyEventMenusRequest;
 use App\Http\Requests\StoreMenuRequest;
 use App\Http\Requests\StoreSalesChannelEventRequest;
 use App\Http\Requests\UpdateChannelMenuRequest;
@@ -17,6 +18,7 @@ use App\Services\MenuImageService;
 use App\Services\SalesChannelService;
 use App\Support\MenuApiFormatter;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -41,18 +43,46 @@ class EventController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
-        return Inertia::render('admin/events/create');
+        $from = $request->integer('from');
+        $source = $from > 0 ? SalesChannel::query()->events()->find($from) : null;
+
+        return Inertia::render('admin/events/create', [
+            'events' => $this->salesChannels->eventCopySources(),
+            'sourceEventId' => $source?->id,
+            'defaults' => [
+                'name' => $source?->name ?? '',
+            ],
+        ]);
     }
 
     public function store(StoreSalesChannelEventRequest $request): RedirectResponse
     {
-        $channel = $this->salesChannels->createEvent($request->validated());
+        $validated = $request->validated();
+        $source = null;
+
+        if (! empty($validated['source_event_id'])) {
+            $source = SalesChannel::query()->events()->findOrFail($validated['source_event_id']);
+        }
+
+        [$channel, $copied] = DB::transaction(function () use ($validated, $source) {
+            $channel = $this->salesChannels->createEvent([
+                'name' => $validated['name'],
+                'starts_at' => $validated['starts_at'],
+                'ends_at' => $validated['ends_at'],
+            ]);
+
+            $copied = $source === null
+                ? 0
+                : $this->salesChannels->copyMenusFromEvent($channel, $source);
+
+            return [$channel, $copied];
+        });
 
         return redirect()
             ->route('admin.events.show', $channel)
-            ->with('success', 'Event created successfully.');
+            ->with('success', $this->createdMessage($source, $copied));
     }
 
     public function show(SalesChannel $salesChannel): Response
@@ -73,6 +103,7 @@ class EventController extends Controller
                 ->map(fn (MenuModel $menu) => MenuApiFormatter::formatListItem($menu, $store))
                 ->values()
                 ->all(),
+            'copySources' => $this->salesChannels->eventCopySources($salesChannel->id, withMenus: true),
         ]);
     }
 
@@ -148,6 +179,19 @@ class EventController extends Controller
             ->with('success', 'Menus assigned successfully.');
     }
 
+    public function copyMenus(CopyEventMenusRequest $request, SalesChannel $salesChannel): RedirectResponse
+    {
+        abort_unless($salesChannel->isEvent(), 404);
+
+        $source = SalesChannel::query()->events()->findOrFail($request->validated('source_event_id'));
+        $menuIds = $request->validated('menu_ids');
+        $copied = $this->salesChannels->copyMenusFromEvent($salesChannel, $source, $menuIds);
+
+        return redirect()
+            ->route('admin.events.show', $salesChannel)
+            ->with('success', $this->copiedMessage($source, $copied));
+    }
+
     public function updateMenu(
         UpdateChannelMenuRequest $request,
         SalesChannel $salesChannel,
@@ -167,6 +211,36 @@ class EventController extends Controller
         return redirect()
             ->route('admin.events.show', $salesChannel)
             ->with('success', 'Menu removed from this event.');
+    }
+
+    private function createdMessage(?SalesChannel $source, int $copied): string
+    {
+        if ($source === null) {
+            return 'Event created successfully.';
+        }
+
+        if ($copied === 0) {
+            return "Event created. {$source->name} has no menus to copy.";
+        }
+
+        if ($copied === 1) {
+            return "Event created with 1 menu from {$source->name}.";
+        }
+
+        return "Event created with {$copied} menus from {$source->name}.";
+    }
+
+    private function copiedMessage(SalesChannel $source, int $copied): string
+    {
+        if ($copied === 0) {
+            return 'No new menus. Those menus are already on this event.';
+        }
+
+        if ($copied === 1) {
+            return "Added 1 menu from {$source->name}.";
+        }
+
+        return "Added {$copied} menus from {$source->name}.";
     }
 
     /**

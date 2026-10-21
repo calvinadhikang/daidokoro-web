@@ -93,6 +93,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/events/{salesChannel}/menus/create', [EventController::class, 'createMenu'])->name('events.menus.create');
         Route::post('/events/{salesChannel}/menus', [EventController::class, 'storeMenu'])->name('events.menus.store');
         Route::post('/events/{salesChannel}/menus/assign', [EventController::class, 'assignMenus'])->name('events.menus.assign');
+        Route::post('/events/{salesChannel}/menus/copy', [EventController::class, 'copyMenus'])->name('events.menus.copy');
         Route::post('/events/{salesChannel}/menus/{menuModel}', [EventController::class, 'updateMenu'])->name('events.menus.update');
         Route::delete('/events/{salesChannel}/menus/{menuModel}', [EventController::class, 'unassignMenu'])->name('events.menus.unassign');
 
