@@ -1,5 +1,18 @@
 export type TransactionStatus = 'in_progress' | 'paid';
 
+export type PaidVia = 'qris' | 'cashier';
+
+export function transactionStatusLabel(
+    status: TransactionStatus,
+    paidVia?: PaidVia | null,
+): string {
+    if (status === 'paid' && paidVia === 'qris') {
+        return 'Paid via QRIS';
+    }
+
+    return status === 'paid' ? 'Paid' : 'In progress';
+}
+
 export type TransactionServiceType = 'dine_in' | 'takeaway';
 
 export function serviceTypeLabel(type: TransactionServiceType): string {
@@ -46,6 +59,7 @@ export type Transaction = {
     service_type: TransactionServiceType;
     table_code: string | null;
     status: TransactionStatus;
+    paid_via?: PaidVia | null;
     total_bill: number;
     is_admin_created: boolean;
     created_at: string;

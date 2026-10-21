@@ -15,6 +15,7 @@ type Props = {
     tableCode: string | null;
     customer: Customer | null;
     hasActiveOrder: boolean;
+    redirectTo: string | null;
 };
 
 function FieldError({ message }: { message?: string }) {
@@ -30,12 +31,14 @@ export default function CustomerLogin({
     tableCode,
     customer,
     hasActiveOrder,
+    redirectTo,
 }: Props) {
-    const form = useForm<CustomerLoginForm>({
+    const form = useForm<CustomerLoginForm & { redirect: string }>({
         name: customer?.name ?? '',
         phone: customer?.phone_local ?? customer?.phone_display ?? '',
         phone_country: customer?.phone_country ?? DEFAULT_PHONE_REGION,
         service_type: serviceType ?? '',
+        redirect: redirectTo ?? '',
     });
 
     function handleSubmit(event: React.FormEvent) {

@@ -24,7 +24,11 @@ export function isCustomerNavActive(
         return url === item.href || url.startsWith(`${item.href}?`);
     }
 
-    return url === item.href || url.startsWith(`${item.href}?`);
+    return (
+        url === item.href ||
+        url.startsWith(`${item.href}?`) ||
+        url.startsWith(`${item.href}/`)
+    );
 }
 
 export function isCustomerAppUrl(url: string): boolean {

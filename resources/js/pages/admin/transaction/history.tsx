@@ -5,13 +5,10 @@ import {
     history as transactionHistory,
     show as showTransaction,
 } from '@/actions/App/Http/Controllers/TransactionController';
-import {
-    inputClassName,
-    labelClassName,
-} from '@/components/admin/menu-form';
+import { inputClassName, labelClassName } from '@/components/admin/menu-form';
 import { TableCodeBadge } from '@/components/admin/table-code-badge';
 import type { Transaction } from '@/types/transaction';
-import { serviceTypeLabel } from '@/types/transaction';
+import { serviceTypeLabel, transactionStatusLabel } from '@/types/transaction';
 
 type Props = {
     transactions: Transaction[];
@@ -35,10 +32,6 @@ function formatDate(iso: string): string {
         dateStyle: 'medium',
         timeStyle: 'short',
     });
-}
-
-function statusLabel(status: Transaction['status']): string {
-    return status === 'paid' ? 'Paid' : 'In progress';
 }
 
 function statusClassName(status: Transaction['status']): string {
@@ -84,7 +77,10 @@ export default function AdminTransactionHistory({
                     <form onSubmit={applyFilters} className="mb-4 space-y-3">
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label htmlFor="from" className={labelClassName}>
+                                <label
+                                    htmlFor="from"
+                                    className={labelClassName}
+                                >
                                     From
                                 </label>
                                 <input
@@ -105,7 +101,9 @@ export default function AdminTransactionHistory({
                                     id="to"
                                     type="date"
                                     value={to}
-                                    onChange={(event) => setTo(event.target.value)}
+                                    onChange={(event) =>
+                                        setTo(event.target.value)
+                                    }
                                     className={inputClassName}
                                 />
                             </div>
@@ -153,7 +151,10 @@ export default function AdminTransactionHistory({
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="min-w-0 flex-1">
                                                 <p className="truncate font-medium">
-                                                    #{transaction.transaction_number}
+                                                    #
+                                                    {
+                                                        transaction.transaction_number
+                                                    }
                                                     {' · '}
                                                     {transaction.customer_name}
                                                 </p>
@@ -173,10 +174,16 @@ export default function AdminTransactionHistory({
                                             </div>
                                             <div className="flex shrink-0 flex-col items-end gap-1.5">
                                                 <TableCodeBadge
-                                                    code={transaction.table_code}
+                                                    code={
+                                                        transaction.table_code
+                                                    }
                                                 />
                                                 {transaction.is_admin_created && (
-                                                    <span className={adminPillClassName}>
+                                                    <span
+                                                        className={
+                                                            adminPillClassName
+                                                        }
+                                                    >
                                                         Admin
                                                     </span>
                                                 )}
@@ -185,16 +192,19 @@ export default function AdminTransactionHistory({
                                                         transaction.status,
                                                     )}
                                                 >
-                                                    {statusLabel(
+                                                    {transactionStatusLabel(
                                                         transaction.status,
+                                                        transaction.paid_via,
                                                     )}
                                                 </span>
                                             </div>
                                         </div>
 
-                                        <p className="mt-3 tabular-nums text-sm font-medium">
+                                        <p className="mt-3 text-sm font-medium tabular-nums">
                                             Total{' '}
-                                            {formatPrice(transaction.total_bill)}
+                                            {formatPrice(
+                                                transaction.total_bill,
+                                            )}
                                         </p>
                                     </Link>
                                 </li>

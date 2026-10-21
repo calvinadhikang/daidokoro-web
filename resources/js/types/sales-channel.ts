@@ -25,6 +25,24 @@ export type ChannelMenu = {
     price_override?: number | null;
 };
 
+export type EventSourceMenu = {
+    id: number;
+    name: string;
+    price_label: string;
+    price_override: number | null;
+    is_available: boolean;
+};
+
+export type EventCopySource = {
+    id: number;
+    name: string;
+    starts_at: string | null;
+    ends_at: string | null;
+    is_archived: boolean;
+    menus_count: number;
+    menus?: EventSourceMenu[];
+};
+
 export type SalesChannelOption = {
     id: number;
     name: string;

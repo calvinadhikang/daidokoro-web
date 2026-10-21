@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/menu', [MenuBrowseController::class, 'index'])->name('menu.index');
+Route::get('/menu/{menuModel}', [MenuBrowseController::class, 'show'])->name('menu.show');
 Route::patch('/menu/{menuModel}/availability', [MenuBrowseController::class, 'toggleAvailability'])->name('menu.availability.toggle');
 Route::get('/t/{code}', [TableEntryController::class, 'show'])->name('table.entry');
 Route::get('/t/{code}/{serviceType}', [TableEntryController::class, 'select'])
@@ -35,6 +36,9 @@ Route::prefix('customer')->name('customer.')->group(function () {
     Route::middleware('customer')->group(function () {
         Route::post('/logout', [CustomerLoginController::class, 'destroy'])->name('logout');
         Route::get('/order', [CustomerOrderController::class, 'index'])->name('order.index');
+        Route::get('/order/history', [CustomerOrderController::class, 'history'])->name('order.history');
+        Route::post('/order/{transaction}/qris', [CustomerOrderController::class, 'storeQris'])->name('order.qris');
+        Route::post('/order/{transaction}/qris/status', [CustomerOrderController::class, 'checkQris'])->name('order.qris.status');
 
         Route::middleware('store.open')->group(function () {
             Route::get('/menu', [CustomerMenuController::class, 'index'])->name('menu.index');
@@ -89,6 +93,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/events/{salesChannel}/menus/create', [EventController::class, 'createMenu'])->name('events.menus.create');
         Route::post('/events/{salesChannel}/menus', [EventController::class, 'storeMenu'])->name('events.menus.store');
         Route::post('/events/{salesChannel}/menus/assign', [EventController::class, 'assignMenus'])->name('events.menus.assign');
+        Route::post('/events/{salesChannel}/menus/copy', [EventController::class, 'copyMenus'])->name('events.menus.copy');
         Route::post('/events/{salesChannel}/menus/{menuModel}', [EventController::class, 'updateMenu'])->name('events.menus.update');
         Route::delete('/events/{salesChannel}/menus/{menuModel}', [EventController::class, 'unassignMenu'])->name('events.menus.unassign');
 

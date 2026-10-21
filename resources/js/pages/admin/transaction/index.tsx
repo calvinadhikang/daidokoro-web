@@ -1,11 +1,14 @@
 import { Head, Link } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
-import { create as createTransaction, show as showTransaction } from '@/actions/App/Http/Controllers/TransactionController';
+import {
+    create as createTransaction,
+    show as showTransaction,
+} from '@/actions/App/Http/Controllers/TransactionController';
 import { TableCodeBadge } from '@/components/admin/table-code-badge';
 import { inputClassName } from '@/components/admin/menu-form';
 import type { Transaction } from '@/types/transaction';
-import { serviceTypeLabel } from '@/types/transaction';
+import { serviceTypeLabel, transactionStatusLabel } from '@/types/transaction';
 
 type Props = {
     transactions: Transaction[];
@@ -13,10 +16,6 @@ type Props = {
 
 function formatPrice(price: number): string {
     return price.toLocaleString();
-}
-
-function statusLabel(status: Transaction['status']): string {
-    return status === 'paid' ? 'Paid' : 'In progress';
 }
 
 function statusClassName(status: Transaction['status']): string {
@@ -48,9 +47,7 @@ export default function AdminTransactionIndex({ transactions }: Props) {
                 (transaction.customer_phone_local ?? '').includes(query) ||
                 transaction.transaction_number.includes(query) ||
                 `#${transaction.transaction_number}`.includes(query) ||
-                (transaction.table_code ?? '')
-                    .toLowerCase()
-                    .includes(query),
+                (transaction.table_code ?? '').toLowerCase().includes(query),
         );
     }, [transactions, search]);
 
@@ -97,7 +94,8 @@ export default function AdminTransactionIndex({ transactions }: Props) {
                     ) : filteredTransactions.length === 0 ? (
                         <div className="rounded-lg border border-[#e3e3e0] bg-white p-10 text-center dark:border-[#3E3E3A] dark:bg-[#161615]">
                             <p className="text-[#706f6c] dark:text-[#A1A09A]">
-                                No transactions match &quot;{search.trim()}&quot;.
+                                No transactions match &quot;{search.trim()}
+                                &quot;.
                             </p>
                         </div>
                     ) : (
@@ -105,13 +103,18 @@ export default function AdminTransactionIndex({ transactions }: Props) {
                             {filteredTransactions.map((transaction) => (
                                 <li key={transaction.id}>
                                     <Link
-                                        href={showTransaction.url(transaction.id)}
+                                        href={showTransaction.url(
+                                            transaction.id,
+                                        )}
                                         className="block rounded-lg border border-[#e3e3e0] bg-white p-4 active:bg-[#FDFDFC] dark:border-[#3E3E3A] dark:bg-[#161615] dark:active:bg-[#0a0a0a]"
                                     >
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="min-w-0 flex-1">
                                                 <p className="truncate font-medium">
-                                                    #{transaction.transaction_number}
+                                                    #
+                                                    {
+                                                        transaction.transaction_number
+                                                    }
                                                     {' · '}
                                                     {transaction.customer_name}
                                                 </p>
@@ -126,10 +129,16 @@ export default function AdminTransactionIndex({ transactions }: Props) {
                                             </div>
                                             <div className="flex shrink-0 flex-col items-end gap-1.5">
                                                 <TableCodeBadge
-                                                    code={transaction.table_code}
+                                                    code={
+                                                        transaction.table_code
+                                                    }
                                                 />
                                                 {transaction.is_admin_created && (
-                                                    <span className={adminPillClassName}>
+                                                    <span
+                                                        className={
+                                                            adminPillClassName
+                                                        }
+                                                    >
                                                         Admin
                                                     </span>
                                                 )}
@@ -138,13 +147,19 @@ export default function AdminTransactionIndex({ transactions }: Props) {
                                                         transaction.status,
                                                     )}
                                                 >
-                                                    {statusLabel(transaction.status)}
+                                                    {transactionStatusLabel(
+                                                        transaction.status,
+                                                        transaction.paid_via,
+                                                    )}
                                                 </span>
                                             </div>
                                         </div>
 
-                                        <p className="mt-3 tabular-nums text-sm font-medium">
-                                            Total {formatPrice(transaction.total_bill)}
+                                        <p className="mt-3 text-sm font-medium tabular-nums">
+                                            Total{' '}
+                                            {formatPrice(
+                                                transaction.total_bill,
+                                            )}
                                         </p>
                                     </Link>
                                 </li>

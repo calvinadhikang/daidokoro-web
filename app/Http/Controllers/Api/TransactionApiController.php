@@ -95,7 +95,7 @@ class TransactionApiController extends Controller
             ]);
         }
 
-        $transaction->update(['status' => 'paid']);
+        $transaction->markPaidByCashier();
 
         return response()->json([
             'success' => true,

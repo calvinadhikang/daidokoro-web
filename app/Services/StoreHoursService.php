@@ -5,12 +5,44 @@ namespace App\Services;
 use App\Models\OperatingClosure;
 use App\Models\OperatingHour;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 class StoreHoursService
 {
     public const TIMEZONE = 'Asia/Jakarta';
 
     public const TIMEZONE_LABEL = 'WIB';
+
+    /**
+     * @var array<int, string>
+     */
+    private const DAY_NAMES_ID = [
+        0 => 'Minggu',
+        1 => 'Senin',
+        2 => 'Selasa',
+        3 => 'Rabu',
+        4 => 'Kamis',
+        5 => 'Jumat',
+        6 => 'Sabtu',
+    ];
+
+    /**
+     * @var array<int, string>
+     */
+    private const MONTH_NAMES_ID = [
+        1 => 'Jan',
+        2 => 'Feb',
+        3 => 'Mar',
+        4 => 'Apr',
+        5 => 'Mei',
+        6 => 'Jun',
+        7 => 'Jul',
+        8 => 'Agu',
+        9 => 'Sep',
+        10 => 'Okt',
+        11 => 'Nov',
+        12 => 'Des',
+    ];
 
     public function now(): Carbon
     {
@@ -200,6 +232,98 @@ class StoreHoursService
         }
 
         return null;
+    }
+
+    /**
+     * The next time the store starts a session, looking ahead up to 21 days.
+     *
+     * @return array{
+     *     opens_at: string,
+     *     opens_at_formatted: string,
+     *     message: string,
+     * }|null
+     */
+    public function nextOpening(?Carbon $at = null): ?array
+    {
+        $at = ($at ?? $this->now())->timezone(self::TIMEZONE);
+        $schedules = OperatingHour::query()->get()->keyBy('day_of_week');
+        $rangeEnd = $at->copy()->addDays(20)->toDateString();
+        $closures = OperatingClosure::query()
+            ->whereDate('starts_at', '<=', $rangeEnd)
+            ->whereDate('ends_at', '>=', $at->toDateString())
+            ->get();
+
+        for ($offset = 0; $offset < 21; $offset++) {
+            $day = $at->copy()->startOfDay()->addDays($offset);
+            $date = $day->toDateString();
+
+            if ($this->dateIsClosedByClosure($closures, $date)) {
+                continue;
+            }
+
+            $schedule = $schedules->get((int) $day->format('w'));
+
+            if (! $schedule instanceof OperatingHour || $schedule->is_closed) {
+                continue;
+            }
+
+            foreach ($this->sessionsFromSchedule($schedule) as $session) {
+                $startsAt = Carbon::parse(
+                    "{$date} {$this->normalizeTime($session['starts_at'])}",
+                    self::TIMEZONE,
+                );
+
+                if ($startsAt->lessThanOrEqualTo($at)) {
+                    continue;
+                }
+
+                return $this->formatNextOpening($at, $startsAt);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  Collection<int, OperatingClosure>  $closures
+     */
+    private function dateIsClosedByClosure(Collection $closures, string $date): bool
+    {
+        return $closures->contains(function (OperatingClosure $closure) use ($date): bool {
+            return $closure->starts_at->toDateString() <= $date
+                && $closure->ends_at->toDateString() >= $date;
+        });
+    }
+
+    /**
+     * @return array{
+     *     opens_at: string,
+     *     opens_at_formatted: string,
+     *     message: string,
+     * }
+     */
+    private function formatNextOpening(Carbon $at, Carbon $startsAt): array
+    {
+        $time = $startsAt->format('H.i');
+        $date = $startsAt->toDateString();
+
+        if ($date === $at->toDateString()) {
+            $when = "hari ini pukul {$time}";
+        } elseif ($date === $at->copy()->addDay()->toDateString()) {
+            $when = "besok pukul {$time}";
+        } else {
+            $dayName = self::DAY_NAMES_ID[(int) $startsAt->format('w')];
+            $month = self::MONTH_NAMES_ID[(int) $startsAt->format('n')];
+            $when = "{$dayName}, {$startsAt->format('j')} {$month} pukul {$time}";
+        }
+
+        $message = "Buka lagi {$when} ".self::TIMEZONE_LABEL;
+
+        return [
+            'opens_at' => $startsAt->toIso8601String(),
+            'opens_at_formatted' => $message,
+            'message' => $message,
+        ];
     }
 
     /**

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\MenuModel;
 use App\Models\OperatingClosure;
 use App\Models\SalesChannel;
+use App\Support\PriceLabel;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
@@ -85,7 +86,7 @@ class SalesChannelService
     {
         return SalesChannel::query()
             ->active()
-            ->orderByRaw("type = ? desc", [SalesChannel::TYPE_STORE])
+            ->orderByRaw('type = ? desc', [SalesChannel::TYPE_STORE])
             ->orderBy('starts_at')
             ->orderBy('name')
             ->get()
@@ -126,6 +127,123 @@ class SalesChannelService
         $this->syncLinkedClosure($channel);
 
         return $channel->fresh(['closure']) ?? $channel;
+    }
+
+    /**
+     * Events that can supply menus, newest first. Archived events stay included.
+     *
+     * @return list<array{
+     *     id: int,
+     *     name: string,
+     *     starts_at: string|null,
+     *     ends_at: string|null,
+     *     is_archived: bool,
+     *     menus_count: int,
+     *     menus?: list<array{
+     *         id: int,
+     *         name: string,
+     *         price_label: string,
+     *         price_override: int|null,
+     *         is_available: bool
+     *     }>
+     * }>
+     */
+    public function eventCopySources(?int $exceptId = null, bool $withMenus = false): array
+    {
+        $query = SalesChannel::query()
+            ->events()
+            ->when($exceptId !== null, fn ($builder) => $builder->where('id', '!=', $exceptId))
+            ->withCount('menus')
+            ->orderByDesc('starts_at')
+            ->orderByDesc('id');
+
+        if ($withMenus) {
+            $query->with(['menus' => fn ($menuQuery) => $menuQuery->orderBy('menus.name')]);
+        }
+
+        return $query->get()
+            ->map(function (SalesChannel $channel) use ($withMenus) {
+                $payload = [
+                    'id' => $channel->id,
+                    'name' => $channel->name,
+                    'starts_at' => $channel->starts_at?->toDateString(),
+                    'ends_at' => $channel->ends_at?->toDateString(),
+                    'is_archived' => $channel->isArchived(),
+                    'menus_count' => (int) $channel->menus_count,
+                ];
+
+                if ($withMenus) {
+                    $payload['menus'] = $channel->menus
+                        ->map(fn (MenuModel $menu) => $this->formatSourceMenu($menu))
+                        ->values()
+                        ->all();
+                }
+
+                return $payload;
+            })
+            ->all();
+    }
+
+    /**
+     * Assign the source event's menus onto the target. Same menu records, with
+     * that event's price override and availability. Menus already on the target
+     * are left as they are.
+     *
+     * @param  list<int>|null  $onlyMenuIds  null copies every menu on the source
+     */
+    public function copyMenusFromEvent(SalesChannel $target, SalesChannel $source, ?array $onlyMenuIds = null): int
+    {
+        $this->assertEvent($target);
+        $this->assertEvent($source);
+
+        if ((int) $source->id === (int) $target->id) {
+            throw ValidationException::withMessages([
+                'source_event_id' => 'Choose a different event to copy from.',
+            ]);
+        }
+
+        $onlyMenuIds = $onlyMenuIds === null
+            ? null
+            : array_values(array_unique(array_map(fn (int|string $id) => (int) $id, $onlyMenuIds)));
+
+        $sourceMenus = $source->menus()
+            ->when(
+                $onlyMenuIds !== null,
+                fn ($query) => $query->whereIn('menus.id', $onlyMenuIds),
+            )
+            ->get();
+
+        if ($onlyMenuIds !== null && $sourceMenus->count() !== count($onlyMenuIds)) {
+            throw ValidationException::withMessages([
+                'menu_ids' => 'Choose menus that belong to the selected event.',
+            ]);
+        }
+
+        $existingIds = array_fill_keys(
+            $target->menus()->pluck('menus.id')->all(),
+            true,
+        );
+
+        $payload = [];
+
+        foreach ($sourceMenus as $menu) {
+            if (isset($existingIds[$menu->id])) {
+                continue;
+            }
+
+            $override = $menu->pivot->price_override;
+
+            $payload[$menu->id] = [
+                'price_override' => $override === null ? null : (int) $override,
+                'is_available' => (bool) $menu->pivot->is_available,
+            ];
+        }
+
+        if ($payload !== []) {
+            $target->menus()->syncWithoutDetaching($payload);
+        }
+
+        return count($payload);
     }
 
     /**
@@ -409,6 +527,30 @@ class SalesChannelService
                 fn (SalesChannel $channel) => $this->format($channel),
                 $this->listForIndex(),
             ),
+        ];
+    }
+
+    /**
+     * @return array{
+     *     id: int,
+     *     name: string,
+     *     price_label: string,
+     *     price_override: int|null,
+     *     is_available: bool
+     * }
+     */
+    private function formatSourceMenu(MenuModel $menu): array
+    {
+        $override = $menu->pivot->price_override;
+        $pricingType = $menu->pricing_type ?: MenuModel::PRICING_STANDARD;
+        $price = $override !== null ? (int) $override : (int) $menu->price;
+
+        return [
+            'id' => $menu->id,
+            'name' => $menu->name,
+            'price_label' => PriceLabel::format($price, $pricingType),
+            'price_override' => $override === null ? null : (int) $override,
+            'is_available' => (bool) $menu->pivot->is_available && (bool) $menu->is_available,
         ];
     }
 

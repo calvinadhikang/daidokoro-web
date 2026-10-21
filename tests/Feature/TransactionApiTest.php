@@ -243,6 +243,7 @@ class TransactionApiTest extends TestCase
         $this->assertDatabaseHas('transactions', [
             'id' => $transaction->id,
             'status' => 'paid',
+            'paid_via' => 'cashier',
         ]);
     }
 

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\CategoryApiController;
 use App\Http\Controllers\Api\CustomerApiController;
+use App\Http\Controllers\Api\ManjoQrisNotificationController;
 use App\Http\Controllers\Api\MenuApiController;
 use App\Http\Controllers\Api\NotificationApiController;
 use App\Http\Controllers\Api\OperatingHoursApiController;
@@ -92,6 +93,12 @@ Route::prefix('channels')->group(function () {
     Route::post('/{salesChannel}/menus/update/{menuModel}', [SalesChannelApiController::class, 'updateMenu']);
     Route::post('/{salesChannel}/menus/unassign/{menuModel}', [SalesChannelApiController::class, 'unassignMenu']);
 });
+
+Route::post('/v1.0/access-token/b2b', [ManjoQrisNotificationController::class, 'token']);
+Route::post('/v1.0/qr/qr-mpm-notify', [ManjoQrisNotificationController::class, 'store']);
+Route::post('/manjo/qris/notify/v1.0/access-token/b2b', [ManjoQrisNotificationController::class, 'token']);
+Route::post('/manjo/qris/notify/v1.0/qr/qr-mpm-notify', [ManjoQrisNotificationController::class, 'store']);
+Route::post('/manjo/qris/notify', [ManjoQrisNotificationController::class, 'store']);
 
 Route::get('/ping', function () {
     return response()->json([

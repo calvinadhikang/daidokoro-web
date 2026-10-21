@@ -33,5 +33,18 @@
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
         <env name="MENU_IMAGE_DISK" value="public"/>
+        <env name="MANJO_BASE_URL" value="https://snap-uat.manjo.co.id/api"/>
+        <env name="MANJO_CLIENT_ID" value="test-client"/>
+        <env name="MANJO_CLIENT_SECRET" value="test-secret"/>
+        <env name="MANJO_MERCHANT_ID" value="MTTEST"/>
+        <env name="MANJO_PARTNER_ID" value="MTTEST"/>
+        <env name="MANJO_CHANNEL_ID" value="05"/>
+        <env name="MANJO_PRIVATE_KEY_PATH" value=""/>
+        <env name="MANJO_PROVIDER_PUBLIC_KEY_PATH" value=""/>
+        <env name="MANJO_CLIENT_IP" value="127.0.0.1"/>
+        <env name="MANJO_ORIGIN" value="staging.daidokoro.my.id"/>
+        <env name="MANJO_QR_VALIDITY_SECONDS" value="3600"/>
+        <env name="MANJO_NOTIFY_PATH" value="/api/manjo/qris/notify"/>
+        <env name="MANJO_QRIS_ENABLED" value="true"/>
     </php>
 </phpunit>
