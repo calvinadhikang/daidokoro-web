@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\EventSalesReportRequest;
+use App\Http\Requests\EventSummaryReportRequest;
 use App\Http\Requests\MenuReportRequest;
 use App\Http\Requests\SalesReportRequest;
 use App\Models\Transaction;
@@ -42,6 +43,11 @@ class ReportApiController extends Controller
             ->all();
 
         return response()->json($report);
+    }
+
+    public function eventSummary(EventSummaryReportRequest $request): JsonResponse
+    {
+        return response()->json($this->salesReports->buildEventSummary($request->validated()));
     }
 
     public function sales(SalesReportRequest $request): JsonResponse

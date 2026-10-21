@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\MenuModel;
+use App\Models\SalesChannel;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Services\StoreHoursService;
@@ -357,5 +358,126 @@ class ReportApiTest extends TestCase
         $response->assertJsonPath('summary.revenue', 75000);
         $response->assertJsonPath('summary.total_count', 1);
         $response->assertJsonCount(1, 'events');
+    }
+
+    public function test_event_summary_groups_event_transactions_and_skips_the_store(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-15 12:00:00', StoreHoursService::TIMEZONE));
+
+        $senayan = SalesChannel::query()->create([
+            'type' => SalesChannel::TYPE_EVENT,
+            'name' => 'Bazaar Senayan',
+            'starts_at' => '2026-10-10',
+            'ends_at' => '2026-10-12',
+            'closes_store' => true,
+        ]);
+
+        $bandung = SalesChannel::query()->create([
+            'type' => SalesChannel::TYPE_EVENT,
+            'name' => 'Bazaar Bandung',
+            'starts_at' => '2026-10-02',
+            'ends_at' => '2026-10-03',
+            'closes_store' => false,
+            'archived_at' => Carbon::parse('2026-10-04 12:00:00', StoreHoursService::TIMEZONE),
+        ]);
+
+        $senayanId = $senayan->id;
+        $bandungId = $bandung->id;
+
+        Transaction::query()->create([
+            'customer_name' => 'Senayan Paid',
+            'customer_phone' => '6281111111111',
+            'service_type' => 'takeaway',
+            'status' => 'paid',
+            'total_bill' => 100000,
+            'business_date' => '2026-10-11',
+            'daily_number' => 1,
+            'sales_channel_id' => $senayanId,
+        ]);
+
+        Transaction::query()->create([
+            'customer_name' => 'Senayan Open',
+            'customer_phone' => '6282222222222',
+            'service_type' => 'takeaway',
+            'status' => 'in_progress',
+            'total_bill' => 20000,
+            'business_date' => '2026-10-12',
+            'daily_number' => 2,
+            'sales_channel_id' => $senayanId,
+        ]);
+
+        Transaction::query()->create([
+            'customer_name' => 'Bandung Paid',
+            'customer_phone' => '6283333333333',
+            'service_type' => 'takeaway',
+            'status' => 'paid',
+            'total_bill' => 50000,
+            'business_date' => '2026-10-02',
+            'daily_number' => 1,
+            'sales_channel_id' => $bandungId,
+        ]);
+
+        Transaction::query()->create([
+            'customer_name' => 'Store Paid',
+            'customer_phone' => '6284444444444',
+            'service_type' => 'dine_in',
+            'status' => 'paid',
+            'total_bill' => 999000,
+            'business_date' => '2026-10-11',
+            'daily_number' => 1,
+        ]);
+
+        Transaction::query()->create([
+            'customer_name' => 'Outside Range',
+            'customer_phone' => '6285555555555',
+            'service_type' => 'takeaway',
+            'status' => 'paid',
+            'total_bill' => 80000,
+            'business_date' => '2026-09-30',
+            'daily_number' => 1,
+            'sales_channel_id' => $senayanId,
+        ]);
+
+        $month = $this->getJson('/api/report/event-summary?preset=month');
+
+        $month->assertOk();
+        $month->assertJsonPath('filters.preset', 'month');
+        $month->assertJsonPath('filters.from', '2026-10-01');
+        $month->assertJsonPath('filters.to', '2026-10-31');
+        $month->assertJsonPath('summary.revenue', 150000);
+        $month->assertJsonPath('summary.paid_count', 2);
+        $month->assertJsonPath('summary.unpaid_revenue', 20000);
+        $month->assertJsonPath('summary.unpaid_count', 1);
+        $month->assertJsonPath('summary.total_count', 3);
+        $month->assertJsonCount(2, 'events');
+        $month->assertJsonPath('events.0.id', $senayanId);
+        $month->assertJsonPath('events.0.summary.revenue', 100000);
+        $month->assertJsonPath('events.0.summary.unpaid_revenue', 20000);
+        $month->assertJsonPath('events.1.id', $bandungId);
+        $month->assertJsonPath('events.1.is_archived', true);
+        $month->assertJsonPath('events.1.summary.revenue', 50000);
+
+        $range = $this->getJson('/api/report/event-summary?'.http_build_query([
+            'preset' => 'range',
+            'from' => '2026-10-10',
+            'to' => '2026-10-12',
+        ]));
+
+        $range->assertOk();
+        $range->assertJsonPath('summary.revenue', 100000);
+        $range->assertJsonCount(1, 'events');
+        $range->assertJsonPath('events.0.id', $senayanId);
+    }
+
+    public function test_event_summary_rejects_range_when_to_is_before_from(): void
+    {
+        $response = $this->getJson('/api/report/event-summary?'.http_build_query([
+            'preset' => 'range',
+            'from' => '2026-10-12',
+            'to' => '2026-10-01',
+        ]));
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors(['to']);
     }
 }

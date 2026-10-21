@@ -69,6 +69,7 @@ Route::prefix('hours')->group(function () {
 Route::prefix('report')->group(function () {
     Route::get('/sales', [ReportApiController::class, 'sales']);
     Route::get('/event-sales', [ReportApiController::class, 'eventSales']);
+    Route::get('/event-summary', [ReportApiController::class, 'eventSummary']);
     Route::get('/menus', [ReportApiController::class, 'menus']);
 });
 
