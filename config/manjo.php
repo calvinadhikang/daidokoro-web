@@ -32,6 +32,12 @@ return [
     'qr_validity_seconds' => (int) env('MANJO_QR_VALIDITY_SECONDS', 3600),
 
     /*
+    | Customer QRIS stays off until Manjo's production license is issued.
+    | The string "false" must not count as enabled.
+    */
+    'customer_enabled' => filter_var(env('MANJO_QRIS_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+
+    /*
     | Extra path accepted in the payment-notification signature.
     | Manjo also signs the SNAP path /v1.0/qr/qr-mpm-notify.
     */

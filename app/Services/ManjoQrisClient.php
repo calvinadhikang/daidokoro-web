@@ -137,58 +137,53 @@ class ManjoQrisClient
         }
 
         $timestamp = $this->timestamp();
-        $externalId = $this->freshExternalId();
-        $paths = array_values(array_unique([
-            '/v1.0/qr/qr-mpm-query',
-            $this->signedPath('/v1.0/qr/qr-mpm-query'),
-        ]));
+        $path = '/v1.0/qr/qr-mpm-query';
         $lastCode = '';
         $lastMessage = '';
 
-        foreach ($paths as $path) {
-            foreach (['hex', 'base64'] as $encoding) {
-                $signature = ManjoSignature::request(
-                    'POST',
-                    $path,
-                    $token,
-                    $body,
-                    $timestamp,
-                    (string) config('manjo.client_secret'),
-                    $encoding,
-                );
-                $headers = $this->transactionHeaders($token, $timestamp, $signature, $externalId);
-                $headers['X-CLIENT-KEY'] = (string) config('manjo.client_id');
+        foreach ($this->queryClientKeys() as $clientKey) {
+            $externalId = $this->freshExternalId();
+            $signature = ManjoSignature::request(
+                'POST',
+                $path,
+                $token,
+                $body,
+                $timestamp,
+                (string) config('manjo.client_secret'),
+            );
+            $headers = $this->transactionHeaders($token, $timestamp, $signature, $externalId);
 
-                try {
-                    $response = Http::withHeaders($headers)
-                        ->withBody($body, 'application/json')
-                        ->timeout(20)
-                        ->post($this->url('/v1.0/qr/qr-mpm-query'));
-                } catch (ConnectionException) {
-                    throw new RuntimeException('Payment service is unreachable. Try again.');
-                }
+            if ($clientKey !== null) {
+                $headers['X-CLIENT-KEY'] = $clientKey;
+            }
 
-                $code = (string) $response->json('responseCode');
-                $decoded = $response->json();
+            try {
+                $response = Http::withHeaders($headers)
+                    ->withBody($body, 'application/json')
+                    ->timeout(20)
+                    ->post($this->url($path));
+            } catch (ConnectionException) {
+                throw new RuntimeException('Payment service is unreachable. Try again.');
+            }
 
-                if (is_array($decoded) && (($response->successful() && str_starts_with($code, '200')) || $code === '4045101')) {
-                    return $decoded;
-                }
+            $code = (string) $response->json('responseCode');
+            $decoded = $response->json();
 
-                $lastCode = $code;
-                $lastMessage = (string) $response->json('responseMessage');
-                Log::warning('Manjo QRIS query failed', [
-                    'path' => $path,
-                    'encoding' => $encoding,
-                    'response_code' => $code,
-                    'message' => $lastMessage,
-                ]);
+            if (is_array($decoded) && (($response->successful() && str_starts_with($code, '200')) || $code === '4045101')) {
+                return $decoded;
+            }
 
-                $externalId = $this->freshExternalId();
+            $lastCode = $code;
+            $lastMessage = (string) $response->json('responseMessage');
+            Log::warning('Manjo QRIS query failed', [
+                'path' => $path,
+                'client_key' => $clientKey === null ? 'none' : 'set',
+                'response_code' => $code,
+                'message' => $lastMessage,
+            ]);
 
-                if (! $this->isSignatureRejection($code, $lastMessage) && ! str_starts_with($code, '409')) {
-                    throw new RuntimeException($this->failureMessage('query', $code, $lastMessage, 'Could not check the payment.'));
-                }
+            if (! $this->isSignatureRejection($code, $lastMessage) && ! str_starts_with($code, '409')) {
+                throw new RuntimeException($this->failureMessage('query', $code, $lastMessage, 'Could not check the payment.'));
             }
         }
 
@@ -303,7 +298,22 @@ class ManjoQrisClient
 
         $detail = $code !== '' ? $step.' '.$code.': ' : $step.': ';
 
-        return 'Could not create a QR code. '.$detail.mb_substr($message, 0, 150);
+        return $fallback.'. '.$detail.mb_substr($message, 0, 150);
+    }
+
+    /**
+     * The working QR call does not send X-CLIENT-KEY. Query docs also allow
+     * merchant id plus payment id 99, then the OAuth client id.
+     *
+     * @return list<string|null>
+     */
+    private function queryClientKeys(): array
+    {
+        return [
+            null,
+            (string) config('manjo.merchant_id').'99',
+            (string) config('manjo.client_id'),
+        ];
     }
 
     /**

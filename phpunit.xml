@@ -45,5 +45,6 @@
         <env name="MANJO_ORIGIN" value="staging.daidokoro.my.id"/>
         <env name="MANJO_QR_VALIDITY_SECONDS" value="3600"/>
         <env name="MANJO_NOTIFY_PATH" value="/api/manjo/qris/notify"/>
+        <env name="MANJO_QRIS_ENABLED" value="true"/>
     </php>
 </phpunit>

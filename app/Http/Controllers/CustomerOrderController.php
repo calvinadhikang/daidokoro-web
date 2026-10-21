@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -39,6 +40,7 @@ class CustomerOrderController extends Controller
 
         return Inertia::render('customer/order/index', [
             'serviceType' => session('service_type'),
+            'qrisEnabled' => (bool) config('manjo.customer_enabled'),
             'transactions' => $transactions
                 ->map(fn (Transaction $transaction) => $this->formatTransaction($transaction))
                 ->values()
@@ -60,6 +62,8 @@ class CustomerOrderController extends Controller
 
     public function storeQris(Transaction $transaction, QrisPaymentService $qris): RedirectResponse
     {
+        $this->ensureQrisEnabled();
+
         $qris->issue($this->ownedTransaction($transaction));
 
         return redirect()
@@ -69,11 +73,22 @@ class CustomerOrderController extends Controller
 
     public function checkQris(Transaction $transaction, QrisPaymentService $qris): RedirectResponse
     {
+        $this->ensureQrisEnabled();
+
         $qris->check($this->ownedTransaction($transaction));
 
         return redirect()
             ->route('customer.order.index')
             ->with('success', 'Payment received.');
+    }
+
+    private function ensureQrisEnabled(): void
+    {
+        if (! config('manjo.customer_enabled')) {
+            throw ValidationException::withMessages([
+                'qris' => 'QRIS payment is not available.',
+            ]);
+        }
     }
 
     private function ownedTransaction(Transaction $transaction): Transaction
@@ -115,7 +130,9 @@ class CustomerOrderController extends Controller
             'service_type' => $transaction->service_type,
             'created_at' => $transaction->created_at?->toIso8601String(),
             'item_groups' => TransactionItemGrouper::groupByOrderedAt($transaction->items),
-            'qris' => $payment instanceof QrisPayment && $transaction->status !== 'paid'
+            'qris' => (bool) config('manjo.customer_enabled')
+                && $payment instanceof QrisPayment
+                && $transaction->status !== 'paid'
                 ? [
                     'qr_content' => $payment->qr_content,
                     'amount' => $payment->amount,

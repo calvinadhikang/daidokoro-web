@@ -36,6 +36,7 @@ type CustomerOrderTransaction = {
 type Props = {
     serviceType: TransactionServiceType | null;
     transactions: CustomerOrderTransaction[];
+    qrisEnabled: boolean;
 };
 
 function statusClassName(status: TransactionStatus): string {
@@ -58,6 +59,7 @@ function formatOrderedTime(iso: string | null): string | null {
 export default function CustomerOrderIndex({
     serviceType,
     transactions,
+    qrisEnabled,
 }: Props) {
     const { errors } = usePage().props as { errors?: Record<string, string> };
     const [payingId, setPayingId] = useState<number | null>(null);
@@ -71,7 +73,7 @@ export default function CustomerOrderIndex({
     );
 
     useEffect(() => {
-        if (!waitingForPayment) {
+        if (!waitingForPayment || payingId !== null || checkingId !== null) {
             return;
         }
 
@@ -85,7 +87,7 @@ export default function CustomerOrderIndex({
         }, 5000);
 
         return () => window.clearInterval(timer);
-    }, [waitingForPayment]);
+    }, [waitingForPayment, payingId, checkingId]);
 
     function checkPayment(transactionId: number) {
         setCheckingId(transactionId);
@@ -222,7 +224,8 @@ export default function CustomerOrderIndex({
                                             </p>
                                         </div>
 
-                                        {transaction.status !== 'paid' &&
+                                        {qrisEnabled &&
+                                            transaction.status !== 'paid' &&
                                             transaction.total_bill > 0 &&
                                             (transaction.qris !== null ? (
                                                 <QrisPaymentSection

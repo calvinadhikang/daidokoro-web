@@ -55,6 +55,7 @@ class QrisPaymentTest extends TestCase
             'manjo.origin' => 'staging.daidokoro.my.id',
             'manjo.qr_validity_seconds' => 3600,
             'manjo.notify_path' => '/api/manjo/qris/notify',
+            'manjo.customer_enabled' => true,
         ]);
 
         Cache::flush();
@@ -206,7 +207,7 @@ class QrisPaymentTest extends TestCase
             $externalId = $request->header('X-EXTERNAL-ID')[0] ?? '';
 
             return ($request->header('X-SIGNATURE')[0] ?? '') === $expected
-                && ($request->header('X-CLIENT-KEY')[0] ?? '') === 'test-client'
+                && ($request->header('X-CLIENT-KEY')[0] ?? '') === ''
                 && ($request->header('X-PARTNER-ID')[0] ?? '') === 'MTTEST'
                 && $externalId !== ''
                 && $externalId !== 'ext-DK-REF-QUERY'
@@ -218,6 +219,51 @@ class QrisPaymentTest extends TestCase
                 && ($body['merchantId'] ?? null) === 'MTTEST'
                 && ($body['additionalInfo']['currency'] ?? null) === 'IDR';
         });
+    }
+
+    public function test_query_retries_with_the_merchant_client_key_after_a_signature_rejection(): void
+    {
+        Http::fake([
+            'https://snap-uat.manjo.co.id/api/v1.0/access-token/b2b' => Http::response([
+                'responseCode' => '2007300',
+                'accessToken' => 'token-abc',
+                'expiresIn' => '900',
+            ]),
+            'https://snap-uat.manjo.co.id/api/v1.0/qr/qr-mpm-query' => Http::sequence()
+                ->push([
+                    'responseCode' => '4015100',
+                    'responseMessage' => 'Unauthorized Signature',
+                ], 401)
+                ->push([
+                    'responseCode' => '2005100',
+                    'latestTransactionStatus' => '03',
+                    'amount' => ['value' => '35000.00', 'currency' => 'IDR'],
+                ]),
+        ]);
+
+        $customer = $this->customer();
+        $transaction = $this->bill($customer->phone, 35000);
+        $payment = $this->payment($transaction, 'DK-REF-RETRY');
+        $payment->update(['reference_no' => 'A0000001703']);
+
+        $this
+            ->from(route('customer.order.index'))
+            ->withSession(['customer_id' => $customer->id])
+            ->post(route('customer.order.qris.status', $transaction))
+            ->assertSessionHasErrors('qris');
+
+        $clientKeys = [];
+        Http::assertSent(function (Request $request) use (&$clientKeys) {
+            if (! str_contains($request->url(), '/v1.0/qr/qr-mpm-query')) {
+                return false;
+            }
+
+            $clientKeys[] = $request->header('X-CLIENT-KEY')[0] ?? '';
+
+            return true;
+        });
+
+        $this->assertSame(['', 'MTTEST99'], $clientKeys);
     }
 
     public function test_checking_a_pending_qris_does_not_mark_the_bill_paid(): void
@@ -336,6 +382,44 @@ class QrisPaymentTest extends TestCase
             ->withSession(['customer_id' => $customer->id])
             ->post(route('customer.order.qris.status', $transaction))
             ->assertNotFound();
+    }
+
+    public function test_customer_qris_stays_hidden_when_disabled(): void
+    {
+        Http::fake();
+        config(['manjo.customer_enabled' => false]);
+
+        $customer = $this->customer();
+        $transaction = $this->bill($customer->phone, 35000);
+        $this->payment($transaction, 'DK-REF-OFF');
+
+        $page = $this
+            ->withSession(['customer_id' => $customer->id])
+            ->get(route('customer.order.index'));
+
+        $page->assertOk();
+        $page->assertInertia(fn ($inertia) => $inertia
+            ->where('qrisEnabled', false)
+            ->where('transactions.0.qris', null)
+        );
+
+        $this
+            ->from(route('customer.order.index'))
+            ->withSession(['customer_id' => $customer->id])
+            ->post(route('customer.order.qris', $transaction))
+            ->assertSessionHasErrors([
+                'qris' => 'QRIS payment is not available.',
+            ]);
+
+        $this
+            ->from(route('customer.order.index'))
+            ->withSession(['customer_id' => $customer->id])
+            ->post(route('customer.order.qris.status', $transaction))
+            ->assertSessionHasErrors([
+                'qris' => 'QRIS payment is not available.',
+            ]);
+
+        Http::assertNotSent(fn (Request $request) => str_contains($request->url(), 'manjo.co.id'));
     }
 
     public function test_order_page_shows_the_active_qris_code(): void
