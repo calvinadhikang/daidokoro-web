@@ -134,11 +134,19 @@ export default function CustomerOrderIndex({
                                 Bills sent to the kitchen today.
                             </p>
                         </div>
-                        {serviceType !== null && (
-                            <span className="shrink-0 rounded-full bg-[#F6EBE2] px-2.5 py-1 text-xs font-medium text-[#A4532E] dark:bg-[#3A2A22] dark:text-[#F3D5C2]">
-                                {serviceTypeLabel(serviceType)}
-                            </span>
-                        )}
+                        <div className="flex shrink-0 flex-col items-end gap-2">
+                            {serviceType !== null && (
+                                <span className="rounded-full bg-[#F6EBE2] px-2.5 py-1 text-xs font-medium text-[#A4532E] dark:bg-[#3A2A22] dark:text-[#F3D5C2]">
+                                    {serviceTypeLabel(serviceType)}
+                                </span>
+                            )}
+                            <Link
+                                href="/customer/order/history"
+                                className="text-sm font-medium text-[#C56A3E] dark:text-[#E7B08C]"
+                            >
+                                History
+                            </Link>
+                        </div>
                     </div>
                 </header>
 

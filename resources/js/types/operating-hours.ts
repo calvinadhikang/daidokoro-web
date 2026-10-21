@@ -52,6 +52,12 @@ export type StoreStatus = {
     timezone_label: string;
 };
 
+export type NextOpening = {
+    opens_at: string;
+    opens_at_formatted: string;
+    message: string;
+};
+
 export type NextSession = {
     context: 'current' | 'upcoming';
     session_number: number;

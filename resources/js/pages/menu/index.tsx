@@ -4,15 +4,23 @@ import { BrandLogo } from '@/components/brand-logo';
 import { MenuBrowsePanel } from '@/components/menu/menu-browse-panel';
 import { cn } from '@/lib/utils';
 import type { Menu, MenuCategory } from '@/types/menu';
-import type { StoreStatus } from '@/types/operating-hours';
+import type { NextOpening, StoreStatus } from '@/types/operating-hours';
 
 type Props = {
     menus: Menu[];
     categories: MenuCategory[];
     storeStatus: StoreStatus;
+    nextOpening: NextOpening | null;
+    orderUrl: string;
 };
 
-export default function MenuIndex({ menus, categories, storeStatus }: Props) {
+export default function MenuIndex({
+    menus,
+    categories,
+    storeStatus,
+    nextOpening,
+    orderUrl,
+}: Props) {
     return (
         <>
             <Head title="Menu" />
@@ -49,6 +57,8 @@ export default function MenuIndex({ menus, categories, storeStatus }: Props) {
                         enableAvailabilityToggle
                         unavailableLabel="Sold out"
                         emptyMessage="No menu items yet."
+                        menuHref={(menu) => `/menu/${menu.id}`}
+                        linkIcon="chevron"
                     />
                 </main>
 
@@ -56,7 +66,7 @@ export default function MenuIndex({ menus, categories, storeStatus }: Props) {
                     <div className="mx-auto max-w-md">
                         {storeStatus.is_open ? (
                             <Link
-                                href="/customer/login"
+                                href={orderUrl}
                                 className={cn(
                                     'flex w-full items-center justify-center rounded-md px-4 py-3 text-sm font-medium transition-colors',
                                     'bg-[#C56A3E] text-white active:bg-[#A4532E]',
@@ -77,10 +87,13 @@ export default function MenuIndex({ menus, categories, storeStatus }: Props) {
                             </button>
                         )}
                         {!storeStatus.is_open && (
-                            <p className="mt-3 text-center text-xs text-[#44403c] dark:text-[#D6D3D1]">
-                                Ordering is available during operating hours
-                                only.
-                            </p>
+                            <div className="mt-3 text-center text-xs text-[#44403c] dark:text-[#D6D3D1]">
+                                <p>Toko sedang tutup.</p>
+                                <p className="mt-1">
+                                    {nextOpening?.message ??
+                                        'Jam buka belum tersedia.'}
+                                </p>
+                            </div>
                         )}
                     </div>
                 </footer>

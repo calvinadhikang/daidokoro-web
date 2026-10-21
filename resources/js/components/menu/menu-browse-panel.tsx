@@ -30,6 +30,7 @@ function MenuCard({
     href,
     onLongPress,
     variant = 'default',
+    linkIcon = 'plus',
 }: {
     menu: Menu;
     showAvailabilityBadge: boolean;
@@ -37,6 +38,7 @@ function MenuCard({
     href?: string;
     onLongPress?: () => void;
     variant?: 'default' | 'customer';
+    linkIcon?: 'plus' | 'chevron';
 }) {
     const handleLongPress = useCallback(() => {
         onLongPress?.();
@@ -97,16 +99,30 @@ function MenuCard({
                             className="flex h-8 w-8 items-center justify-center rounded-full bg-[#C56A3E] text-white shadow-sm"
                             aria-hidden="true"
                         >
-                            <svg
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                className="size-4"
-                            >
-                                <path d="M12 5v14M5 12h14" />
-                            </svg>
+                            {linkIcon === 'chevron' ? (
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="size-4"
+                                >
+                                    <path d="M9 6l6 6-6 6" />
+                                </svg>
+                            ) : (
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    className="size-4"
+                                >
+                                    <path d="M12 5v14M5 12h14" />
+                                </svg>
+                            )}
                         </span>
                     ) : null}
                 </div>
@@ -194,6 +210,7 @@ type MenuBrowsePanelProps = {
     summaryLabel?: string;
     emptyMessage?: string;
     menuHref?: (menu: Menu) => string | undefined;
+    linkIcon?: 'plus' | 'chevron';
     variant?: 'default' | 'customer';
 };
 
@@ -208,6 +225,7 @@ export function MenuBrowsePanel({
     summaryLabel,
     emptyMessage = 'No menu items available right now.',
     menuHref,
+    linkIcon = 'plus',
     variant = 'default',
 }: MenuBrowsePanelProps) {
     const [search, setSearch] = useState('');
@@ -423,6 +441,7 @@ export function MenuBrowsePanel({
                                         }
                                         unavailableLabel={unavailableLabel}
                                         href={menuHref?.(menu)}
+                                        linkIcon={linkIcon}
                                         onLongPress={
                                             enableAvailabilityToggle
                                                 ? () => setToggleTarget(menu)

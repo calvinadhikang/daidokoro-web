@@ -154,7 +154,13 @@ export function MenuOrderForm({
         const withoutGroup = addonOptionIds.filter(
             (id) => !groupOptionIds.includes(id),
         );
-        setAddonOptionIds([...withoutGroup, optionId]);
+
+        if (addonOptionIds.includes(optionId)) {
+            setAddonOptionIds(withoutGroup);
+        } else {
+            setAddonOptionIds([...withoutGroup, optionId]);
+        }
+
         setError(null);
     }
 
@@ -278,16 +284,36 @@ export function MenuOrderForm({
                                             !option.is_available;
                                         const isSelected =
                                             addonOptionIds.includes(option.id);
-                                        const inputType =
-                                            group.selection_type === 'single'
-                                                ? 'radio'
-                                                : 'checkbox';
 
                                         return (
-                                            <label
+                                            <button
                                                 key={option.id}
+                                                type="button"
+                                                disabled={isUnavailable}
+                                                aria-pressed={isSelected}
+                                                onClick={() => {
+                                                    if (isUnavailable) {
+                                                        return;
+                                                    }
+
+                                                    if (
+                                                        group.selection_type ===
+                                                        'single'
+                                                    ) {
+                                                        toggleSingleOption(
+                                                            groupOptionIds,
+                                                            option.id,
+                                                        );
+
+                                                        return;
+                                                    }
+
+                                                    toggleMultipleOption(
+                                                        option.id,
+                                                    );
+                                                }}
                                                 className={cn(
-                                                    'flex items-center justify-between gap-3 border text-sm',
+                                                    'flex w-full items-center justify-between gap-3 border text-left text-sm',
                                                     isCustomer
                                                         ? 'rounded-xl px-3.5 py-3'
                                                         : 'rounded-md px-3 py-2',
@@ -302,48 +328,13 @@ export function MenuOrderForm({
                                                               'border-[#e3e3e0] dark:border-[#3E3E3A]',
                                                 )}
                                             >
-                                                <span className="flex items-center gap-2">
-                                                    <input
-                                                        type={inputType}
-                                                        name={
-                                                            group.selection_type ===
-                                                            'single'
-                                                                ? `addon-group-${group.id}`
-                                                                : undefined
-                                                        }
-                                                        checked={isSelected}
-                                                        disabled={isUnavailable}
-                                                        onChange={() => {
-                                                            if (isUnavailable) {
-                                                                return;
-                                                            }
-
-                                                            if (
-                                                                group.selection_type ===
-                                                                'single'
-                                                            ) {
-                                                                toggleSingleOption(
-                                                                    groupOptionIds,
-                                                                    option.id,
-                                                                );
-
-                                                                return;
-                                                            }
-
-                                                            toggleMultipleOption(
-                                                                option.id,
-                                                            );
-                                                        }}
-                                                        className="h-4 w-4 border-[#e3e3e0] disabled:cursor-not-allowed dark:border-[#3E3E3A]"
-                                                    />
-                                                    <span>
-                                                        {option.name}
-                                                        {isUnavailable && (
-                                                            <span className="ml-1.5 text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                                                                Unavailable
-                                                            </span>
-                                                        )}
-                                                    </span>
+                                                <span>
+                                                    {option.name}
+                                                    {isUnavailable && (
+                                                        <span className="ml-1.5 text-xs text-[#706f6c] dark:text-[#A1A09A]">
+                                                            Unavailable
+                                                        </span>
+                                                    )}
                                                 </span>
                                                 <span className="text-[#706f6c] tabular-nums dark:text-[#A1A09A]">
                                                     {option.price === 0 &&
@@ -351,7 +342,7 @@ export function MenuOrderForm({
                                                         ? 'Free'
                                                         : `+${formatPrice(option.price)}`}
                                                 </span>
-                                            </label>
+                                            </button>
                                         );
                                     })}
                                 </div>

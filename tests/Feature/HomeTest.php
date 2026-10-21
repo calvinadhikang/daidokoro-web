@@ -89,4 +89,28 @@ class HomeTest extends TestCase
 
         Carbon::setTestNow();
     }
+
+    public function test_next_opening_is_later_today_when_between_sessions(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-27 13:00:00', StoreHoursService::TIMEZONE));
+
+        $nextOpening = app(StoreHoursService::class)->nextOpening();
+
+        $this->assertNotNull($nextOpening);
+        $this->assertSame('Buka lagi hari ini pukul 15.00 WIB', $nextOpening['message']);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_next_opening_skips_weekly_closed_days(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-27 19:00:00', StoreHoursService::TIMEZONE));
+
+        $nextOpening = app(StoreHoursService::class)->nextOpening();
+
+        $this->assertNotNull($nextOpening);
+        $this->assertSame('Buka lagi Senin, 29 Jun pukul 09.00 WIB', $nextOpening['message']);
+
+        Carbon::setTestNow();
+    }
 }

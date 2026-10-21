@@ -3,6 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\Customer;
+use App\Models\MenuAddonGroup;
+use App\Models\MenuAddonOption;
 use App\Models\MenuModel;
 use App\Models\OperatingClosure;
 use App\Models\OperatingHour;
@@ -135,5 +138,112 @@ class MenuBrowseTest extends TestCase
 
         $response->assertRedirect(route('menu.index'));
         $this->assertTrue($menu->fresh()->is_available);
+    }
+
+    public function test_public_menu_detail_shows_addons_without_a_cart_action(): void
+    {
+        $category = Category::query()->create(['name' => 'Mains']);
+        $menu = MenuModel::query()->create([
+            'name' => 'Chicken Rice',
+            'price' => 35000,
+            'is_available' => true,
+        ]);
+        $menu->categories()->attach($category);
+
+        $group = MenuAddonGroup::query()->create([
+            'menu_id' => $menu->id,
+            'name' => 'Spice Level',
+            'selection_type' => 'single',
+            'is_required' => false,
+            'sort_order' => 0,
+        ]);
+
+        MenuAddonOption::query()->create([
+            'menu_addon_group_id' => $group->id,
+            'name' => 'Medium',
+            'price' => 0,
+            'is_available' => true,
+            'sort_order' => 0,
+        ]);
+
+        $response = $this->get(route('menu.show', $menu));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('menu/show')
+            ->where('menu.name', 'Chicken Rice')
+            ->where('menu.addon_groups.0.name', 'Spice Level')
+            ->where('menu.addon_groups.0.options.0.name', 'Medium')
+            ->where('orderUrl', '/customer/login?redirect='.rawurlencode('/customer/menu/'.$menu->id))
+            ->missing('cart')
+        );
+    }
+
+    public function test_public_menu_detail_sends_logged_in_customers_to_the_order_page(): void
+    {
+        $customer = Customer::query()->create([
+            'name' => 'Alex Tan',
+            'phone' => '6281234567890',
+        ]);
+
+        $menu = MenuModel::query()->create([
+            'name' => 'Chicken Rice',
+            'price' => 35000,
+            'is_available' => true,
+        ]);
+
+        $response = $this
+            ->withSession(['customer_id' => $customer->id])
+            ->get(route('menu.show', $menu));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('menu/show')
+            ->where('orderUrl', '/customer/menu/'.$menu->id)
+        );
+    }
+
+    public function test_public_menu_detail_tells_guests_when_the_store_opens(): void
+    {
+        OperatingHour::ensureWeekExists();
+        Carbon::setTestNow(Carbon::parse('2026-06-27 13:00:00', StoreHoursService::TIMEZONE));
+
+        $menu = MenuModel::query()->create([
+            'name' => 'Chicken Rice',
+            'price' => 35000,
+            'is_available' => true,
+        ]);
+
+        $response = $this->get(route('menu.show', $menu));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('menu/show')
+            ->where('storeStatus.is_open', false)
+            ->where('nextOpening.message', 'Buka lagi hari ini pukul 15.00 WIB')
+        );
+
+        Carbon::setTestNow();
+    }
+
+    public function test_public_menu_detail_hides_event_only_menus(): void
+    {
+        $event = SalesChannel::query()->create([
+            'type' => SalesChannel::TYPE_EVENT,
+            'name' => 'Bazaar',
+            'starts_at' => '2026-09-26',
+            'ends_at' => '2026-09-26',
+            'closes_store' => true,
+        ]);
+
+        $eventMenu = new MenuModel([
+            'name' => 'Event Only Roll',
+            'price' => 30000,
+            'is_available' => true,
+        ]);
+        $eventMenu->assignToSalesChannelId = $event->id;
+        $eventMenu->save();
+
+        $this->get(route('menu.show', $eventMenu))->assertNotFound();
     }
 }

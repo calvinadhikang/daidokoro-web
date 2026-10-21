@@ -123,6 +123,28 @@ class CustomerLoginTest extends TestCase
         $this->assertFalse(session()->has('transaction_id'));
     }
 
+    public function test_login_redirects_to_the_requested_menu(): void
+    {
+        $response = $this->post(route('customer.login.store'), [
+            'name' => 'Alex Tan',
+            'phone' => '081234567890',
+            'redirect' => '/customer/menu/12',
+        ]);
+
+        $response->assertRedirect('/customer/menu/12');
+    }
+
+    public function test_login_ignores_redirects_outside_the_customer_menu(): void
+    {
+        $response = $this->post(route('customer.login.store'), [
+            'name' => 'Alex Tan',
+            'phone' => '081234567890',
+            'redirect' => 'https://evil.test/customer/menu/12',
+        ]);
+
+        $response->assertRedirect(route('customer.menu.index'));
+    }
+
     public function test_logout_requires_customer_session(): void
     {
         $response = $this->post(route('customer.logout'));

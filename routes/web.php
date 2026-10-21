@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/menu', [MenuBrowseController::class, 'index'])->name('menu.index');
+Route::get('/menu/{menuModel}', [MenuBrowseController::class, 'show'])->name('menu.show');
 Route::patch('/menu/{menuModel}/availability', [MenuBrowseController::class, 'toggleAvailability'])->name('menu.availability.toggle');
 Route::get('/t/{code}', [TableEntryController::class, 'show'])->name('table.entry');
 Route::get('/t/{code}/{serviceType}', [TableEntryController::class, 'select'])
@@ -35,6 +36,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
     Route::middleware('customer')->group(function () {
         Route::post('/logout', [CustomerLoginController::class, 'destroy'])->name('logout');
         Route::get('/order', [CustomerOrderController::class, 'index'])->name('order.index');
+        Route::get('/order/history', [CustomerOrderController::class, 'history'])->name('order.history');
         Route::post('/order/{transaction}/qris', [CustomerOrderController::class, 'storeQris'])->name('order.qris');
         Route::post('/order/{transaction}/qris/status', [CustomerOrderController::class, 'checkQris'])->name('order.qris.status');
 

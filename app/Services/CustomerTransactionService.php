@@ -45,6 +45,23 @@ class CustomerTransactionService
             ->get();
     }
 
+    /**
+     * @return Collection<int, Transaction>
+     */
+    public function listHistoryByPhone(string $phone, string $sort = 'newest'): Collection
+    {
+        $direction = $sort === 'oldest' ? 'asc' : 'desc';
+
+        return Transaction::query()
+            ->forPhone($phone)
+            ->where('sales_channel_id', SalesChannel::store()->id)
+            ->with('items')
+            ->orderBy('business_date', $direction)
+            ->orderBy('created_at', $direction)
+            ->orderBy('id', $direction)
+            ->get();
+    }
+
     public function hasTodayOrdersByPhone(string $phone): bool
     {
         return Transaction::query()

@@ -38,6 +38,7 @@ class CustomerLoginController extends Controller
             'tableCode' => session('table_code'),
             'customer' => $customer === null ? null : CustomerFormatter::format($customer),
             'hasActiveOrder' => $activeTransaction !== null,
+            'redirectTo' => $this->safeOrderRedirect(request()->query('redirect')),
         ]);
     }
 
@@ -72,8 +73,17 @@ class CustomerLoginController extends Controller
             : 'Welcome, '.$customer->name.'!';
 
         return redirect()
-            ->route('customer.menu.index')
+            ->to($this->safeOrderRedirect($request->input('redirect')) ?? route('customer.menu.index'))
             ->with('success', $message);
+    }
+
+    private function safeOrderRedirect(mixed $redirect): ?string
+    {
+        if (! is_string($redirect) || ! preg_match('#\A/customer/menu/\d+\z#', $redirect)) {
+            return null;
+        }
+
+        return $redirect;
     }
 
     public function destroy(): RedirectResponse
