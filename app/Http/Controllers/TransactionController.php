@@ -197,12 +197,14 @@ class TransactionController extends Controller
             ->with('success', 'Transaction marked as paid.');
     }
 
-    public function destroy(Transaction $transaction): RedirectResponse
+    public function destroy(Request $request, Transaction $transaction): RedirectResponse
     {
-        if ($transaction->isPaid()) {
+        if ($transaction->isPaid() && trim((string) $request->input('confirmation')) !== 'delete paid transaction') {
             return redirect()
                 ->route('admin.transaction.show', $transaction)
-                ->with('success', 'Paid transactions cannot be deleted.');
+                ->withErrors([
+                    'confirmation' => 'Type delete paid transaction to confirm.',
+                ]);
         }
 
         $transaction->delete();

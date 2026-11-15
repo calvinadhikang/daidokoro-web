@@ -11,6 +11,7 @@ type ConfirmDialogProps = {
     variant?: 'default' | 'danger';
     loading?: boolean;
     confirmDelaySeconds?: number;
+    confirmPhrase?: string;
     titleClassName?: string;
     descriptionClassName?: string;
     panelClassName?: string;
@@ -27,6 +28,7 @@ export function ConfirmDialog({
     variant = 'default',
     loading = false,
     confirmDelaySeconds = 0,
+    confirmPhrase,
     titleClassName,
     descriptionClassName,
     panelClassName,
@@ -36,17 +38,27 @@ export function ConfirmDialog({
     const titleId = useId();
     const descriptionId = useId();
     const cancelRef = useRef<HTMLButtonElement>(null);
+    const phraseInputId = useId();
     const [delayForOpen, setDelayForOpen] = useState(open);
     const [delayRemaining, setDelayRemaining] = useState(
         open ? confirmDelaySeconds : 0,
     );
+    const [phraseForOpen, setPhraseForOpen] = useState(open);
+    const [phrase, setPhrase] = useState('');
 
     if (open !== delayForOpen) {
         setDelayForOpen(open);
         setDelayRemaining(open ? confirmDelaySeconds : 0);
     }
 
+    if (open !== phraseForOpen) {
+        setPhraseForOpen(open);
+        setPhrase('');
+    }
+
     const confirmLocked = delayRemaining > 0;
+    const phraseLocked =
+        confirmPhrase !== undefined && phrase.trim() !== confirmPhrase;
 
     useEffect(() => {
         if (!open || confirmDelaySeconds <= 0) {
@@ -119,6 +131,29 @@ export function ConfirmDialog({
                     {description}
                 </p>
 
+                {confirmPhrase !== undefined && (
+                    <div className="mt-4">
+                        <label
+                            htmlFor={phraseInputId}
+                            className="mb-1.5 block text-sm font-medium text-[#706f6c] dark:text-[#A1A09A]"
+                        >
+                            Type{' '}
+                            <span className="font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">
+                                {confirmPhrase}
+                            </span>{' '}
+                            to confirm
+                        </label>
+                        <input
+                            id={phraseInputId}
+                            type="text"
+                            value={phrase}
+                            autoComplete="off"
+                            onChange={(event) => setPhrase(event.target.value)}
+                            className="w-full rounded-md border border-[#e3e3e0] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#1b1b18] dark:border-[#3E3E3A] dark:bg-[#0a0a0a] dark:focus:border-[#EDEDEC]"
+                        />
+                    </div>
+                )}
+
                 <div className="mt-5 flex gap-3">
                     <button
                         ref={cancelRef}
@@ -132,7 +167,7 @@ export function ConfirmDialog({
                     <button
                         type="button"
                         onClick={onConfirm}
-                        disabled={loading || confirmLocked}
+                        disabled={loading || confirmLocked || phraseLocked}
                         className={cn(
                             'flex flex-1 items-center justify-center rounded-md px-4 py-2.5 text-sm font-medium disabled:opacity-50',
                             variant === 'danger'

@@ -42,6 +42,7 @@ type Props = {
 };
 
 const serviceTypes: TransactionServiceType[] = ['dine_in', 'takeaway'];
+const paidDeleteConfirmation = 'delete paid transaction';
 
 function formatDate(iso: string): string {
     return new Date(iso).toLocaleString(undefined, {
@@ -89,6 +90,7 @@ export default function AdminTransactionShow({
         itemGroups.reduce((sum, group) => sum + group.items.length, 0);
     const [markPaidOpen, setMarkPaidOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
+    const [deletePaidOpen, setDeletePaidOpen] = useState(false);
     const [markPaidLoading, setMarkPaidLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [editingItem, setEditingItem] = useState<TransactionItem | null>(
@@ -144,6 +146,17 @@ export default function AdminTransactionShow({
             onFinish: () => {
                 setDeleteLoading(false);
                 setDeleteOpen(false);
+            },
+        });
+    }
+
+    function handleConfirmDeletePaid() {
+        setDeleteLoading(true);
+        router.delete(destroy.url(transaction.id), {
+            data: { confirmation: paidDeleteConfirmation },
+            onFinish: () => {
+                setDeleteLoading(false);
+                setDeletePaidOpen(false);
             },
         });
     }
@@ -232,6 +245,18 @@ export default function AdminTransactionShow({
                 loading={deleteLoading}
                 onConfirm={handleConfirmDelete}
                 onCancel={() => setDeleteOpen(false)}
+            />
+
+            <ConfirmDialog
+                open={deletePaidOpen}
+                title="Delete paid transaction?"
+                description={`Delete paid transaction #${transaction.transaction_number} for ${transaction.customer_name}? The sale is removed from reports. A QRIS payment is not refunded.`}
+                confirmLabel="Delete"
+                confirmPhrase={paidDeleteConfirmation}
+                variant="danger"
+                loading={deleteLoading}
+                onConfirm={handleConfirmDeletePaid}
+                onCancel={() => setDeletePaidOpen(false)}
             />
 
             <ConfirmDialog
@@ -548,24 +573,27 @@ export default function AdminTransactionShow({
                         </section>
                     )}
 
-                    {!isPaid && (
-                        <section className="mt-8 border-t border-[#e3e3e0] pt-6 dark:border-[#3E3E3A]">
-                            <h2 className="text-sm font-medium text-[#706f6c] dark:text-[#A1A09A]">
-                                Danger zone
-                            </h2>
-                            <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                Permanently remove this in-progress transaction
-                                and all its items.
-                            </p>
-                            <button
-                                type="button"
-                                onClick={() => setDeleteOpen(true)}
-                                className="mt-4 w-full rounded-md border border-[#fda29b] px-4 py-2.5 text-sm font-medium text-[#b42318] dark:border-[#912018]"
-                            >
-                                Delete transaction
-                            </button>
-                        </section>
-                    )}
+                    <section className="mt-8 border-t border-[#e3e3e0] pt-6 dark:border-[#3E3E3A]">
+                        <h2 className="text-sm font-medium text-[#706f6c] dark:text-[#A1A09A]">
+                            Danger zone
+                        </h2>
+                        <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                            {isPaid
+                                ? 'Permanently remove this paid transaction and all its items. The sale is removed from reports. A QRIS payment is not refunded.'
+                                : 'Permanently remove this in-progress transaction and all its items.'}
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() =>
+                                isPaid
+                                    ? setDeletePaidOpen(true)
+                                    : setDeleteOpen(true)
+                            }
+                            className="mt-4 w-full rounded-md border border-[#fda29b] px-4 py-2.5 text-sm font-medium text-[#b42318] dark:border-[#912018]"
+                        >
+                            Delete transaction
+                        </button>
+                    </section>
                 </div>
             </div>
         </>

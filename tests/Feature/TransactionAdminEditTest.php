@@ -164,4 +164,57 @@ class TransactionAdminEditTest extends TestCase
             'quantity' => 2,
         ])->assertSessionHasErrors('transaction');
     }
+
+    public function test_admin_can_delete_paid_transaction_with_confirmation_phrase(): void
+    {
+        $transaction = Transaction::query()->create([
+            'customer_name' => 'Alex Tan',
+            'customer_phone' => '6281111111111',
+            'status' => 'paid',
+            'total_bill' => 50000,
+        ]);
+
+        $this->delete(route('admin.transaction.destroy', $transaction), [
+            'confirmation' => 'delete paid transaction',
+        ])->assertRedirect(route('admin.transaction.index'));
+
+        $this->assertDatabaseMissing('transactions', ['id' => $transaction->id]);
+    }
+
+    public function test_admin_cannot_delete_paid_transaction_without_confirmation_phrase(): void
+    {
+        $transaction = Transaction::query()->create([
+            'customer_name' => 'Alex Tan',
+            'customer_phone' => '6281111111111',
+            'status' => 'paid',
+            'total_bill' => 50000,
+        ]);
+
+        $this->delete(route('admin.transaction.destroy', $transaction))
+            ->assertRedirect(route('admin.transaction.show', $transaction))
+            ->assertSessionHasErrors('confirmation');
+
+        $this->delete(route('admin.transaction.destroy', $transaction), [
+            'confirmation' => 'delete',
+        ])
+            ->assertRedirect(route('admin.transaction.show', $transaction))
+            ->assertSessionHasErrors('confirmation');
+
+        $this->assertDatabaseHas('transactions', ['id' => $transaction->id]);
+    }
+
+    public function test_admin_can_delete_in_progress_transaction_without_confirmation_phrase(): void
+    {
+        $transaction = Transaction::query()->create([
+            'customer_name' => 'Alex Tan',
+            'customer_phone' => '6281111111111',
+            'status' => 'in_progress',
+            'total_bill' => 50000,
+        ]);
+
+        $this->delete(route('admin.transaction.destroy', $transaction))
+            ->assertRedirect(route('admin.transaction.index'));
+
+        $this->assertDatabaseMissing('transactions', ['id' => $transaction->id]);
+    }
 }
