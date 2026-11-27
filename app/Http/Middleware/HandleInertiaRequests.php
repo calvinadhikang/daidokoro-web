@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\Customer;
 use App\Services\CustomerCartService;
 use App\Services\CustomerTransactionService;
+use App\Support\AppVersion;
 use App\Support\CustomerFormatter;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -43,6 +44,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'appVersion' => fn () => AppVersion::current(),
             'auth' => [
                 'user' => $request->user(),
             ],

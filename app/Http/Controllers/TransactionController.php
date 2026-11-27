@@ -9,26 +9,39 @@ use App\Http\Requests\UpdateTransactionRequest;
 use App\Models\MenuModel;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
+use App\Services\StoreHoursService;
 use App\Services\TransactionOrderService;
 use App\Support\TransactionItemGrouper;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class TransactionController extends Controller
 {
-    public function __construct(private TransactionOrderService $orderService) {}
+    public function __construct(
+        private TransactionOrderService $orderService,
+        private StoreHoursService $storeHours,
+    ) {}
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $today = $this->storeHours->today();
+        $date = $this->resolveFilterDate($request->query('date'), $today);
+
         $transactions = Transaction::query()
             ->with('salesChannel')
+            ->whereDate('business_date', $date)
             ->orderByDesc('created_at')
             ->get();
 
         return Inertia::render('admin/transaction/index', [
             'transactions' => $transactions,
+            'filters' => [
+                'date' => $date,
+                'today' => $today,
+            ],
         ]);
     }
 
@@ -197,12 +210,14 @@ class TransactionController extends Controller
             ->with('success', 'Transaction marked as paid.');
     }
 
-    public function destroy(Transaction $transaction): RedirectResponse
+    public function destroy(Request $request, Transaction $transaction): RedirectResponse
     {
-        if ($transaction->isPaid()) {
+        if ($transaction->isPaid() && trim((string) $request->input('confirmation')) !== 'delete paid transaction') {
             return redirect()
                 ->route('admin.transaction.show', $transaction)
-                ->with('success', 'Paid transactions cannot be deleted.');
+                ->withErrors([
+                    'confirmation' => 'Type delete paid transaction to confirm.',
+                ]);
         }
 
         $transaction->delete();
@@ -210,5 +225,24 @@ class TransactionController extends Controller
         return redirect()
             ->route('admin.transaction.index')
             ->with('success', 'Transaction deleted successfully.');
+    }
+
+    private function resolveFilterDate(mixed $requested, string $today): string
+    {
+        if (! is_string($requested) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $requested) !== 1) {
+            return $today;
+        }
+
+        try {
+            $parsed = Carbon::createFromFormat('!Y-m-d', $requested, StoreHoursService::TIMEZONE);
+        } catch (\Throwable) {
+            return $today;
+        }
+
+        if (! $parsed instanceof Carbon || $parsed->format('Y-m-d') !== $requested) {
+            return $today;
+        }
+
+        return $requested;
     }
 }

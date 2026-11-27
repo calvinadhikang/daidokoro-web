@@ -1,21 +1,35 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
 import {
     create as createTransaction,
+    index as transactionIndex,
     show as showTransaction,
 } from '@/actions/App/Http/Controllers/TransactionController';
-import { TableCodeBadge } from '@/components/admin/table-code-badge';
 import { inputClassName } from '@/components/admin/menu-form';
+import { TableCodeBadge } from '@/components/admin/table-code-badge';
+import { TransactionDatePicker } from '@/components/admin/transaction-date-picker';
+import { cn } from '@/lib/utils';
 import type { Transaction } from '@/types/transaction';
 import { serviceTypeLabel, transactionStatusLabel } from '@/types/transaction';
 
 type Props = {
     transactions: Transaction[];
+    filters: {
+        date: string;
+        today: string;
+    };
 };
 
 function formatPrice(price: number): string {
     return price.toLocaleString();
+}
+
+function formatTime(iso: string): string {
+    return new Date(iso).toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+    });
 }
 
 function statusClassName(status: Transaction['status']): string {
@@ -27,7 +41,10 @@ function statusClassName(status: Transaction['status']): string {
 const adminPillClassName =
     'shrink-0 rounded-full bg-[#eff8ff] px-2.5 py-1 text-xs font-medium text-[#175cd3] dark:bg-[#102a56] dark:text-[#84caff]';
 
-export default function AdminTransactionIndex({ transactions }: Props) {
+export default function AdminTransactionIndex({
+    transactions,
+    filters,
+}: Props) {
     const [search, setSearch] = useState('');
 
     const filteredTransactions = useMemo(() => {
@@ -54,11 +71,20 @@ export default function AdminTransactionIndex({ transactions }: Props) {
     const paidCount = transactions.filter((t) => t.status === 'paid').length;
     const isSearching = search.trim() !== '';
 
+    function visitDate(date: string) {
+        setSearch('');
+        router.get(
+            transactionIndex.url({ query: { date } }),
+            {},
+            { preserveScroll: false, replace: true },
+        );
+    }
+
     return (
         <>
             <Head title="Transactions" />
             <div className="flex h-[calc(100dvh-7.5rem)] flex-col px-4 py-4">
-                <div className="mx-auto flex w-full max-w-lg shrink-0 flex-col">
+                <div className="relative z-20 mx-auto flex w-full max-w-lg shrink-0 flex-col">
                     <header className="mb-4">
                         <h1 className="text-2xl font-semibold">Transactions</h1>
                         <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">
@@ -68,12 +94,18 @@ export default function AdminTransactionIndex({ transactions }: Props) {
                         </p>
                     </header>
 
+                    <TransactionDatePicker
+                        date={filters.date}
+                        today={filters.today}
+                        onChange={visitDate}
+                    />
+
                     <input
                         type="search"
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
                         placeholder="Search by number, name, phone, or table..."
-                        className={`${inputClassName} mb-4`}
+                        className={cn(inputClassName, 'mb-4')}
                     />
 
                     <Link
@@ -88,7 +120,7 @@ export default function AdminTransactionIndex({ transactions }: Props) {
                     {transactions.length === 0 ? (
                         <div className="rounded-lg border border-[#e3e3e0] bg-white p-10 text-center dark:border-[#3E3E3A] dark:bg-[#161615]">
                             <p className="text-[#706f6c] dark:text-[#A1A09A]">
-                                No transactions yet.
+                                No transactions on this date.
                             </p>
                         </div>
                     ) : filteredTransactions.length === 0 ? (
@@ -155,12 +187,19 @@ export default function AdminTransactionIndex({ transactions }: Props) {
                                             </div>
                                         </div>
 
-                                        <p className="mt-3 text-sm font-medium tabular-nums">
-                                            Total{' '}
-                                            {formatPrice(
-                                                transaction.total_bill,
-                                            )}
-                                        </p>
+                                        <div className="mt-3 flex items-baseline justify-between gap-3">
+                                            <p className="text-xs text-[#706f6c] tabular-nums dark:text-[#A1A09A]">
+                                                {formatTime(
+                                                    transaction.created_at,
+                                                )}
+                                            </p>
+                                            <p className="text-sm font-medium tabular-nums">
+                                                Total{' '}
+                                                {formatPrice(
+                                                    transaction.total_bill,
+                                                )}
+                                            </p>
+                                        </div>
                                     </Link>
                                 </li>
                             ))}

@@ -124,9 +124,6 @@ class SalesReportService
             ->orderByDesc('created_at')
             ->get();
 
-        $paidTransactions = $transactions->where('status', 'paid');
-        $unpaidTransactions = $transactions->where('status', 'in_progress');
-
         $groups = $transactions
             ->groupBy(fn (Transaction $transaction): string => $transaction->business_date->toDateString())
             ->map(fn (Collection $dayTransactions, string $date): array => [
@@ -136,14 +133,100 @@ class SalesReportService
             ->values();
 
         return [
-            'summary' => [
-                'revenue' => (int) $paidTransactions->sum('total_bill'),
-                'total_count' => $transactions->count(),
-                'paid_count' => $paidTransactions->count(),
-                'unpaid_count' => $unpaidTransactions->count(),
-                'unpaid_revenue' => (int) $unpaidTransactions->sum('total_bill'),
-            ],
+            'summary' => $this->summarize($transactions),
             'groups' => $groups,
+        ];
+    }
+
+    /**
+     * Paid and unpaid totals for every event channel in a date window.
+     * Store transactions are excluded. Events with no transactions in the window are omitted.
+     *
+     * @param  array{preset?: string|null, from?: string|null, to?: string|null}  $input
+     * @return array{
+     *     filters: array{preset: 'month'|'range', from: string, to: string},
+     *     summary: array{revenue: int, total_count: int, paid_count: int, unpaid_count: int, unpaid_revenue: int},
+     *     events: list<array<string, mixed>>
+     * }
+     */
+    public function buildEventSummary(array $input = []): array
+    {
+        $now = $this->storeHours->now();
+        $preset = $input['preset'] ?? 'month';
+
+        if ($preset === 'month') {
+            $from = $now->copy()->startOfMonth()->toDateString();
+            $to = $now->copy()->endOfMonth()->toDateString();
+        } else {
+            $from = $input['from'] ?? $now->toDateString();
+            $to = $input['to'] ?? $now->toDateString();
+            $preset = 'range';
+        }
+
+        $transactions = Transaction::query()
+            ->with('salesChannel')
+            ->whereDate('business_date', '>=', $from)
+            ->whereDate('business_date', '<=', $to)
+            ->whereHas('salesChannel', function ($query): void {
+                $query->where('type', SalesChannel::TYPE_EVENT);
+            })
+            ->orderByDesc('business_date')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $events = $transactions
+            ->groupBy('sales_channel_id')
+            ->map(function (Collection $eventTransactions): ?array {
+                $channel = $eventTransactions->first()?->salesChannel;
+
+                if ($channel === null || ! $channel->isEvent()) {
+                    return null;
+                }
+
+                return [
+                    ...$this->salesChannels->format($channel),
+                    'summary' => $this->summarize($eventTransactions),
+                ];
+            })
+            ->filter()
+            ->sort(function (array $left, array $right): int {
+                $byRevenue = $right['summary']['revenue'] <=> $left['summary']['revenue'];
+
+                if ($byRevenue !== 0) {
+                    return $byRevenue;
+                }
+
+                return strcmp((string) ($right['starts_at'] ?? ''), (string) ($left['starts_at'] ?? ''));
+            })
+            ->values()
+            ->all();
+
+        return [
+            'filters' => [
+                'preset' => $preset === 'month' ? 'month' : 'range',
+                'from' => $from,
+                'to' => $to,
+            ],
+            'summary' => $this->summarize($transactions),
+            'events' => $events,
+        ];
+    }
+
+    /**
+     * @param  Collection<int, Transaction>  $transactions
+     * @return array{revenue: int, total_count: int, paid_count: int, unpaid_count: int, unpaid_revenue: int}
+     */
+    private function summarize(Collection $transactions): array
+    {
+        $paidTransactions = $transactions->where('status', 'paid');
+        $unpaidTransactions = $transactions->where('status', 'in_progress');
+
+        return [
+            'revenue' => (int) $paidTransactions->sum('total_bill'),
+            'total_count' => $transactions->count(),
+            'paid_count' => $paidTransactions->count(),
+            'unpaid_count' => $unpaidTransactions->count(),
+            'unpaid_revenue' => (int) $unpaidTransactions->sum('total_bill'),
         ];
     }
 
