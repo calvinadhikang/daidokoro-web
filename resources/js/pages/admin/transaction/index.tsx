@@ -1,21 +1,66 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
 import {
     create as createTransaction,
+    index as transactionIndex,
     show as showTransaction,
 } from '@/actions/App/Http/Controllers/TransactionController';
 import { TableCodeBadge } from '@/components/admin/table-code-badge';
 import { inputClassName } from '@/components/admin/menu-form';
+import { cn } from '@/lib/utils';
 import type { Transaction } from '@/types/transaction';
 import { serviceTypeLabel, transactionStatusLabel } from '@/types/transaction';
 
 type Props = {
     transactions: Transaction[];
+    filters: {
+        date: string;
+        today: string;
+    };
 };
 
 function formatPrice(price: number): string {
     return price.toLocaleString();
+}
+
+function shiftDate(date: string, days: number): string {
+    const [year, month, day] = date.split('-').map(Number);
+    const next = new Date(year, month - 1, day);
+    next.setDate(next.getDate() + days);
+
+    const y = next.getFullYear();
+    const m = String(next.getMonth() + 1).padStart(2, '0');
+    const d = String(next.getDate()).padStart(2, '0');
+
+    return `${y}-${m}-${d}`;
+}
+
+function formatDayLabel(date: string, today: string): string {
+    const [year, month, day] = date.split('-').map(Number);
+    const value = new Date(year, month - 1, day);
+    const formatted = value.toLocaleDateString(undefined, {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+    });
+
+    if (date === today) {
+        return `Today · ${formatted}`;
+    }
+
+    if (date === shiftDate(today, -1)) {
+        return `Yesterday · ${formatted}`;
+    }
+
+    return formatted;
+}
+
+function formatTime(iso: string): string {
+    return new Date(iso).toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+    });
 }
 
 function statusClassName(status: Transaction['status']): string {
@@ -27,8 +72,34 @@ function statusClassName(status: Transaction['status']): string {
 const adminPillClassName =
     'shrink-0 rounded-full bg-[#eff8ff] px-2.5 py-1 text-xs font-medium text-[#175cd3] dark:bg-[#102a56] dark:text-[#84caff]';
 
-export default function AdminTransactionIndex({ transactions }: Props) {
+const stepButtonClassName =
+    'flex size-11 shrink-0 items-center justify-center rounded-md border border-[#e3e3e0] bg-white text-[#1b1b18] disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#3E3E3A] dark:bg-[#161615] dark:text-[#EDEDEC]';
+
+function DayChevron({ direction }: { direction: 'left' | 'right' }) {
+    return (
+        <svg
+            viewBox="0 0 20 20"
+            fill="none"
+            aria-hidden="true"
+            className="size-5"
+        >
+            <path
+                d={direction === 'left' ? 'M12.5 4.5 7 10l5.5 5.5' : 'M7.5 4.5 13 10l-5.5 5.5'}
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+        </svg>
+    );
+}
+
+export default function AdminTransactionIndex({
+    transactions,
+    filters,
+}: Props) {
     const [search, setSearch] = useState('');
+    const isToday = filters.date === filters.today;
 
     const filteredTransactions = useMemo(() => {
         const query = search.trim().toLowerCase();
@@ -54,6 +125,15 @@ export default function AdminTransactionIndex({ transactions }: Props) {
     const paidCount = transactions.filter((t) => t.status === 'paid').length;
     const isSearching = search.trim() !== '';
 
+    function visitDate(date: string) {
+        setSearch('');
+        router.get(
+            transactionIndex.url({ query: { date } }),
+            {},
+            { preserveScroll: false, replace: true },
+        );
+    }
+
     return (
         <>
             <Head title="Transactions" />
@@ -68,12 +148,72 @@ export default function AdminTransactionIndex({ transactions }: Props) {
                         </p>
                     </header>
 
+                    <div className="mb-4">
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                aria-label="Previous day"
+                                onClick={() =>
+                                    visitDate(shiftDate(filters.date, -1))
+                                }
+                                className={stepButtonClassName}
+                            >
+                                <DayChevron direction="left" />
+                            </button>
+
+                            <div className="relative min-w-0 flex-1">
+                                <input
+                                    type="date"
+                                    value={filters.date}
+                                    max={filters.today}
+                                    onChange={(event) => {
+                                        if (event.target.value !== '') {
+                                            visitDate(event.target.value);
+                                        }
+                                    }}
+                                    aria-label="Choose date"
+                                    className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+                                />
+                                <div className="flex h-11 items-center justify-center rounded-md border border-[#e3e3e0] bg-white px-3 dark:border-[#3E3E3A] dark:bg-[#161615]">
+                                    <span className="truncate text-sm font-medium">
+                                        {formatDayLabel(
+                                            filters.date,
+                                            filters.today,
+                                        )}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                aria-label="Next day"
+                                disabled={filters.date >= filters.today}
+                                onClick={() =>
+                                    visitDate(shiftDate(filters.date, 1))
+                                }
+                                className={stepButtonClassName}
+                            >
+                                <DayChevron direction="right" />
+                            </button>
+                        </div>
+
+                        {!isToday && (
+                            <button
+                                type="button"
+                                onClick={() => visitDate(filters.today)}
+                                className="mt-2 w-full text-center text-sm font-medium text-[#706f6c] underline-offset-2 hover:underline dark:text-[#A1A09A]"
+                            >
+                                Back to today
+                            </button>
+                        )}
+                    </div>
+
                     <input
                         type="search"
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
                         placeholder="Search by number, name, phone, or table..."
-                        className={`${inputClassName} mb-4`}
+                        className={cn(inputClassName, 'mb-4')}
                     />
 
                     <Link
@@ -88,7 +228,7 @@ export default function AdminTransactionIndex({ transactions }: Props) {
                     {transactions.length === 0 ? (
                         <div className="rounded-lg border border-[#e3e3e0] bg-white p-10 text-center dark:border-[#3E3E3A] dark:bg-[#161615]">
                             <p className="text-[#706f6c] dark:text-[#A1A09A]">
-                                No transactions yet.
+                                No transactions on this date.
                             </p>
                         </div>
                     ) : filteredTransactions.length === 0 ? (
@@ -155,12 +295,19 @@ export default function AdminTransactionIndex({ transactions }: Props) {
                                             </div>
                                         </div>
 
-                                        <p className="mt-3 text-sm font-medium tabular-nums">
-                                            Total{' '}
-                                            {formatPrice(
-                                                transaction.total_bill,
-                                            )}
-                                        </p>
+                                        <div className="mt-3 flex items-baseline justify-between gap-3">
+                                            <p className="text-xs tabular-nums text-[#706f6c] dark:text-[#A1A09A]">
+                                                {formatTime(
+                                                    transaction.created_at,
+                                                )}
+                                            </p>
+                                            <p className="text-sm font-medium tabular-nums">
+                                                Total{' '}
+                                                {formatPrice(
+                                                    transaction.total_bill,
+                                                )}
+                                            </p>
+                                        </div>
                                     </Link>
                                 </li>
                             ))}
