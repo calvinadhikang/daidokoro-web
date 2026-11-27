@@ -6,8 +6,8 @@ import {
     AdminMenuButton,
     AdminMenuDrawer,
 } from '@/components/admin/admin-menu-drawer';
-import { BrandLogo } from '@/components/brand-logo';
 import { AdminNavbar } from '@/components/admin/admin-navbar';
+import { BrandLogo } from '@/components/brand-logo';
 import { isSecondaryNavActive } from '@/lib/admin-nav';
 import { cn } from '@/lib/utils';
 
@@ -16,6 +16,7 @@ type AdminLayoutProps = {
 };
 
 type PageProps = {
+    appVersion: string;
     flash: {
         success?: string;
     };
@@ -23,7 +24,7 @@ type PageProps = {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
     const { url, props } = usePage<PageProps>();
-    const { flash } = props;
+    const { appVersion, flash } = props;
     const [menuOpen, setMenuOpen] = useState(false);
     const secondaryActive = isSecondaryNavActive(url);
 
@@ -38,9 +39,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     />
                     <BrandLogo className="h-9 w-9 shrink-0" />
                     <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium tracking-wide text-[#706f6c] uppercase dark:text-[#A1A09A]">
-                            Admin
-                        </p>
+                        <div className="flex items-baseline gap-2">
+                            <p className="text-xs font-medium tracking-wide text-[#706f6c] uppercase dark:text-[#A1A09A]">
+                                Admin
+                            </p>
+                            <p className="truncate font-mono text-[11px] text-[#A1A09A] dark:text-[#706f6c]">
+                                {appVersion}
+                            </p>
+                        </div>
                         {secondaryActive && (
                             <p className="truncate text-sm font-medium">
                                 {url.startsWith('/admin/hours')
