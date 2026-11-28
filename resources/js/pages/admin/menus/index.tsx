@@ -67,6 +67,11 @@ function MenuListItem({ menu }: { menu: Menu }) {
                                     ? ' / 100g'
                                     : ''}
                             </p>
+                            {menu.description ? (
+                                <p className="mt-1 line-clamp-2 text-xs leading-relaxed whitespace-pre-line text-[#706f6c] dark:text-[#A1A09A]">
+                                    {menu.description}
+                                </p>
+                            ) : null}
                         </div>
                         <span
                             className={

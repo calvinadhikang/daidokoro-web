@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\MenuAddonGroup;
 use App\Models\MenuAddonOption;
 use App\Models\MenuModel;
+use App\Models\SalesChannel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -392,5 +393,124 @@ class MenuApiTest extends TestCase
             'name' => 'Sushi',
             'menus_count' => 1,
         ]);
+    }
+
+    public function test_detail_includes_sales_channel_ids(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Miso Soup',
+            'price' => 18000,
+            'is_available' => true,
+        ]);
+
+        $this->getJson("/api/menu/detail/{$menu->id}")
+            ->assertOk()
+            ->assertJsonPath('sales_channel_ids', [SalesChannel::store()->id]);
+    }
+
+    public function test_create_with_sales_channel_ids_assigns_only_those_channels(): void
+    {
+        $event = SalesChannel::query()->create([
+            'type' => SalesChannel::TYPE_EVENT,
+            'name' => 'Popup',
+            'starts_at' => '2026-11-01',
+            'ends_at' => '2026-11-02',
+            'closes_store' => true,
+        ]);
+
+        $response = $this->postJson('/api/menu/create', [
+            'name' => 'Event Bowl',
+            'price' => 40000,
+            'is_available' => true,
+            'sales_channel_ids' => [$event->id],
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('menu.sales_channel_ids', [$event->id]);
+
+        $menu = MenuModel::query()->where('name', 'Event Bowl')->firstOrFail();
+        $this->assertSame(
+            [$event->id],
+            $menu->salesChannels()->pluck('sales_channels.id')->map(fn ($id) => (int) $id)->all(),
+        );
+    }
+
+    public function test_update_keeps_channels_unless_sales_channel_ids_are_sent(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Edamame',
+            'price' => 15000,
+            'is_available' => true,
+        ]);
+        $storeId = SalesChannel::store()->id;
+        $event = SalesChannel::query()->create([
+            'type' => SalesChannel::TYPE_EVENT,
+            'name' => 'Popup',
+            'starts_at' => '2026-11-01',
+            'ends_at' => '2026-11-02',
+            'closes_store' => true,
+        ]);
+
+        $this->postJson("/api/channels/{$event->id}/menus/assign", [
+            'menus' => [
+                ['menu_id' => $menu->id, 'price_override' => 22000],
+            ],
+        ])->assertOk();
+
+        $this->postJson("/api/menu/update/{$menu->id}", [
+            'name' => 'Edamame',
+            'price' => 16000,
+            'is_available' => true,
+        ])->assertOk();
+
+        $menu->refresh();
+        $this->assertEqualsCanonicalizing(
+            [$storeId, $event->id],
+            $menu->salesChannels()->pluck('sales_channels.id')->map(fn ($id) => (int) $id)->all(),
+        );
+        $this->assertSame(
+            22000,
+            (int) $menu->salesChannels()->where('sales_channels.id', $event->id)->firstOrFail()->pivot->price_override,
+        );
+
+        $this->postJson("/api/menu/update/{$menu->id}", [
+            'name' => 'Edamame',
+            'price' => 16000,
+            'is_available' => true,
+            'sales_channel_ids' => [$storeId],
+        ])->assertOk()
+            ->assertJsonPath('menu.sales_channel_ids', [$storeId]);
+
+        $this->assertSame(
+            [$storeId],
+            $menu->fresh()->salesChannels()->pluck('sales_channels.id')->map(fn ($id) => (int) $id)->all(),
+        );
+    }
+
+    public function test_empty_sales_channel_ids_fall_back_to_the_store(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Gyoza',
+            'price' => 28000,
+            'is_available' => true,
+        ]);
+        $event = SalesChannel::query()->create([
+            'type' => SalesChannel::TYPE_EVENT,
+            'name' => 'Popup',
+            'starts_at' => '2026-11-01',
+            'ends_at' => '2026-11-02',
+            'closes_store' => true,
+        ]);
+        $menu->salesChannels()->sync([
+            $event->id => ['price_override' => null, 'is_available' => true],
+        ]);
+
+        $this->postJson("/api/menu/update/{$menu->id}", [
+            'name' => 'Gyoza',
+            'price' => 28000,
+            'is_available' => true,
+            'sales_channel_ids' => [],
+        ])->assertOk()
+            ->assertJsonPath('menu.sales_channel_ids', [SalesChannel::store()->id]);
     }
 }

@@ -91,6 +91,57 @@ class MenuImageUploadTest extends TestCase
         $this->assertPublicMenuImageExists($menu->image);
     }
 
+    public function test_api_can_replace_menu_image(): void
+    {
+        $this->post('/api/menu/create', [
+            'name' => 'Coffee',
+            'price' => 15000,
+            'is_available' => true,
+            'image' => UploadedFile::fake()->image('old.jpg'),
+        ])->assertCreated();
+
+        $menu = MenuModel::query()->where('name', 'Coffee')->firstOrFail();
+        $previousImage = $menu->image;
+
+        $this->post('/api/menu/update/'.$menu->id, [
+            'name' => 'Coffee',
+            'price' => 15000,
+            'is_available' => true,
+            'is_recommended' => false,
+            'image' => UploadedFile::fake()->image('new.png'),
+        ])->assertOk();
+
+        $menu->refresh();
+
+        $this->assertNotNull($menu->image);
+        $this->assertNotSame($previousImage, $menu->image);
+        $this->assertStringContainsString('.png', $menu->image);
+        $this->assertPublicMenuImageExists($menu->image);
+    }
+
+    public function test_api_can_remove_menu_image(): void
+    {
+        $this->post('/api/menu/create', [
+            'name' => 'Tea',
+            'price' => 12000,
+            'is_available' => true,
+            'image' => UploadedFile::fake()->image('tea.jpg'),
+        ])->assertCreated();
+
+        $menu = MenuModel::query()->where('name', 'Tea')->firstOrFail();
+
+        $this->postJson('/api/menu/update/'.$menu->id, [
+            'name' => 'Tea',
+            'price' => 12000,
+            'is_available' => true,
+            'remove_image' => true,
+        ])->assertOk();
+
+        $menu->refresh();
+
+        $this->assertNull($menu->image);
+    }
+
     public function test_menu_image_validation_rejects_invalid_file(): void
     {
         $response = $this->postJson('/api/menu/create', [

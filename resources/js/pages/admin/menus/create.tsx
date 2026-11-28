@@ -22,6 +22,7 @@ export default function AdminMenusCreate({
 }: Props) {
     const form = useForm<MenuForm>({
         name: '',
+        description: '',
         price: '',
         pricing_type: 'standard',
         is_available: true,

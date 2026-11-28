@@ -66,14 +66,19 @@ class MenuApiController extends Controller
         $menu = DB::transaction(function () use ($validated, $request, $channel) {
             $menu = new MenuModel([
                 'name' => $validated['name'],
+                'description' => $request->normalizedDescription(),
                 'image' => $this->resolveMenuImageUrl($request, $this->menuImages),
                 'price' => $validated['price'],
                 'pricing_type' => $validated['pricing_type'] ?? MenuModel::PRICING_STANDARD,
                 'is_available' => $validated['is_available'] ?? true,
                 'is_recommended' => $validated['is_recommended'] ?? false,
             ]);
-            $menu->assignToSalesChannelId = $channel->id;
+            if (! array_key_exists('sales_channel_ids', $validated)) {
+                $menu->assignToSalesChannelId = $channel->id;
+            }
+
             $menu->save();
+            $this->syncChannelsIfRequested($menu, $validated);
 
             $this->syncAddonGroups($menu, $validated['addon_groups'] ?? []);
             $menu->categories()->sync($validated['category_ids'] ?? []);
@@ -101,18 +106,25 @@ class MenuApiController extends Controller
         );
 
         DB::transaction(function () use ($menuModel, $validated, $request) {
-            $menuModel->update([
+            $attributes = [
                 'name' => $validated['name'],
                 'image' => $this->resolveMenuImageUrl($request, $this->menuImages, $menuModel->image),
                 'price' => $validated['price'],
                 'pricing_type' => $validated['pricing_type'] ?? $menuModel->pricing_type,
                 'is_available' => $validated['is_available'] ?? true,
                 'is_recommended' => $validated['is_recommended'] ?? false,
-            ]);
+            ];
+
+            if ($request->hasDescription()) {
+                $attributes['description'] = $request->normalizedDescription();
+            }
+
+            $menuModel->update($attributes);
 
             $menuModel->addonGroups()->delete();
             $this->syncAddonGroups($menuModel, $validated['addon_groups'] ?? []);
             $menuModel->categories()->sync($validated['category_ids'] ?? []);
+            $this->syncChannelsIfRequested($menuModel, $validated);
         });
 
         $menuModel->load([
@@ -154,6 +166,18 @@ class MenuApiController extends Controller
             'message' => $menu->name.' is now '.($available ? 'available' : 'unavailable').'.',
             'menu' => MenuApiFormatter::formatListItem($menu, $channel),
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function syncChannelsIfRequested(MenuModel $menu, array $validated): void
+    {
+        if (! array_key_exists('sales_channel_ids', $validated)) {
+            return;
+        }
+
+        $this->salesChannels->syncMenuChannels($menu, $validated['sales_channel_ids'] ?? []);
     }
 
     /**

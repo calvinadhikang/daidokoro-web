@@ -25,6 +25,7 @@ export type MenuCategory = {
 export type Menu = {
     id: number;
     name: string;
+    description: string | null;
     image: string | null;
     price: number;
     pricing_type?: 'standard' | 'weight_based';
@@ -49,6 +50,7 @@ export type MenuAddonGroupForm = {
 
 export type MenuForm = {
     name: string;
+    description: string;
     price: string;
     pricing_type: 'standard' | 'weight_based';
     is_available: boolean;

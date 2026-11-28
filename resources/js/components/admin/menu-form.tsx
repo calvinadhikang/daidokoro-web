@@ -249,6 +249,26 @@ export function MenuFormFields({
                         </div>
 
                         <div>
+                            <label htmlFor="description" className={labelClassName}>
+                                Description
+                            </label>
+                            <textarea
+                                id="description"
+                                value={form.data.description}
+                                onChange={(event) =>
+                                    form.setData('description', event.target.value)
+                                }
+                                className={`${inputClassName} min-h-28 resize-y`}
+                                placeholder="What customers should know about this dish"
+                                rows={4}
+                            />
+                            <p className="mt-1 text-xs text-[#706f6c] dark:text-[#A1A09A]">
+                                Shown on the customer menu. Line breaks are kept.
+                            </p>
+                            <FieldError message={form.errors.description} />
+                        </div>
+
+                        <div>
                             <label htmlFor="price" className={labelClassName}>
                                 {form.data.pricing_type === 'weight_based'
                                     ? 'Price / 100g'
@@ -684,6 +704,7 @@ export function MenuFormFields({
 
 export function menuToForm(menu: {
     name: string;
+    description?: string | null;
     price: number;
     pricing_type?: 'standard' | 'weight_based';
     is_available: boolean;
@@ -702,6 +723,7 @@ export function menuToForm(menu: {
 }): MenuForm {
     return {
         name: menu.name,
+        description: menu.description ?? '',
         price: String(menu.price),
         pricing_type: menu.pricing_type === 'weight_based' ? 'weight_based' : 'standard',
         is_available: menu.is_available,

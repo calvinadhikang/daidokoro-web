@@ -80,6 +80,11 @@ function MenuCard({
                 <h2 className="line-clamp-2 text-[15px] leading-snug font-semibold tracking-tight">
                     {menu.name}
                 </h2>
+                {menu.description ? (
+                    <p className="mt-1 line-clamp-2 text-xs leading-relaxed whitespace-pre-line text-[#44403c] dark:text-[#D6D3D1]">
+                        {menu.description}
+                    </p>
+                ) : null}
                 {addonSummary !== null && (
                     <p className="mt-1 line-clamp-1 text-xs text-[#44403c] dark:text-[#D6D3D1]">
                         {addonSummary}

@@ -120,6 +120,12 @@ export default function CustomerMenuShow({ menu, serviceType }: Props) {
                         </p>
                     </div>
 
+                    {menu.description ? (
+                        <p className="mt-4 text-sm leading-relaxed whitespace-pre-wrap text-[#44403c] dark:text-[#D6D3D1]">
+                            {menu.description}
+                        </p>
+                    ) : null}
+
                     <div className="mt-5">
                         <MenuOrderForm
                             menu={menu}

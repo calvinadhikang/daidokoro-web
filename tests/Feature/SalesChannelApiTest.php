@@ -6,7 +6,6 @@ use App\Models\MenuModel;
 use App\Models\OperatingClosure;
 use App\Models\OperatingHour;
 use App\Models\SalesChannel;
-use App\Models\Transaction;
 use App\Services\StoreHoursService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -354,5 +353,115 @@ class SalesChannelApiTest extends TestCase
             'id' => $eventId,
             'archived_at' => null,
         ]);
+    }
+
+    public function test_creating_an_event_can_copy_every_menu_from_another_event(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Takoyaki',
+            'price' => 25000,
+            'is_available' => true,
+        ]);
+
+        $sourceId = $this->postJson('/api/channels/events/create', [
+            'name' => 'Bazaar A',
+            'starts_at' => '2026-09-23',
+            'ends_at' => '2026-09-25',
+        ])->json('channel.id');
+
+        $this->postJson("/api/channels/{$sourceId}/menus/assign", [
+            'menus' => [
+                ['menu_id' => $menu->id, 'price_override' => 30000],
+            ],
+        ])->assertOk();
+
+        $response = $this->postJson('/api/channels/events/create', [
+            'name' => 'Bazaar B',
+            'starts_at' => '2026-10-01',
+            'ends_at' => '2026-10-02',
+            'source_event_id' => $sourceId,
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('copied', 1);
+
+        $this->getJson('/api/channels/'.$response->json('channel.id').'/menus')
+            ->assertOk()
+            ->assertJsonFragment([
+                'id' => $menu->id,
+                'price' => 30000,
+            ]);
+    }
+
+    public function test_copy_menus_adds_only_the_selected_menus_and_skips_ones_already_assigned(): void
+    {
+        $keep = MenuModel::query()->create([
+            'name' => 'Keep',
+            'price' => 10000,
+            'is_available' => true,
+        ]);
+        $skip = MenuModel::query()->create([
+            'name' => 'Skip',
+            'price' => 12000,
+            'is_available' => true,
+        ]);
+        $already = MenuModel::query()->create([
+            'name' => 'Already',
+            'price' => 8000,
+            'is_available' => true,
+        ]);
+        $storeOnly = MenuModel::query()->create([
+            'name' => 'Store Only',
+            'price' => 9000,
+            'is_available' => true,
+        ]);
+
+        $sourceId = $this->postJson('/api/channels/events/create', [
+            'name' => 'Source',
+            'starts_at' => '2026-09-23',
+            'ends_at' => '2026-09-24',
+        ])->json('channel.id');
+        $targetId = $this->postJson('/api/channels/events/create', [
+            'name' => 'Target',
+            'starts_at' => '2026-10-01',
+            'ends_at' => '2026-10-02',
+        ])->json('channel.id');
+
+        $this->postJson("/api/channels/{$sourceId}/menus/assign", [
+            'menus' => [
+                ['menu_id' => $keep->id],
+                ['menu_id' => $skip->id],
+                ['menu_id' => $already->id, 'price_override' => 11000],
+            ],
+        ])->assertOk();
+        $this->postJson("/api/channels/{$targetId}/menus/assign", [
+            'menus' => [
+                ['menu_id' => $already->id],
+            ],
+        ])->assertOk();
+
+        $copied = $this->postJson("/api/channels/events/{$targetId}/menus/copy", [
+            'source_event_id' => $sourceId,
+            'menu_ids' => [$keep->id, $already->id],
+        ]);
+
+        $copied->assertOk();
+        $copied->assertJsonPath('copied', 1);
+        $names = collect($copied->json('menus'))->pluck('name')->all();
+        $this->assertContains('Keep', $names);
+        $this->assertContains('Already', $names);
+        $this->assertNotContains('Skip', $names);
+
+        $this->postJson("/api/channels/events/{$targetId}/menus/copy", [
+            'source_event_id' => $sourceId,
+            'menu_ids' => [$storeOnly->id],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['menu_ids']);
+
+        $this->postJson("/api/channels/events/{$targetId}/menus/copy", [
+            'source_event_id' => $targetId,
+            'menu_ids' => [$keep->id],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['source_event_id']);
     }
 }

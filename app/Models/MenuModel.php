@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,6 +12,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property string $name
+ * @property string|null $description
  * @property string|null $image
  * @property int $price
  * @property string $pricing_type
@@ -18,11 +20,11 @@ use Illuminate\Support\Carbon;
  * @property bool $is_recommended
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, MenuAddonGroup> $addonGroups
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Category> $categories
- * @property-read \Illuminate\Database\Eloquent\Collection<int, SalesChannel> $salesChannels
+ * @property-read Collection<int, MenuAddonGroup> $addonGroups
+ * @property-read Collection<int, Category> $categories
+ * @property-read Collection<int, SalesChannel> $salesChannels
  */
-#[Fillable(['name', 'image', 'price', 'pricing_type', 'is_available', 'is_recommended'])]
+#[Fillable(['name', 'description', 'image', 'price', 'pricing_type', 'is_available', 'is_recommended'])]
 class MenuModel extends Model
 {
     public const PRICING_STANDARD = 'standard';

@@ -51,6 +51,7 @@ Route::prefix('omakase')->group(function () {
     Route::get('/session', [OmakaseController::class, 'getOmakaseSessions']);
     Route::get('/session/{id}', [OmakaseController::class, 'getOmakaseSessionById']);
     Route::post('/session/create', [OmakaseController::class, 'createOmakaseSession']);
+    Route::post('/session/import/{id}', [OmakaseController::class, 'importOmakaseMenus']);
     Route::post('/session/update/{id}', [OmakaseController::class, 'updateOmakaseSession']);
     Route::post('/session/delete/{id}', [OmakaseController::class, 'deleteOmakaseSession']);
 
@@ -89,6 +90,7 @@ Route::prefix('channels')->group(function () {
     Route::post('/events/update/{salesChannel}', [SalesChannelApiController::class, 'updateEvent']);
     Route::post('/events/archive/{salesChannel}', [SalesChannelApiController::class, 'archiveEvent']);
     Route::post('/events/unarchive/{salesChannel}', [SalesChannelApiController::class, 'unarchiveEvent']);
+    Route::post('/events/{salesChannel}/menus/copy', [SalesChannelApiController::class, 'copyMenus']);
     Route::get('/{salesChannel}/menus', [SalesChannelApiController::class, 'menus']);
     Route::post('/{salesChannel}/menus/assign', [SalesChannelApiController::class, 'assignMenus']);
     Route::post('/{salesChannel}/menus/update/{menuModel}', [SalesChannelApiController::class, 'updateMenu']);
