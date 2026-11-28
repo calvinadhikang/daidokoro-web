@@ -123,6 +123,16 @@ class MenuController extends Controller
             ->with('success', 'Menu updated successfully.');
     }
 
+    public function destroy(MenuModel $menuModel): RedirectResponse
+    {
+        $this->menuImages->deleteIfStored($menuModel->image);
+        $menuModel->delete();
+
+        return redirect()
+            ->route('admin.menus.index')
+            ->with('success', 'Menu deleted successfully.');
+    }
+
     /**
      * @return list<array{id: int, name: string, type: string}>
      */

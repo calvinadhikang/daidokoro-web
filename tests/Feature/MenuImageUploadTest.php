@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\MenuModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -140,6 +141,41 @@ class MenuImageUploadTest extends TestCase
         $menu->refresh();
 
         $this->assertNull($menu->image);
+    }
+
+    public function test_admin_can_delete_a_menu_and_its_image(): void
+    {
+        Storage::disk('public')->put('menus/to-delete.jpg', 'image');
+
+        $menu = MenuModel::query()->create([
+            'name' => 'To Delete',
+            'image' => rtrim((string) config('app.url'), '/').'/storage/menus/to-delete.jpg',
+            'price' => 10000,
+            'is_available' => true,
+        ]);
+
+        $this->delete(route('admin.menus.destroy', $menu))
+            ->assertRedirect(route('admin.menus.index'))
+            ->assertSessionHas('success', 'Menu deleted successfully.');
+
+        $this->assertDatabaseMissing('menus', ['id' => $menu->id]);
+        $this->assertFalse(Storage::disk('public')->exists('menus/to-delete.jpg'));
+    }
+
+    public function test_guest_cannot_delete_a_menu(): void
+    {
+        $menu = MenuModel::query()->create([
+            'name' => 'Keep Me',
+            'price' => 10000,
+            'is_available' => true,
+        ]);
+
+        Auth::logout();
+
+        $this->delete(route('admin.menus.destroy', $menu))
+            ->assertRedirect(route('admin.login'));
+
+        $this->assertDatabaseHas('menus', ['id' => $menu->id]);
     }
 
     public function test_menu_image_validation_rejects_invalid_file(): void

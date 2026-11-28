@@ -1,9 +1,12 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
+import { useState } from 'react';
 
 import {
+    destroy,
     index as menusIndex,
     update,
 } from '@/actions/App/Http/Controllers/MenuController';
+import { ConfirmDialog } from '@/components/admin/confirm-dialog';
 import {
     MenuFormFields,
     menuToForm,
@@ -26,6 +29,8 @@ export default function AdminMenusShow({
     const form = useForm<MenuForm>(
         menuToForm({ ...menu, sales_channel_ids: assignedChannelIds }),
     );
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     function handleSubmit(event: React.FormEvent) {
         event.preventDefault();
@@ -38,9 +43,31 @@ export default function AdminMenusShow({
         });
     }
 
+    function handleConfirmDelete() {
+        setDeleteLoading(true);
+        router.delete(destroy.url(menu.id), {
+            onFinish: () => {
+                setDeleteLoading(false);
+                setDeleteOpen(false);
+            },
+        });
+    }
+
     return (
         <>
             <Head title={menu.name} />
+
+            <ConfirmDialog
+                open={deleteOpen}
+                title="Delete menu?"
+                description={`Delete "${menu.name}"? This cannot be undone.`}
+                confirmLabel="Delete"
+                variant="danger"
+                loading={deleteLoading}
+                onConfirm={handleConfirmDelete}
+                onCancel={() => setDeleteOpen(false)}
+            />
+
             <MenuFormFields
                 form={form}
                 formId="menu-edit-form"
@@ -50,6 +77,15 @@ export default function AdminMenusShow({
                 imageSrc={menu.image}
                 channels={channels}
                 onSubmit={handleSubmit}
+                deleteAction={
+                    <button
+                        type="button"
+                        onClick={() => setDeleteOpen(true)}
+                        className="w-full rounded-md border border-[#fda29b] px-4 py-3 text-sm font-medium text-[#b42318] dark:border-[#912018] dark:text-[#fda29b]"
+                    >
+                        Delete menu
+                    </button>
+                }
             />
         </>
     );

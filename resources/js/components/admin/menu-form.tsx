@@ -66,6 +66,7 @@ type MenuFormProps = {
     imageSrc?: string | null;
     channels?: SalesChannelOption[];
     description?: string;
+    deleteAction?: React.ReactNode;
     onSubmit: (event: React.FormEvent) => void;
 };
 
@@ -78,6 +79,7 @@ export function MenuFormFields({
     imageSrc = null,
     channels = [],
     description,
+    deleteAction,
     onSubmit,
 }: MenuFormProps) {
     const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
@@ -678,6 +680,10 @@ export function MenuFormFields({
                         </div>
                     )}
                 </section>
+
+                {deleteAction && (
+                    <section className="mt-4">{deleteAction}</section>
+                )}
             </form>
 
             <div className="fixed inset-x-0 bottom-16 z-20 border-t border-[#e3e3e0] bg-[#FDFDFC]/95 px-4 py-4 backdrop-blur dark:border-[#3E3E3A] dark:bg-[#0a0a0a]/95">

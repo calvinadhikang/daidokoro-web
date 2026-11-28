@@ -64,6 +64,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/menus', [MenuController::class, 'store'])->name('menus.store');
         Route::get('/menus/{menuModel}', [MenuController::class, 'show'])->name('menus.show');
         Route::put('/menus/{menuModel}', [MenuController::class, 'update'])->name('menus.update');
+        Route::delete('/menus/{menuModel}', [MenuController::class, 'destroy'])->name('menus.destroy');
 
         Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
         Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create');
