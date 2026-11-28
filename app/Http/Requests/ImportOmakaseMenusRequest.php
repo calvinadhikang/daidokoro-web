@@ -28,8 +28,10 @@ class ImportOmakaseMenusRequest extends FormRequest
      */
     public function rules(): array
     {
-        $current = $this->route('omakaseSession');
-        $currentId = $current instanceof OmakaseSession ? $current->id : $current;
+        $current = $this->route('omakaseSession') ?? $this->route('id');
+        $currentId = $current instanceof OmakaseSession
+            ? $current->id
+            : (is_numeric($current) ? (int) $current : $current);
 
         return [
             'source_session_id' => [

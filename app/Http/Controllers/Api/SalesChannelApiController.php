@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AssignChannelMenusRequest;
+use App\Http\Requests\CopyEventMenusRequest;
 use App\Http\Requests\StoreSalesChannelEventRequest;
 use App\Http\Requests\UpdateChannelMenuRequest;
 use App\Http\Requests\UpdateSalesChannelEventRequest;
@@ -13,6 +14,7 @@ use App\Services\MenuCatalogService;
 use App\Services\SalesChannelService;
 use App\Support\MenuApiFormatter;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class SalesChannelApiController extends Controller
 {
@@ -59,13 +61,56 @@ class SalesChannelApiController extends Controller
 
     public function storeEvent(StoreSalesChannelEventRequest $request): JsonResponse
     {
-        $channel = $this->salesChannels->createEvent($request->validated());
+        $validated = $request->validated();
+        $source = null;
+
+        if (! empty($validated['source_event_id'])) {
+            $source = SalesChannel::query()->events()->findOrFail($validated['source_event_id']);
+        }
+
+        [$channel, $copied] = DB::transaction(function () use ($validated, $source) {
+            $channel = $this->salesChannels->createEvent([
+                'name' => $validated['name'],
+                'starts_at' => $validated['starts_at'],
+                'ends_at' => $validated['ends_at'],
+            ]);
+
+            $copied = $source === null
+                ? 0
+                : $this->salesChannels->copyMenusFromEvent($channel, $source);
+
+            return [$channel, $copied];
+        });
 
         return response()->json([
             'success' => true,
             'message' => 'Event created successfully.',
+            'copied' => $copied,
             'channel' => $this->salesChannels->format($channel),
         ], 201);
+    }
+
+    public function copyMenus(CopyEventMenusRequest $request, SalesChannel $salesChannel): JsonResponse
+    {
+        abort_unless($salesChannel->isEvent(), 404);
+
+        $source = SalesChannel::query()->events()->findOrFail($request->validated('source_event_id'));
+        $copied = $this->salesChannels->copyMenusFromEvent(
+            $salesChannel,
+            $source,
+            $request->validated('menu_ids'),
+        );
+
+        $menus = $this->menuCatalog->allForBrowse($salesChannel);
+
+        return response()->json([
+            'success' => true,
+            'copied' => $copied,
+            'menus' => $menus
+                ->map(fn (MenuModel $menu) => MenuApiFormatter::formatListItem($menu, $salesChannel))
+                ->values()
+                ->all(),
+        ]);
     }
 
     public function updateEvent(

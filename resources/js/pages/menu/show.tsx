@@ -111,6 +111,12 @@ export default function MenuShow({
                             </p>
                         </div>
 
+                        {menu.description ? (
+                            <p className="mt-4 text-sm leading-relaxed whitespace-pre-wrap text-[#44403c] dark:text-[#D6D3D1]">
+                                {menu.description}
+                            </p>
+                        ) : null}
+
                         <section className="mt-6">
                             <h2 className="text-sm font-semibold tracking-wide text-[#44403c] uppercase dark:text-[#D6D3D1]">
                                 Add-ons

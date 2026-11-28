@@ -23,6 +23,7 @@ class MenuApiFormatter
         return [
             'id' => $menu->id,
             'name' => $menu->name,
+            'description' => $menu->description,
             'price' => $price,
             'price_label' => PriceLabel::format($price, $pricingType),
             'type' => $pricingType,
@@ -52,6 +53,12 @@ class MenuApiFormatter
 
         return [
             ...self::formatListItem($menu, $channel),
+            'sales_channel_ids' => $menu->salesChannels()
+                ->pluck('sales_channels.id')
+                ->map(fn ($id) => (int) $id)
+                ->sort()
+                ->values()
+                ->all(),
             'addon_groups' => $menu->addonGroups
                 ->map(fn (MenuAddonGroup $group) => [
                     'id' => $group->id,

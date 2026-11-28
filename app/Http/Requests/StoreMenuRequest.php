@@ -15,6 +15,23 @@ class StoreMenuRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $channelIds = $this->input('sales_channel_ids');
+
+        if (! is_string($channelIds)) {
+            return;
+        }
+
+        $decoded = json_decode($channelIds, true);
+
+        if (is_array($decoded)) {
+            $this->merge([
+                'sales_channel_ids' => $decoded,
+            ]);
+        }
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -24,6 +41,7 @@ class StoreMenuRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:5000'],
             'price' => ['required', 'integer', 'min:0'],
             'pricing_type' => ['nullable', 'in:standard,weight_based'],
             'sales_channel_id' => ['nullable', 'integer', 'exists:sales_channels,id'],
@@ -44,5 +62,23 @@ class StoreMenuRequest extends FormRequest
             'addon_groups.*.options.*.price' => ['required', 'integer', 'min:0'],
             'addon_groups.*.options.*.is_available' => ['boolean'],
         ];
+    }
+
+    public function hasDescription(): bool
+    {
+        return $this->exists('description');
+    }
+
+    public function normalizedDescription(): ?string
+    {
+        $description = $this->validated('description');
+
+        if (! is_string($description)) {
+            return null;
+        }
+
+        $description = str_replace(["\r\n", "\r"], "\n", trim($description));
+
+        return $description === '' ? null : $description;
     }
 }

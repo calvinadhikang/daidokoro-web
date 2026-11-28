@@ -152,6 +152,7 @@ class EventController extends Controller
         DB::transaction(function () use ($validated, $request, $salesChannel) {
             $menu = new MenuModel([
                 'name' => $validated['name'],
+                'description' => $request->normalizedDescription(),
                 'image' => $this->resolveMenuImageUrl($request, $this->menuImages),
                 'price' => $validated['price'],
                 'pricing_type' => $validated['pricing_type'] ?? MenuModel::PRICING_STANDARD,

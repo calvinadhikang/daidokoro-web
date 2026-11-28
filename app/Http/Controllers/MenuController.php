@@ -56,6 +56,7 @@ class MenuController extends Controller
         DB::transaction(function () use ($validated, $request) {
             $menu = MenuModel::query()->create([
                 'name' => $validated['name'],
+                'description' => $request->normalizedDescription(),
                 'image' => $this->resolveMenuImageUrl($request, $this->menuImages),
                 'price' => $validated['price'],
                 'pricing_type' => $validated['pricing_type'] ?? MenuModel::PRICING_STANDARD,
@@ -91,14 +92,20 @@ class MenuController extends Controller
         $validated = $request->validated();
 
         DB::transaction(function () use ($menuModel, $validated, $request) {
-            $menuModel->update([
+            $attributes = [
                 'name' => $validated['name'],
                 'image' => $this->resolveMenuImageUrl($request, $this->menuImages, $menuModel->image),
                 'price' => $validated['price'],
                 'pricing_type' => $validated['pricing_type'] ?? $menuModel->pricing_type,
                 'is_available' => $validated['is_available'] ?? true,
                 'is_recommended' => $validated['is_recommended'] ?? false,
-            ]);
+            ];
+
+            if ($request->hasDescription()) {
+                $attributes['description'] = $request->normalizedDescription();
+            }
+
+            $menuModel->update($attributes);
 
             $menuModel->addonGroups()->delete();
             $this->syncAddonGroups($menuModel, $validated['addon_groups'] ?? []);
